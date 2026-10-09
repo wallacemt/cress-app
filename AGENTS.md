@@ -1,0 +1,83 @@
+# AGENTS.md — Cress
+
+Regras e descobertas acumuladas para qualquer agente (ou pessoa) trabalhando neste repositório. Objetivo: nunca reconsultar/redescobrir algo que já está aqui — economiza tokens e evita retrabalho.
+
+## Regra permanente
+
+**Toda descoberta nova relevante (decisão, correção de premissa, fato verificado sobre uma lib/API, armadilha evitada, padrão comprovado em outro projeto) entra neste arquivo antes de a tarefa ser considerada concluída.** Formato: seção curta, factual, com a fonte. Não duplicar o que já está documentado em `docs/` (Blueprint, Dossier, PRD, arch.md) — aqui só entra o que *não* está lá, ou o que corrige/atualiza o que está lá.
+
+Ao atualizar: adicionar nas seções abaixo, nunca reescrever o histórico de decisões já tomadas sem marcar a mudança.
+
+---
+
+## 1. Onde está cada coisa
+
+- **Repositório deste código:** `cress-app/` — GitHub `wallacemt/cress-app` (remote configurado, `gh auth status` OK).
+- **Documentação de produto/arquitetura/design vive FORA deste repo**, em `../docs/` (pasta pai `cress/docs/`, que não é um repo git): `PRD.md`, `arch.md`, `briefing-design.md`, `blueprints/The-Blueprint-001.md`, `dossiers/Dossier-de-Creation-001.md` + `design-tokens.json`.
+  - **Implicação:** referências a essa documentação em issues/PRs do GitHub não podem ser links de arquivo clicáveis (o arquivo não está no repo). Usar referência textual (seção/ADR) ou, se algum dia pedirem, copiar `docs/` para dentro de `cress-app/`.
+- **Milestones e Issues já criadas no GitHub** (`wallacemt/cress-app`): 12 milestones mapeando as 11 fases do Blueprint-001 + uma 12ª milestone nova ("Distribuição — Store") que o Blueprint deixa fora do MVP de implementação (ADR-20). ~73 issues. Não recriar — editar/complementar as existentes.
+- **Caso de sucesso de referência para distribuição/CI:** `../CRITIX/critix_vault_desktop/` — app Tauri já publicado, com pipeline de MSIX/updater funcionando em produção. Ver §4.
+
+## 2. Stack e versões travadas (Blueprint-001 §4) — não atualizar sem motivo forte
+
+| Camada      | Lib                                               | Versão exata                                                     |
+| ----------- | ------------------------------------------------- | ----------------------------------------------------------------- |
+| Desktop     | `tauri` / `tauri-build`                       | 2.12.1 / 2.7.1                                                    |
+| CLI/API     | `@tauri-apps/cli` / `@tauri-apps/api`         | 2.12.1 / 2.12.1                                                   |
+| DB          | `tauri-plugin-sql`                              | 2.5.0                                                             |
+| Dialogs     | `tauri-plugin-dialog` (só Rust, sem pacote JS) | 2.8.1                                                             |
+| Log         | `tauri-plugin-log`                              | 2.10.0                                                            |
+| Áudio      | `cpal`                                          | **=0.18.2** (fixo; 0.19 troca `play()`→`start()`)      |
+| Ring buffer | `rtrb`                                          | 0.4.0                                                             |
+| WAV         | `hound`                                         | 3.5.1                                                             |
+| Hash        | `sha2`                                          | 0.11.0                                                            |
+| UI          | `react`/`react-dom`                           | 19.3.0                                                            |
+| Build       | `vite`                                          | 8.3.3                                                             |
+| TS          | `typescript`                                    | 6.0.3 (travado por`typescript-eslint` 8.71.1 exigir `<6.1.0`) |
+| CSS         | `tailwindcss`                                   | 4.3.3                                                             |
+| Docking     | `dockview-react`                                | 8.4.1                                                             |
+| PDF         | `pdfjs-dist`                                    | 6.4.299                                                           |
+| Rotas       | `react-router`                                  | 8.4.0 (`createHashRouter`)                                      |
+| Estado      | `zustand`                                       | 5.0.15 (só runtime, nunca fonte de verdade persistida)           |
+
+Regra do Blueprint: `npm i -E` sempre. Se uma versão não estiver disponível no momento da instalação, **parar e reportar**, não aceitar um `^` próximo.
+
+## 3. Decisões arquiteturais que já foram tomadas (não reabrir sem novo fato)
+
+- Domínio e aplicação **só em TypeScript**; Rust é só áudio nativo + arquivos (ADR-01).
+- `StudySession`: estados `ACTIVE ⇄ PAUSED → FINISHED` (não o `IDLE/PREPARING/RECORDING/PAUSED/FINISHED` do `arch.md` antigo) — ADR-06.
+- Nenhum caminho absoluto de arquivo cruza o webview em nenhuma direção — diálogos de arquivo/pasta são abertos **pelo Rust** (`tauri-plugin-dialog`, zero permissão `dialog:*` ao webview) — ADR-17.
+- Heurística de importação de partituras por pasta: agrupamento por **nome-base dentro do mesmo diretório**, nunca entre diretórios; "obra = subpasta" não é regra — ADR-18 (algoritmo completo documentado lá, não reimplementar do zero).
+- Workspace dockável via `dockview-react`; popout (janela nativa separada) **desligado deliberadamente** — ADR-14.
+- `identifier = "dev.wallacesantana.cress"` e `publisher = "Wallace Santana"` — **imutáveis a partir da primeira publicação**, não propor mudança — ADR-20.
+- Ambiente oficial de `tauri dev`/`tauri build` é **Windows nativo**, nunca WSL (áudio/cpal não funciona igual no WSLg) — ADR-04, §4. WSL só roda `vitest`/`cargo test` sem hardware.
+
+## 4. Correções feitas sobre o Blueprint-001, a partir do caso real do Critix Vault
+
+O Blueprint-001 (ADR-20) assumia que "o Tauri gera EXE (NSIS) e MSI, não MSIX" e que a submissão na Store seria de um "app Win32 que aponta para o instalador". **Isso está desatualizado/incompleto** — o Critix Vault (`../CRITIX/critix_vault_desktop`), já publicado, prova um caminho funcional para gerar um `.msix` real:
+
+1. `tauri build` normal com `msi` nos `bundle.targets`.
+2. Extrair os arquivos do app de dentro do `.msi` via instalação administrativa: `msiexec /a app.msi TARGETDIR=staging /qn` (não instala de verdade, só extrai).
+3. Montar a pasta do pacote MSIX: copiar os arquivos extraídos + gerar `Assets/` (ícones redimensionados com `System.Drawing` do .NET, sem dependência nova) + preencher um `AppxManifest.xml` próprio (não existe no scaffold do Tauri — precisa ser escrito à mão).
+4. Empacotar com `makeappx.exe` (vem no Windows SDK): `makeappx.exe pack /d <pasta> /p saida.msix /o`.
+5. **Não assinar localmente** — a Microsoft Store assina o `.msix` na publicação (confirmado no próprio script do Critix: "Do NOT sign the package locally - the Store signs it for you"). Um certificado Authenticode de assinatura de código **só é necessário se também distribuir fora da Store** (download direto com updater próprio).
+6. Upload do `.msix` em Partner Center → Submissions → Upload packages.
+
+Referências no código do Critix: `.github/workflows/msix-build.yml`, `scripts/build-msix.ps1`, `src-tauri/packaging/AppxManifest.xml`. Issues do Cress já atualizadas com isso: `#66`, `#67`, `#69`, `#70`, `#72` (milestone 12) e `#73` (milestone 11).
+
+### Outras descobertas do caso Critix (aplicáveis com adaptação)
+
+- `tauri build` **não gera** um `latest.json` agregado do updater por conta própria — isso só existe via a GitHub Action `tauri-apps/tauri-action`. Sem usá-la, o manifesto precisa ser montado manualmente a partir dos arquivos `.sig` gerados ao lado de cada instalador.
+- Chave de assinatura do updater (`tauri-plugin-updater`) é um par minisign gerado por `npm run tauri signer generate` — **não tem relação** com certificado Authenticode. São dois mecanismos de assinatura independentes, fácil de confundir.
+- O Critix embute um servidor Node.js (Next.js) dentro do bundle Tauri e por isso precisa de passos extras (Node portátil, rebuild do `better-sqlite3` para a ABI certa, capability `privateNetworkClientServer` no `AppxManifest.xml`, regra de firewall para `node.exe`). **O Cress não tem esse servidor** (usa `tauri-plugin-sql` direto) — não copiar esses passos, só os de empacotamento MSIX em si.
+- O CI do Critix (`ci.yml`) deixa `cargo check` comentado como débito técnico. **Não repetir isso no Cress** — `cargo test`/`clippy` entram no CI desde o início (ADR-12 já exige isso localmente).
+
+## 5. Ferramental para gerenciar milestones/issues
+
+Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh issue create/edit`, `gh api repos/wallacemt/cress-app/milestones`) chamado por um script Python descartável (não versionado — vive em scratch de sessão). `gh issue create --milestone` espera o **título** da milestone, não o número.
+
+## 6. Decisões de processo com o usuário
+
+- Nunca adicionar atribuição de IA (Co-Authored-By Claude, menção a Claude Code) em commits/issues/PRs — regra do `CLAUDE.md` global do usuário.
+- Design do app já está decidido e aprovado até a direção "03 · Dashboard — Nav F (atril)" com efeito glass — ver Dossier §8.13.1. Não reabrir alternativas de navegação (A–E) sem pedido explícito.
+- **Toda milestone e toda feature (cada issue, na prática) é trabalhada em uma branch separada.** Nunca commitar direto em `main`. Convenção de nome: `milestone-<NN>/<slug-da-milestone>` para trabalho guarda-chuva de uma milestone, ou `feature/<slug-da-issue>` (ou `fix/<slug>` para correções) para o trabalho de uma issue específica — abrir a partir de `main` atualizada, e abrir PR de volta para `main` ao concluir. Isso vale também para trabalho de agente (ex.: `EnterWorktree`/branch dedicada), nunca editar o checkout compartilhado do usuário na `main`.
