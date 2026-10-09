@@ -1,29 +1,32 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
-  "productName": "cress",
+  "productName": "Cress",
   "version": "0.1.0",
-  "identifier": "com.wallace.cress",
+  "identifier": "dev.wallacesantana.cress",
   "build": {
-    "beforeDevCommand": "bun run dev",
+    "beforeDevCommand": "npm run dev",
     "devUrl": "http://localhost:1420",
-    "beforeBuildCommand": "bun run build",
+    "beforeBuildCommand": "npm run build",
     "frontendDist": "../dist"
   },
   "app": {
     "windows": [
       {
-        "title": "cress",
-        "width": 800,
-        "height": 600
+        "title": "Cress",
+        "width": 1440,
+        "height": 900,
+        "minWidth": 1100,
+        "minHeight": 700
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self' asset:; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' 'wasm-unsafe-eval'; connect-src ipc: http://ipc.localhost asset:; media-src 'self' asset: blob:"
     }
   },
   "bundle": {
     "active": true,
-    "targets": "all",
+    "publisher": "Wallace Santana",
+    "targets": ["nsis"],
     "icon": [
       "icons/32x32.png",
       "icons/128x128.png",
@@ -31,5 +34,6 @@
       "icons/icon.icns",
       "icons/icon.ico"
     ]
-  }
+  },
+  "plugins": {"sql": {"preload": ["migrations/0001_init.sql"]}}
 }
