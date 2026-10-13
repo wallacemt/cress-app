@@ -20,6 +20,7 @@ dist-ssr
 public/pdfjs/
 src-tauri/target/
 .impeccable
+coverage/
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
