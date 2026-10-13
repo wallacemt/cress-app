@@ -35,5 +35,5 @@
       "icons/icon.ico"
     ]
   },
-  "plugins": {"sql": {"preload": ["migrations/0001_init.sql"]}}
+  "plugins": { "sql": { "preload": ["sqlite:cress.db"] } }
 }

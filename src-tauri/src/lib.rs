@@ -2,11 +2,11 @@
 #[tauri::command]
 async fn blocking_pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
-    app.dialog()
+   Ok(app
+        .dialog()
         .file()
         .blocking_pick_folder()
-        .map(|p| p.map(|x| x.to_string()))
-        .map_err(|e| e.to_string())
+        .map(|path| path.to_string()))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
