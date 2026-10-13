@@ -52,7 +52,7 @@ jobs:
   rust:
     name: cargo check / test / clippy (src-tauri)
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 40
 
     steps:
       - name: Checkout
