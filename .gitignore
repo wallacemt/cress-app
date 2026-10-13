@@ -6,12 +6,19 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
+graphify-out/
 node_modules
 dist
 dist-ssr
 *.local
-
+.claude
+.agents
+.aws
+.serena/
+.impeccable
+public/pdfjs/
+src-tauri/target/
+.impeccable
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

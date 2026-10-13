@@ -81,3 +81,26 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 - Nunca adicionar atribuição de IA (Co-Authored-By Claude, menção a Claude Code) em commits/issues/PRs — regra do `CLAUDE.md` global do usuário.
 - Design do app já está decidido e aprovado até a direção "03 · Dashboard — Nav F (atril)" com efeito glass — ver Dossier §8.13.1. Não reabrir alternativas de navegação (A–E) sem pedido explícito.
 - **Toda milestone e toda feature (cada issue, na prática) é trabalhada em uma branch separada.** Nunca commitar direto em `main`. Convenção de nome: `milestone-<NN>/<slug-da-milestone>` para trabalho guarda-chuva de uma milestone, ou `feature/<slug-da-issue>` (ou `fix/<slug>` para correções) para o trabalho de uma issue específica — abrir a partir de `main` atualizada, e abrir PR de volta para `main` ao concluir. Isso vale também para trabalho de agente (ex.: `EnterWorktree`/branch dedicada), nunca editar o checkout compartilhado do usuário na `main`.
+
+## 7. Descobertas da Milestone 1
+
+- O registry npm mantém `vite@8.3.3` disponível; a primeira tentativa deixou uma instalação parcial por cache npm em `/home`, então instalações neste workspace devem usar `npm_config_cache` apontando para `/tmp` (fato verificado por `npm view` e pela falha EROFS).
+- O adaptador `node:sqlite` precisa habilitar explicitamente `PRAGMA foreign_keys = ON`; `NodeSqliteDb` faz isso no construtor e o teste de integração confirma rejeição de FK inválida (fonte: teste local `src/infrastructure/db/nodeSqliteDb.test.ts`).
+- A validação dos itens de áudio, asset protocol, dockview e diálogo exige WebView2/WASAPI nativos; WSL só fornece evidência para o adaptador SQLite (fonte: `SPIKE.md`, execução desta milestone).
+
+## 8. Limitação conhecida deste ambiente (WSL)
+
+- `cargo check`/`cargo test`/`cargo clippy` falham neste WSL com `failed to run custom build command for alsa-sys v0.4.0` — falta o pacote de sistema `libasound2-dev` (dependência Linux do `cpal`, já prevista em `arch.md` §15/ADR-04 "Consequences"). Não é bug de código. Requer `sudo apt-get install -y libasound2-dev` (uma vez, precisa de senha — não automatizável por um agente sem acesso a sudo interativo). Depois de instalado, re-rodar `npm run check`/`cargo check` normalmente.
+
+## 9. Descobertas da correção da Milestone 1
+
+- O `node_modules` compartilhado no checkout WSL pode ficar parcialmente reificado: `npm install` termina, mas módulos internos de ESLint/Vitest podem faltar. Uma cópia temporária limpa com `npm ci` é uma verificação válida do projeto; nessa cópia, lint, typecheck e Vitest passaram (fonte: execução desta correção).
+- O CLI `shadcn@4.21.3 init -d` foi executado, mas não completou por módulo ausente no `node_modules` compartilhado (`zod-to-json-schema/.../any.js`). `components.json` e `src/components/ui/.gitkeep` foram preparados conforme o contrato; repetir o CLI em uma instalação limpa quando os componentes forem adicionados (fonte: execução desta correção).
+- O TypeScript não inclui os tipos globais de `AudioWorkletProcessor` nem `node:sqlite` nesta combinação de libs; declarações locais mínimas em `src/features/spike/click-processor.ts` e `src/types/node-sqlite.d.ts` mantêm o fixture do spike verificável sem alterar o runtime (fonte: `npm run typecheck`).
+- **Causa raiz confirmada** do ponto acima: o repo vive em `/mnt/e/...`, montado via 9p (`drvfs` do WSL), que é lento/não-atômico para pacotes com muitos arquivos pequenos (caso do ESLint) e pode corromper a instalação sem erro visível no `npm install`. Correção: `rm -rf node_modules && npm install` (confirmado nesta máquina — lint/typecheck/test passaram limpos depois). Se voltar a acontecer, reinstalar do zero antes de depurar módulo a módulo.
+
+## 10. Correções encontradas só ao validar no Windows (cargo check fica bloqueado no WSL)
+
+- `tauri_plugin_dialog::DialogExt::blocking_pick_folder()` retorna `Option<FilePath>` diretamente, **não** `Result<Option<FilePath>, Error>` — não há `.map_err` a fazer. O command correto é `Ok(app.dialog().file().blocking_pick_folder().map(|p| p.to_string()))` (fonte: build real no Windows, 2026-10-13).
+- `tauri.conf.json` → `plugins.sql.preload` espera uma **connection string** (ex.: `"sqlite:cress.db"`), não o caminho do arquivo `.sql` de migration. O arquivo de migration entra via `include_str!` no `Migration` registrado em `lib.rs`, não no `preload` (fonte: mesmo build).
+- Esses dois bugs não aparecem em `npm run typecheck`/lint — só `cargo build`/`tauri dev` real pega. Como este WSL não compila o lado Rust (§8), **builds reais no Windows são a única verificação confiável do `src-tauri/`** até `libasound2-dev` ser instalado aqui.

@@ -1,0 +1,175 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "./features/workspace/workspace-theme.css";
+
+:root {
+  color-scheme: dark;
+  --ink-950: #05070d;
+  --ink-900: #090b14;
+  --ink-850: #0d1020;
+  --ink-800: #111629;
+  --ink-750: #161b30;
+  --ink-700: #1c2240;
+  --ink-600: #232a4c;
+  --text-primary: #f5f3ef;
+  --text-secondary: #a7adbd;
+  --text-muted: #8a90a3;
+  --text-subtle: #686f82;
+  --border-subtle: rgb(255 255 255 / 0.06);
+  --border-default: rgb(255 255 255 / 0.1);
+  --border-strong: rgb(255 255 255 / 0.16);
+  --border-control: #626a8a;
+  --violet-50: #ede9fe;
+  --violet-100: #ddd6fe;
+  --violet-300: #c4b5fd;
+  --violet-400: #a78bfa;
+  --violet-500: #8b5cf6;
+  --violet-600: #7c3aed;
+  --violet-700: #6d28d9;
+  --violet-900: #4c1d95;
+  --violet-950: #2e1065;
+  --violet-tint: rgb(124 58 237 / 0.16);
+  --blue-100: #dbeafe;
+  --blue-300: #93c5fd;
+  --blue-400: #60a5fa;
+  --blue-500: #3b82f6;
+  --blue-600: #2563eb;
+  --blue-700: #1d4ed8;
+  --indigo-500: #6366f1;
+  --gold-200: #f7e3bd;
+  --gold-300: #f2cf8f;
+  --gold-400: #e8b45c;
+  --gold-500: #d19a3c;
+  --gold-tint: rgb(232 180 92 / 0.12);
+  --danger: #f87171;
+  --danger-tint: rgb(248 113 113 / 0.12);
+  --warning: #fb923c;
+  --warning-tint: rgb(251 146 60 / 0.12);
+  --info: #60a5fa;
+  --info-tint: rgb(96 165 250 / 0.12);
+  --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
+  --gradient-hairpin: linear-gradient(90deg, #a78bfa 0%, #60a5fa 100%);
+  --background: var(--ink-900);
+  --foreground: var(--text-primary);
+  --card: var(--ink-800);
+  --card-foreground: var(--text-primary);
+  --popover: var(--ink-700);
+  --popover-foreground: var(--text-primary);
+  --primary: var(--violet-600);
+  --primary-foreground: var(--text-primary);
+  --secondary: rgb(255 255 255 / 0.05);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--ink-750);
+  --muted-foreground: var(--text-secondary);
+  --accent: rgb(255 255 255 / 0.06);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--danger);
+  --border: var(--border-subtle);
+  --input: var(--border-default);
+  --ring: var(--violet-400);
+  --radius: 0.75rem;
+  --font-sans: "Inter Variable", system-ui, sans-serif;
+  --font-display: "Cormorant Garamond Variable", Georgia, serif;
+  --font-metric: "Manrope Variable", var(--font-sans);
+  --ease-crescendo: cubic-bezier(0.22, 1, 0.36, 1);
+  --duration-fast: 120ms;
+  --duration-normal: 200ms;
+  --duration-slow: 320ms;
+}
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-primary: var(--primary);
+  --color-gold: var(--gold-400);
+  --color-subtle: var(--text-subtle);
+  --font-sans: var(--font-sans);
+  --font-display: var(--font-display);
+  --font-metric: var(--font-metric);
+}
+
+* {
+  box-sizing: border-box;
+}
+body {
+  margin: 0;
+  min-width: 1100px;
+  background: var(--background);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  font-size: 16px;
+  line-height: 1.5;
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+.app-shell {
+  display: flex;
+  min-height: 100vh;
+}
+aside {
+  width: 240px;
+  background: var(--ink-850);
+  padding: 32px 20px;
+  border-right: 1px solid var(--border-subtle);
+}
+.brand {
+  margin-bottom: 48px;
+  font: 32px var(--font-display);
+  letter-spacing: 0.04em;
+}
+.brand span {
+  color: var(--gold-400);
+}
+nav {
+  display: grid;
+  gap: 8px;
+}
+nav a {
+  color: var(--text-secondary);
+  text-decoration: none;
+  padding: 12px 14px;
+  border-radius: var(--radius);
+}
+nav a.active,
+nav a:hover {
+  color: var(--text-primary);
+  background: var(--accent);
+}
+main {
+  flex: 1;
+}
+header {
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 40px;
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+}
+.placeholder {
+  max-width: 720px;
+  padding: 72px 8%;
+}
+.placeholder h1 {
+  margin: 8px 0;
+  font: 64px var(--font-display);
+}
+.placeholder p {
+  color: var(--text-secondary);
+}
+.eyebrow {
+  color: var(--violet-400) !important;
+  font-size: 12px;
+  letter-spacing: 0.2em;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
