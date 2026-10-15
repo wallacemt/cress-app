@@ -9,6 +9,9 @@ export class NodeSqliteDb implements SqlDb {
   constructor(private readonly db = new DatabaseSync(":memory:")) {
     this.db.exec("PRAGMA foreign_keys = ON");
   }
+  exec(sql: string): void {
+    this.db.exec(sql);
+  }
   async execute(sql: string, params: unknown[] = []): Promise<SqlResult> {
     const result = this.db
       .prepare(normalizeParameters(sql))
