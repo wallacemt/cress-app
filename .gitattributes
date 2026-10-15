@@ -1,0 +1,8 @@
+# src-tauri/migrations/*.sql is embedded verbatim at compile time via include_str!
+# and tauri-plugin-sql (sqlx) stores a checksum of that content the first time a
+# migration runs. If the working-tree line endings flip (LF <-> CRLF) between
+# builds - e.g. because of a Windows git client with core.autocrlf=true - the
+# checksum changes even though the SQL itself didn't, and the app fails to start
+# with "migration was previously applied but has been modified". Force LF here so
+# the embedded bytes are always identical regardless of OS/git config.
+src-tauri/migrations/*.sql text eol=lf
