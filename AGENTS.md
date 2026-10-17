@@ -143,3 +143,12 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 ## 15. Descobertas da UI de onboarding
 
 - Neste checkout, o arquivo `*.dom.test.tsx` executou em ambiente `node` apesar da configuração `environmentMatchGlobs`; a diretiva `// @vitest-environment jsdom` no próprio teste fez o RTL receber `document` (fonte: execução de `bun run test`, 2026-10-15).
+
+## 16. Execução do Vitest no checkout WSL em `/mnt/e`
+
+- `bun run test` pode falhar ao iniciar o worker paralelo de `src/features/onboarding/OnboardingPage.dom.test.tsx` com `Timeout waiting for worker to respond`, mesmo quando os demais testes passam. Nesta máquina, `bun run test -- --maxWorkers=1` passou (23 arquivos/64 testes), indicando limitação de inicialização paralela neste checkout montado em 9p; não reduzir o paralelismo padrão do projeto apenas para contornar a máquina local (fonte: duas execuções padrão e uma serial em 2026-10-17).
+
+## 17. Revalidação dos workers DOM no WSL (2026-10-17)
+
+- Ao adicionar `SettingsPage.dom.test.tsx`, duas execuções de `bun run test -- --maxWorkers=1` não iniciaram os workers DOM de onboarding e settings (`Timeout waiting for worker to respond`); 22 arquivos/62 testes passaram nas duas tentativas. A execução isolada do teste de settings com pool `threads` também expirou antes de executar testes. Isto confirma uma falha de inicialização do worker neste checkout 9p, não uma falha de asserção; os testes DOM precisam ser reexecutados em um ambiente onde os workers iniciem (fonte: execuções locais desta issue).
+- **Causa raiz confirmada:** não é flakiness aleatória — o pool padrão (`forks`/`threads` com `isolate: true`) sobe um worker novo por arquivo, e nesta máquina o setup do ambiente `jsdom` é lento demais pra responder dentro do timeout de start quando isso acontece pra cada arquivo `*.dom.test.tsx`. `bun run test -- --no-isolate` reaproveita o worker entre arquivos (paga o custo de setup do `jsdom` uma vez só) e passou limpo: **24 arquivos/66 testes, 0 erros** (fonte: validação da issue #25, 2026-10-17). Usar esse flag só para validação local nesta máquina — não é para mudar o `isolate` padrão do projeto/CI sem motivo mais forte.
