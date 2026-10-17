@@ -3,6 +3,7 @@ import { AppShell } from "./AppShell";
 import { LoadingScreen } from "./LoadingScreen";
 import { onboardingLoader, rootLoader } from "./boot";
 import { OnboardingPage } from "../features/onboarding/OnboardingPage";
+import { SettingsPage } from "../features/settings/SettingsPage";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -21,7 +22,6 @@ const placeholderRoutes = [
   "/sessions",
   "/sessions/:sessionId",
   "/tools",
-  "/settings",
 ];
 
 export const router = createHashRouter([
@@ -38,6 +38,7 @@ export const router = createHashRouter([
     hydrateFallbackElement: <LoadingScreen />,
     children: [
       { index: true, element: <Placeholder name="Dashboard" /> },
+      { path: "settings", element: <SettingsPage /> },
       ...placeholderRoutes.map((path) => ({
         path: path.slice(1),
         element: <Placeholder name={path} />,

@@ -1,0 +1,137 @@
+import { useState, type FormEvent } from "react";
+import { Check, Star } from "lucide-react";
+import { saveProfile } from "../../application/profile";
+import { container } from "../../app/container";
+import {
+  INSTRUMENTS,
+  MUSICAL_ROLES,
+  type InstrumentCode,
+  type MusicalRole,
+} from "../../domain/profile";
+import { useProfileStore } from "../../stores/profileStore";
+
+const levels = [
+  ["beginner", "Iniciante"],
+  ["intermediate", "Intermediário"],
+  ["advanced", "Avançado"],
+  ["professional", "Profissional"],
+] as const;
+const roles: Record<MusicalRole, string> = {
+  orchestra: "Músico(a) de orquestra",
+  soloist: "Solista",
+  chamber: "Camerista",
+  student: "Estudante",
+  teacher: "Professor(a)",
+  amateur: "Amador(a)",
+};
+const control =
+  "rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)] outline-none focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]";
+const button =
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-4 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)] disabled:cursor-not-allowed disabled:opacity-45";
+const chip = (selected: boolean) =>
+  `${button} w-full border ${selected ? "border-[var(--violet-400)] bg-[var(--violet-tint)] text-[var(--text-primary)]" : "border-[var(--border-default)] bg-[var(--ink-800)] text-[var(--text-secondary)] hover:bg-[var(--ink-700)]"}`;
+
+export function SettingsPage() {
+  const profile = useProfileStore((state) => state.profile);
+  const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
+  const [instruments, setInstruments] = useState<InstrumentCode[]>(profile?.instruments ?? []);
+  const [primaryInstrument, setPrimaryInstrument] = useState<InstrumentCode | null>(profile?.primaryInstrument ?? null);
+  const [otherInstrumentLabel, setOtherInstrumentLabel] = useState(profile?.otherInstrumentLabel ?? "");
+  const [experienceLevel, setExperienceLevel] = useState<(typeof levels)[number][0] | undefined>(profile?.experienceLevel);
+  const [musicalRoles, setMusicalRoles] = useState<MusicalRole[]>(profile?.musicalRoles ?? []);
+  const [ensembleName, setEnsembleName] = useState(profile?.ensembleName ?? "");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const toggleInstrument = (code: InstrumentCode) => {
+    setInstruments((current) => {
+      if (current.includes(code)) {
+        const next = current.filter((item) => item !== code);
+        setPrimaryInstrument((primary) => primary === code ? (next[0] ?? null) : primary);
+        return next;
+      }
+      if (current.length === 8) return current;
+      setPrimaryInstrument((primary) => primary ?? code);
+      return [...current, code];
+    });
+  };
+  const toggleRole = (role: MusicalRole) =>
+    setMusicalRoles((current) => current.includes(role) ? current.filter((item) => item !== role) : [...current, role]);
+
+  const save = async (event: FormEvent) => {
+    event.preventDefault();
+    setError("");
+    if (!displayName.trim()) return setError("Informe seu nome.");
+    if (displayName.trim().length > 60) return setError("Use até 60 caracteres no nome.");
+    if (!instruments.length) return setError("Selecione pelo menos um instrumento.");
+    if (instruments.includes("other") && !otherInstrumentLabel.trim()) return setError("Informe qual é o instrumento.");
+    setSaving(true);
+    try {
+      const updated = await saveProfile(await container.getDeps(), {
+        displayName: displayName.trim(),
+        instruments,
+        primaryInstrument: primaryInstrument!,
+        otherInstrumentLabel: instruments.includes("other") ? otherInstrumentLabel.trim() : null,
+        experienceLevel,
+        musicalRoles,
+        ensembleName: ensembleName.trim() || null,
+      });
+      useProfileStore.getState().setProfile(updated);
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível salvar o perfil.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (!profile) return <section className="placeholder"><p role="alert">Perfil indisponível.</p></section>;
+
+  return (
+    <main className="mx-auto w-full max-w-3xl px-6 py-10 text-[var(--text-primary)]">
+      <section aria-labelledby="settings-profile-title">
+        <header className="mb-8 border-b border-[var(--border-subtle)] pb-6">
+          <p className="mb-2 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">CONFIGURAÇÕES</p>
+          <h1 id="settings-profile-title" className="font-display text-4xl">Perfil</h1>
+          {ensembleName.trim() && <p className="mt-2 text-[var(--text-secondary)]">{ensembleName.trim()}</p>}
+        </header>
+        <form onSubmit={save}>
+          <label className="mb-7 block text-sm text-[var(--text-secondary)]">Seu nome
+            <input aria-label="Seu nome" className={`${control} mt-2 h-12 w-full`} maxLength={60} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+          </label>
+          <fieldset className="mb-7">
+            <legend className="mb-3 text-sm text-[var(--text-secondary)]">Instrumentos <span className="text-[var(--text-muted)]">(marque a estrela para definir o principal)</span></legend>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+              {(Object.entries(INSTRUMENTS) as [InstrumentCode, string][]).map(([code, label]) => <div key={code} className="relative">
+                <button type="button" aria-pressed={instruments.includes(code)} className={chip(instruments.includes(code))} onClick={() => toggleInstrument(code)}>
+                  {instruments.includes(code) && <Check size={15} aria-hidden="true" />} {label}
+                </button>
+                {instruments.includes(code) && <button type="button" aria-label={`Definir ${label} como principal`} title="Principal" className={`absolute -right-1 -top-2 rounded-full p-1 ${primaryInstrument === code ? "text-[var(--gold-300)]" : "text-[var(--text-muted)]"}`} onClick={() => setPrimaryInstrument(code)}><Star size={16} fill={primaryInstrument === code ? "currentColor" : "none"} /></button>}
+              </div>)}
+            </div>
+            {instruments.includes("other") && <label className="mt-5 block text-sm text-[var(--text-secondary)]">Qual instrumento?
+              <input aria-label="Qual instrumento?" className={`${control} mt-2 h-12 w-full`} maxLength={60} value={otherInstrumentLabel} onChange={(event) => setOtherInstrumentLabel(event.target.value)} />
+            </label>}
+          </fieldset>
+          <fieldset className="mb-7">
+            <legend className="mb-3 text-sm text-[var(--text-secondary)]">Nível</legend>
+            <div className="flex flex-wrap gap-2">
+              {levels.map(([value, label]) => <button key={value} type="button" aria-pressed={experienceLevel === value} className={chip(experienceLevel === value)} onClick={() => setExperienceLevel(experienceLevel === value ? undefined : value)}>{label}</button>)}
+              <button type="button" aria-pressed={!experienceLevel} className={chip(!experienceLevel)} onClick={() => setExperienceLevel(undefined)}>Prefiro não dizer</button>
+            </div>
+          </fieldset>
+          <fieldset className="mb-7">
+            <legend className="mb-3 text-sm text-[var(--text-secondary)]">Papéis</legend>
+            <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
+              {MUSICAL_ROLES.map((role) => <button key={role} type="button" aria-pressed={musicalRoles.includes(role)} className={chip(musicalRoles.includes(role))} onClick={() => toggleRole(role)}>{roles[role]}</button>)}
+            </div>
+          </fieldset>
+          <label className="mb-7 block text-sm text-[var(--text-secondary)]">Conjunto, orquestra ou escola <span className="text-[var(--text-muted)]">(opcional)</span>
+            <input aria-label="Conjunto, orquestra ou escola" className={`${control} mt-2 h-12 w-full`} maxLength={120} value={ensembleName} onChange={(event) => setEnsembleName(event.target.value)} />
+          </label>
+          {error && <p role="alert" className="mb-4 text-sm text-[var(--danger)]">{error}</p>}
+          <button type="submit" disabled={saving} className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{saving ? "Salvando…" : "Salvar perfil"}</button>
+        </form>
+      </section>
+    </main>
+  );
+}
