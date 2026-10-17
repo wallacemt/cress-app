@@ -1,0 +1,238 @@
+import { useRef, useState, type FormEvent } from "react";
+import { useNavigate } from "react-router";
+import { Check, Star } from "lucide-react";
+import cressSymbol from "../../assets/brand/cress-symbol-gold.svg";
+import cressStacked from "../../assets/brand/cress-stacked-gold.svg";
+import { completeOnboarding } from "../../application/profile";
+import { container } from "../../app/container";
+import {
+  INSTRUMENTS,
+  MUSICAL_ROLES,
+  type InstrumentCode,
+  type MusicalRole,
+} from "../../domain/profile";
+
+const levels = [
+  ["beginner", "Iniciante"],
+  ["intermediate", "Intermediário"],
+  ["advanced", "Avançado"],
+  ["professional", "Profissional"],
+] as const;
+const roles: Record<MusicalRole, string> = {
+  orchestra: "Músico(a) de orquestra",
+  soloist: "Solista",
+  chamber: "Camerista",
+  student: "Estudante",
+  teacher: "Professor(a)",
+  amateur: "Amador(a)",
+};
+const control =
+  "rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)] outline-none focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]";
+const button =
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)] disabled:cursor-not-allowed disabled:opacity-45";
+const chip = (selected: boolean) =>
+  `${button} w-full border ${selected ? "border-[var(--violet-400)] bg-[var(--violet-tint)] text-[var(--text-primary)]" : "border-[var(--border-default)] bg-[var(--ink-800)] text-[var(--text-secondary)] hover:bg-[var(--ink-700)]"}`;
+
+export function OnboardingPage() {
+  const navigate = useNavigate();
+  const [step, setStep] = useState(1);
+  const [displayName, setDisplayName] = useState("");
+  const [instruments, setInstruments] = useState<InstrumentCode[]>([]);
+  const [primaryInstrument, setPrimaryInstrument] =
+    useState<InstrumentCode | null>(null);
+  const [otherInstrumentLabel, setOtherInstrumentLabel] = useState("");
+  const [experienceLevel, setExperienceLevel] = useState<
+    (typeof levels)[number][0] | undefined
+  >();
+  const [musicalRoles, setMusicalRoles] = useState<MusicalRole[]>([]);
+  const [ensembleName, setEnsembleName] = useState("");
+  const [a4, setA4] = useState("440");
+  const [noteNaming, setNoteNaming] = useState<"letter" | "solfege">("letter");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+  const fieldRef = useRef<HTMLInputElement | null>(null);
+  const focusRef = useRef<HTMLElement | null>(null);
+
+  const advance = (event?: FormEvent) => {
+    event?.preventDefault();
+    setError("");
+    if (step === 2) {
+      if (!displayName.trim()) return invalid("Informe seu nome.");
+      if (displayName.trim().length > 60)
+        return invalid("Use até 60 caracteres.");
+    }
+    if (step === 3) {
+      if (!instruments.length) return invalid("Selecione pelo menos um instrumento.");
+      if (instruments.length > 8) return invalid("Selecione até 8 instrumentos.");
+      if (instruments.includes("other") && !otherInstrumentLabel.trim())
+        return invalid("Informe qual é o instrumento.");
+    }
+    if (step === 5 && (!Number.isInteger(Number(a4)) || Number(a4) < 415 || Number(a4) > 466))
+      return invalid("A afinação precisa ser um número inteiro entre 415 e 466 Hz.");
+    setStep((current) => Math.min(current + 1, 6));
+  };
+
+  const invalid = (message: string) => {
+    setError(message);
+    requestAnimationFrame(() => (focusRef.current ?? fieldRef.current)?.focus());
+  };
+
+  const toggleInstrument = (code: InstrumentCode) => {
+    setInstruments((current) => {
+      if (current.includes(code)) {
+        const next = current.filter((item) => item !== code);
+        setPrimaryInstrument((primary) =>
+          primary === code ? (next[0] ?? null) : primary,
+        );
+        return next;
+      }
+      if (current.length === 8) return current;
+      setPrimaryInstrument((primary) => primary ?? code);
+      return [...current, code];
+    });
+  };
+
+  const toggleRole = (role: MusicalRole) =>
+    setMusicalRoles((current) =>
+      current.includes(role)
+        ? current.filter((item) => item !== role)
+        : [...current, role],
+    );
+
+  const finish = async () => {
+    setSaving(true);
+    setError("");
+    try {
+      await completeOnboarding(await container.getDeps(), {
+        displayName: displayName.trim(),
+        instruments,
+        primaryInstrument: primaryInstrument!,
+        otherInstrumentLabel: instruments.includes("other")
+          ? otherInstrumentLabel.trim()
+          : null,
+        experienceLevel,
+        musicalRoles,
+        ensembleName: ensembleName.trim() || null,
+        a4: Number(a4),
+        noteNaming,
+      });
+      navigate("/");
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível concluir o cadastro.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const summary = [
+    ["Nome", displayName.trim(), 2],
+    [
+      "Instrumentos",
+      instruments
+        .map((code) => `${code === primaryInstrument ? "(Principal) " : ""}${INSTRUMENTS[code]}${code === "other" ? ` (${otherInstrumentLabel.trim()})` : ""}`)
+        .join(", "),
+      3,
+    ],
+    ["Papéis", musicalRoles.map((role) => roles[role]).join(", ") || "—", 4],
+    ["Conjunto", ensembleName.trim() || "—", 4],
+    ["A4", `${a4} Hz`, 5],
+    ["Nomenclatura", noteNaming === "letter" ? "C D E" : "Dó Ré Mi", 5],
+  ] as const;
+
+  return (
+    <main className="flex min-h-screen items-center justify-center bg-[var(--ink-900)] px-8 py-10">
+      <section className="w-full max-w-[560px]" aria-label="Configuração inicial do Cress">
+        <div className="mb-12 flex items-center justify-between gap-8">
+          <img src={cressSymbol} alt="Cress" className="h-8 w-8" />
+          <div className="text-right">
+            <div className="mb-2 flex justify-end gap-1" aria-hidden="true">
+              {Array.from({ length: 6 }, (_, index) => (
+                <span key={index} style={{ height: index + 1 }} className={`w-10 rounded-full ${index < step ? "bg-[image:var(--gradient-hairpin)]" : "bg-[var(--ink-600)]"}`} />
+              ))}
+            </div>
+            <p aria-live="polite" className="text-xs text-[var(--text-muted)]">Passo {step} de 6</p>
+          </div>
+        </div>
+
+        <form onSubmit={advance}>
+          {step === 1 && <div className="py-8">
+            <img src={cressStacked} alt="Cress" className="mb-8 h-32" />
+            <p className="mb-5 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">PRACTICE. MEASURE. CRESCENDO.</p>
+            <h1 className="mb-6 font-display text-[72px] leading-[76px] font-medium text-[var(--text-primary)]">Cada estudo, um pequeno <i>crescendo</i>.</h1>
+            <p className="max-w-[68ch] text-lg leading-7 text-[var(--text-secondary)]">O Cress reúne partitura, metrônomo, afinador e gravador numa mesma mesa de estudo — e guarda a sua evolução.</p>
+          </div>}
+
+          {step === 2 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">Como podemos te chamar?</h1>
+            <input ref={(node) => { fieldRef.current = node; focusRef.current = node; }} autoFocus aria-label="Seu nome" className={`${control} h-[52px] w-full text-lg`} maxLength={60} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+            <p className="mt-3 text-sm text-[var(--text-muted)]">Usamos só para te cumprimentar. Fica neste computador.</p>
+          </div>}
+
+          {step === 3 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">O que você toca?</h1>
+            <div ref={(node) => { focusRef.current = node?.querySelector("button") ?? null; }} className="grid grid-cols-4 gap-2">
+              {(Object.entries(INSTRUMENTS) as [InstrumentCode, string][]).map(([code, label]) => <div key={code} className="relative">
+                <button type="button" aria-pressed={instruments.includes(code)} className={chip(instruments.includes(code))} onClick={() => toggleInstrument(code)}>
+                  {instruments.includes(code) && <Check size={15} aria-hidden="true" />} {label}
+                </button>
+                {instruments.includes(code) && <button type="button" aria-label={`Definir ${label} como principal`} title="Principal" className={`absolute -right-1 -top-2 rounded-full p-1 ${primaryInstrument === code ? "text-[var(--gold-300)]" : "text-[var(--text-muted)]"}`} onClick={() => setPrimaryInstrument(code)}><Star size={16} fill={primaryInstrument === code ? "currentColor" : "none"} /></button>}
+              </div>)}
+            </div>
+            {instruments.includes("other") && <label className="mt-6 block text-sm text-[var(--text-secondary)]">Qual instrumento?
+              <input ref={(node) => { fieldRef.current = node; focusRef.current = node; }} autoFocus className={`${control} mt-2 h-12 w-full`} maxLength={60} value={otherInstrumentLabel} onChange={(event) => setOtherInstrumentLabel(event.target.value)} />
+            </label>}
+          </div>}
+
+          {step === 4 && <div className="py-8">
+            <h1 className="mb-2 font-display text-4xl leading-10 text-[var(--text-primary)]">Você e a música</h1>
+            <p className="mb-8 text-[var(--text-secondary)]">Tudo opcional. Ajuda o Cress a se adaptar a você.</p>
+            <fieldset className="mb-7">
+              <legend className="mb-3 text-sm text-[var(--text-secondary)]">Nível</legend>
+              <div className="flex flex-wrap gap-2">{levels.map(([value, label]) => <button key={value} type="button" aria-pressed={experienceLevel === value} className={chip(experienceLevel === value)} onClick={() => setExperienceLevel(experienceLevel === value ? undefined : value)}>{label}</button>)}
+                <button type="button" aria-pressed={!experienceLevel} className={chip(!experienceLevel)} onClick={() => setExperienceLevel(undefined)}>Prefiro não dizer</button>
+              </div>
+            </fieldset>
+            <fieldset className="mb-7">
+              <legend className="mb-3 text-sm text-[var(--text-secondary)]">Papéis</legend>
+              <div className="grid grid-cols-2 gap-2">{MUSICAL_ROLES.map((role) => <button key={role} type="button" aria-pressed={musicalRoles.includes(role)} className={chip(musicalRoles.includes(role))} onClick={() => toggleRole(role)}>{roles[role]}</button>)}</div>
+            </fieldset>
+            <label className="block text-sm text-[var(--text-secondary)]">Conjunto, orquestra ou escola <span className="text-[var(--text-muted)]">(opcional)</span>
+              <input className={`${control} mt-2 h-12 w-full`} maxLength={120} placeholder="Ex.: Orquestra Sinfônica Jovem de Goiás" value={ensembleName} onChange={(event) => setEnsembleName(event.target.value)} />
+            </label>
+          </div>}
+
+          {step === 5 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">Sua afinação</h1>
+            <fieldset className="mb-8">
+              <legend className="mb-3 text-sm text-[var(--text-secondary)]">Frequência de A4</legend>
+              <div className="flex gap-2">{[440, 442, 443].map((value) => <button key={value} type="button" aria-pressed={Number(a4) === value} className={chip(Number(a4) === value)} onClick={() => setA4(String(value))}>{value} Hz</button>)}
+                <label className="flex items-center gap-2 text-sm text-[var(--text-secondary)]">Outro <input ref={(node) => { fieldRef.current = node; focusRef.current = node; }} aria-label="Outra frequência A4" className={`${control} h-11 w-24`} type="number" min="415" max="466" step="1" value={a4} onChange={(event) => setA4(event.target.value)} /> Hz</label>
+              </div>
+            </fieldset>
+            <fieldset>
+              <legend className="mb-3 text-sm text-[var(--text-secondary)]">Nomenclatura das notas</legend>
+              <div className="grid grid-cols-2 gap-3">{([["letter", "C D E", "A₄"], ["solfege", "Dó Ré Mi", "Lá₄"]] as const).map(([value, label, example]) => <button key={value} type="button" role="radio" aria-checked={noteNaming === value} className={`${chip(noteNaming === value)} h-28 flex-col`} onClick={() => setNoteNaming(value)}><span>{label}</span><i className="font-display text-3xl">{example}</i></button>)}</div>
+            </fieldset>
+          </div>}
+
+          {step === 6 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">Tudo pronto, {displayName.trim()}.</h1>
+            <dl className="divide-y divide-[var(--border-subtle)]">
+              {summary.map(([label, value, editStep]) => <div key={label} className="flex items-start justify-between gap-4 py-4">
+                <dt className="w-28 shrink-0 text-sm text-[var(--text-muted)]">{label}</dt>
+                <dd className="flex-1 text-sm text-[var(--text-primary)]">{value || "—"}</dd>
+                <button type="button" className="text-sm text-[var(--violet-300)] underline underline-offset-4 hover:text-[var(--text-primary)]" onClick={() => { setError(""); setStep(editStep); }}>Editar</button>
+              </div>)}
+            </dl>
+          </div>}
+
+          {error && <p role="alert" className="mb-4 text-sm text-[var(--danger)]">{error}</p>}
+          <div className="mt-6 flex items-center justify-between border-t border-[var(--border-subtle)] pt-6">
+            {step > 1 ? <button type="button" className={`${button} bg-transparent text-[var(--text-secondary)] hover:bg-[var(--accent)]`} onClick={() => { setError(""); setStep((current) => current - 1); }}>Voltar</button> : <span />}
+            {step < 6 ? <button type="submit" className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{step === 1 ? "Começar" : "Continuar"}</button> : <button type="button" disabled={saving} className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`} onClick={finish}>{saving ? "Salvando…" : "Entrar no Cress"}</button>}
+          </div>
+        </form>
+      </section>
+    </main>
+  );
+}

@@ -164,6 +164,22 @@ header {
   font-size: 12px;
   letter-spacing: 0.2em;
 }
+.loading-hairpin {
+  transform-origin: left;
+  background-image: var(--gradient-hairpin);
+  animation: loading-hairpin 1.6s var(--ease-crescendo) infinite;
+}
+@keyframes loading-hairpin {
+  0%,
+  100% {
+    transform: scaleX(0.05);
+    opacity: 0.5;
+  }
+  50% {
+    transform: scaleX(1);
+    opacity: 1;
+  }
+}
 
 @media (prefers-reduced-motion: reduce) {
   *,
