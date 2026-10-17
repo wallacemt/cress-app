@@ -1,6 +1,8 @@
 import { createHashRouter, Navigate } from "react-router";
 import { AppShell } from "./AppShell";
+import { LoadingScreen } from "./LoadingScreen";
 import { onboardingLoader, rootLoader } from "./boot";
+import { OnboardingPage } from "../features/onboarding/OnboardingPage";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -26,12 +28,14 @@ export const router = createHashRouter([
   {
     path: "/onboarding",
     loader: onboardingLoader,
-    element: <Placeholder name="Onboarding" />,
+    element: <OnboardingPage />,
+    hydrateFallbackElement: <LoadingScreen />,
   },
   {
     path: "/",
     loader: rootLoader,
     element: <AppShell />,
+    hydrateFallbackElement: <LoadingScreen />,
     children: [
       { index: true, element: <Placeholder name="Dashboard" /> },
       ...placeholderRoutes.map((path) => ({
