@@ -6,8 +6,8 @@ import {
 } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import {
+  buildDefaultLayoutPanels,
   chooseLayoutSource,
-  defaultLayoutPlan,
   type WorkspaceMode,
 } from "../../domain/workspace";
 import { container } from "../../app/container";
@@ -82,12 +82,10 @@ export function Workspace({
     const scopedPieceId = mode === "session" ? pieceId : undefined;
     const applyDefault = () => {
       event.api.closeAllGroups();
-      for (const panel of defaultLayoutPlan(mode, hasScores, firstScoreId)) {
+      for (const spec of buildDefaultLayoutPanels(mode, hasScores, firstScoreId)) {
         event.api.addPanel({
-          id: panel.id,
-          component: panel.component,
-          title: panel.title,
-          params: panel.component === "session" && session && activeDeps
+          ...spec,
+          params: spec.component === "session" && session && activeDeps
             ? { session, pieceId, deps: activeDeps }
             : undefined,
         });

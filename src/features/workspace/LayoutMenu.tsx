@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { LayoutPanelLeft } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
-import { defaultLayoutPlan, type WorkspaceMode } from "../../domain/workspace";
+import { buildDefaultLayoutPanels, type WorkspaceMode } from "../../domain/workspace";
 import { resetLayouts, saveLayout } from "../../application/workspace";
 import type { Deps } from "../../application/deps";
 
@@ -64,7 +64,7 @@ export function LayoutMenu({
     if (!api) return;
     if (deps) await resetLayouts(deps);
     api.closeAllGroups();
-    const plan = defaultLayoutPlan(mode, hasScores, firstScoreId);
+    const plan = buildDefaultLayoutPanels(mode, hasScores, firstScoreId);
     for (const panel of plan)
       api.addPanel({
         ...panel,

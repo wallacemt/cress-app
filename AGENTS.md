@@ -179,6 +179,34 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 - Painéis Dockview leem contexto específico pela propriedade `params` do `addPanel`; layouts restaurados podem receber os dados atualizados via `panel.api.updateParameters` (fonte: integração da issue #35, pacote dockview-react 8.4.1).
 - Alterar o objetivo associado à sessão passa por `setSessionGoal` em `application/sessions.ts`, que valida que o objetivo pertence à obra da sessão antes de persistir (fonte: implementação da issue #35, 2026-10-23).
 
+## 24. Bug real: layout padrão do Workspace sem grupos/splits (reportado em teste manual no Windows, 2026-10-23)
+
+- **Sintoma:** usuário testou o app real no Windows e viu só 1-2 painéis em abas simples, sem o
+  grid/split esperado, e DnD aparentemente quebrado.
+- **Causa raiz confirmada via Penpot (fonte de design real, não só o Dossier):** `defaultLayoutPlan`
+  (`src/domain/workspace.ts`) retornava uma lista PLANA de painéis, e `Workspace.tsx`/`LayoutMenu.tsx`
+  chamavam `api.addPanel()` sem `position` — pela API real do dockview 8.4.1, isso empilha tudo como
+  abas de um único grupo, nunca cria os splits (modo livre: Afinador|Metrônomo lado a lado; modo
+  sessão: Partitura 62% + coluna direita dividida em Gravações/Sessão sobre Metrônomo/Afinador).
+- **Correção:** `defaultLayoutPlan` agora retorna `LayoutPlan[]` com grupos (`panels`, `split`,
+  `width`, `height`); nova função `buildDefaultLayoutPanels()` (mesmo arquivo) é a única fonte que
+  caminha esses grupos e monta as opções reais de `addPanel` (`position: {referencePanel,
+  direction}`, `initialWidth`/`initialHeight`) — usada tanto por `Workspace.tsx` (montagem inicial)
+  quanto por `LayoutMenu.tsx` ("Restaurar layout padrão"), evitando duplicar essa lógica duas vezes.
+- **Armadilha evitada:** a primeira versão do fix (gerada por codex) decidia width/height por
+  **índice do grupo** (`groupIndex === 1` → largura, `groupIndex === 2` → altura), o que quebra
+  quando o grupo da partitura não existe (sem obra importada) e os índices dos demais grupos mudam.
+  `buildDefaultLayoutPanels` usa o `width`/`height` do próprio grupo, nunca o índice.
+- **Limitação do ambiente observada nesta validação:** todo arquivo `*.dom.test.tsx` do projeto
+  (não só os tocados por esta correção) falhou a iniciar o worker jsdom em 3 tentativas seguidas
+  (`--no-isolate`, `--no-isolate --maxWorkers=1`, e um único arquivo isolado) — mesmo os 10 arquivos
+  DOM do projeto inteiro, enquanto os 22 arquivos/65 testes não-DOM passaram limpos em todas as
+  tentativas. `free -h` no momento mostrava ~769 Mi livres e ~2,4 GiB de swap em uso — pressão de
+  memória mais severa que o caso parcial já documentado no §17, não um bug desta correção (nenhum
+  teste `*.dom.test.tsx` tocado por esta mudança teve asserção nova; `LayoutMenu.dom.test.tsx`
+  cobre só `move()`, não `reset()`). Revalidar os testes DOM tocados (`LayoutMenu.dom.test.tsx`)
+  num ambiente com memória livre, ou no Windows.
+
 ## 23. Mudança de processo: Milestone 5 em uma branch só, uma issue por commit (2026-10-23)
 
 - Diferente das Milestones 3/4 (uma branch + PR por issue), a Milestone 5 foi pedida

@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import {
+  buildDefaultLayoutPanels,
   chooseLayoutSource,
   defaultLayoutPlan,
   layoutKey,
@@ -7,15 +8,66 @@ import {
 } from "./workspace";
 describe("workspace", () => {
   it("builds layout modes and keys", () => {
-    expect(defaultLayoutPlan("free")).toHaveLength(2);
-    expect(defaultLayoutPlan("session")).toHaveLength(4);
-    expect(
-      defaultLayoutPlan("session", true, "p1").some(
-        (panel) => panel.id === "score:p1",
-      ),
-    ).toBe(true);
+    const free = defaultLayoutPlan("free");
+    expect(free.map((group) => group.panels.map((panel) => panel.id))).toEqual([
+      ["tuner"], ["metronome"],
+    ]);
+    expect(free[1]!.split).toBe("right");
+    const session = defaultLayoutPlan("session", true, "p1");
+    expect(session.map((group) => group.panels.map((panel) => panel.id))).toEqual([
+      ["score:p1"], ["recorder", "session"], ["metronome", "tuner"],
+    ]);
+    expect(session.map((group) => group.split)).toEqual([undefined, "right", "below"]);
+    expect(session[0]!.width).toBe(62);
+    expect(session[1]!.width).toBe(38);
+    expect(defaultLayoutPlan("session").map((group) => group.panels.map((panel) => panel.id))).toEqual([
+      ["recorder", "session"], ["metronome", "tuner"],
+    ]);
     expect(layoutKey({ pieceId: "p1" })).toBe("workspace.layout.piece.p1");
     expect(layoutKey({})).toBe("workspace.layout.free");
+  });
+  it("builds dockview addPanel specs regardless of which group index carries a split", () => {
+    // Regression: sizing must come from each group's own width/height, not from a
+    // hardcoded group index — the recorder/session group sits at index 0 (not 1) when
+    // there is no score, and its split sibling must still get initialHeight.
+    const noScore = buildDefaultLayoutPanels("session", false);
+    expect(noScore).toEqual([
+      { id: "recorder", component: "recorder", title: undefined },
+      {
+        id: "session",
+        component: "session",
+        title: undefined,
+        position: { referencePanel: "recorder" },
+      },
+      {
+        id: "metronome",
+        component: "metronome",
+        title: undefined,
+        position: { referencePanel: "session", direction: "below" },
+        initialHeight: 50,
+      },
+      {
+        id: "tuner",
+        component: "tuner",
+        title: undefined,
+        position: { referencePanel: "metronome" },
+      },
+    ]);
+    const withScore = buildDefaultLayoutPanels("session", true, "p1");
+    expect(withScore[1]).toEqual({
+      id: "recorder",
+      component: "recorder",
+      title: undefined,
+      position: { referencePanel: "score:p1", direction: "right" },
+      initialWidth: 38,
+    });
+    expect(withScore[3]).toEqual({
+      id: "metronome",
+      component: "metronome",
+      title: undefined,
+      position: { referencePanel: "session", direction: "below" },
+      initialHeight: 50,
+    });
   });
   it("sanitizes invalid and duplicate panels", () => {
     const layout = sanitizeLayout(

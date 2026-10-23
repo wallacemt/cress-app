@@ -10,10 +10,57 @@ export const PANEL_CATALOG = {
   recorder: { component: "recorder", singleton: true, modes: ["session"] },
   session: { component: "session", singleton: true, modes: ["session"] },
 } as const;
-export interface LayoutPlan {
+export interface LayoutPanel {
   component: string;
   id: string;
   title?: string;
+}
+export interface LayoutPlan {
+  panels: LayoutPanel[];
+  split?: "left" | "right" | "above" | "below";
+  width?: number;
+  height?: number;
+}
+export interface AddPanelSpec {
+  id: string;
+  component: string;
+  title?: string;
+  position?: {
+    referencePanel: string;
+    direction?: "left" | "right" | "above" | "below";
+  };
+  initialWidth?: number;
+  initialHeight?: number;
+}
+// ponytail: single source of truth for walking the group plan into dockview addPanel
+// calls, so Workspace.tsx (initial mount) and LayoutMenu.tsx ("restaurar layout
+// padrão") never drift from each other.
+export function buildDefaultLayoutPanels(
+  mode: WorkspaceMode,
+  hasScores = false,
+  firstScoreId?: string,
+): AddPanelSpec[] {
+  const specs: AddPanelSpec[] = [];
+  let previousPanelId: string | undefined;
+  defaultLayoutPlan(mode, hasScores, firstScoreId).forEach((group, groupIndex) => {
+    group.panels.forEach((panel, panelIndex) => {
+      const spec: AddPanelSpec = {
+        id: panel.id,
+        component: panel.component,
+        title: panel.title,
+      };
+      if (panelIndex > 0 && previousPanelId) {
+        spec.position = { referencePanel: previousPanelId };
+      } else if (groupIndex > 0 && previousPanelId) {
+        spec.position = { referencePanel: previousPanelId, direction: group.split };
+        if (group.width !== undefined) spec.initialWidth = group.width;
+        if (group.height !== undefined) spec.initialHeight = group.height;
+      }
+      specs.push(spec);
+      previousPanelId = panel.id;
+    });
+  });
+  return specs;
 }
 export function chooseLayoutSource(
   saved: SerializedDockview | null,
@@ -35,22 +82,28 @@ export function defaultLayoutPlan(
 ): LayoutPlan[] {
   if (mode === "free")
     return [
-      { component: "metronome", id: "metronome" },
-      { component: "tuner", id: "tuner" },
+      { panels: [{ component: "tuner", id: "tuner" }] },
+      {
+        panels: [{ component: "metronome", id: "metronome" }],
+        split: "right",
+        width: 50,
+      },
     ];
-  if (hasScores && firstScoreId)
-    return [
-      { component: "session", id: "session" },
-      { component: "score", id: `score:${firstScoreId}` },
-      { component: "metronome", id: "metronome" },
-      { component: "tuner", id: "tuner" },
-      { component: "recorder", id: "recorder" },
-    ];
+  // ponytail: when no score is imported, the recorder group anchors the grid; add the score group when one exists.
   return [
-    { component: "session", id: "session" },
-    { component: "metronome", id: "metronome" },
-    { component: "tuner", id: "tuner" },
-    { component: "recorder", id: "recorder" },
+    ...(hasScores && firstScoreId
+      ? [{ panels: [{ component: "score", id: `score:${firstScoreId}` }], width: 62 }]
+      : []),
+    {
+      panels: [{ component: "recorder", id: "recorder" }, { component: "session", id: "session" }],
+      split: hasScores && firstScoreId ? "right" : undefined,
+      width: hasScores && firstScoreId ? 38 : undefined,
+    },
+    {
+      panels: [{ component: "metronome", id: "metronome" }, { component: "tuner", id: "tuner" }],
+      split: "below",
+      height: 50,
+    },
   ];
 }
 export const layoutKey = (scope: { pieceId?: string }) =>
