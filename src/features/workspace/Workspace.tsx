@@ -20,12 +20,14 @@ import {
 } from "./panelRegistry";
 import { useLayoutPersistence } from "./useLayoutPersistence";
 import { WorkspaceHeader } from "./WorkspaceHeader";
+import type { StudySessionRow } from "../../infrastructure/db/rows";
 
 export interface WorkspaceProps {
   mode: WorkspaceMode;
   pieceId?: string;
   pieceTitle?: string;
   goalSummary?: string;
+  session?: StudySessionRow | null;
   onBack?: () => void;
   onReady?: (event: DockviewReadyEvent) => void;
 }
@@ -35,6 +37,7 @@ export function Workspace({
   pieceId,
   pieceTitle,
   goalSummary,
+  session = null,
   onBack,
   onReady,
 }: WorkspaceProps) {
@@ -142,6 +145,7 @@ export function Workspace({
         mode={mode}
         api={ready?.api ?? null}
         deps={deps}
+        session={session}
         pieceId={pieceId}
         pieceTitle={pieceTitle}
         goalSummary={goalSummary}

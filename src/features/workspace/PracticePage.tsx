@@ -71,6 +71,7 @@ export function PracticePage() {
       pieceId={piece.id}
       pieceTitle={piece.title}
       goalSummary={goal?.description}
+      session={session}
       onBack={() => navigate("/")}
     />
   );
