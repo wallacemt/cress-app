@@ -167,3 +167,9 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 
 - A API pública tipada do `DockviewApi` expõe `IDockviewPanel.api.moveTo({ group, position })` para mover um painel e `IDockviewGroupPanel.api.moveTo(...)` para mover um grupo; `getPopouts()` lista grupos em janelas popout. `moveGroupOrPanel` e `floatingGroups` existem no componente interno, mas não fazem parte do `DockviewApi` público usado por `DockviewReadyEvent` (fonte: `dockview-core/dist/cjs/api/component.api.d.ts`, `dockviewPanelApi.d.ts` e `dockviewGroupPanelApi.d.ts`, pacote instalado 8.4.1, issue #32).
 - `Position` em `moveTo` usa `top/bottom/left/right/center`; não passe `above/below` (esses nomes pertencem à direção de adição de grupo em outros contratos) (fonte: `dockview-core/dist/cjs/dnd/droptarget.d.ts`, pacote instalado 8.4.1, issue #32).
+
+## 21. Rotas Workspace — setup e shell em tela inteira
+
+- `/practice/new` carrega repertório e objetivos pelas funções da aplicação no componente, seguindo o padrão de `PieceDetailPage`; `/practice/:sessionId` lê a sessão pelo repositório e resolve obra/objetivo antes de montar `Workspace` (fonte: issue #33 e implementação local, 2026-10-23).
+- `AppShell` mantém o mesmo roteador e omite aside/header globais nas rotas `/tools` e `/practice/*`; a classe de tela inteira precisa dar ao shell `height: 100vh` para o Workspace preencher a janela (fonte: implementação local, 2026-10-23).
+- O catálogo e `AddPanelMenu` filtram `recorder` e `session` fora de modo `session`; o submenu de partitura pode comunicar que a seleção completa chega na Fase 9 (fonte: `src/domain/workspace.ts`, `src/features/workspace/AddPanelMenu.tsx`, confirmado na issue #33).

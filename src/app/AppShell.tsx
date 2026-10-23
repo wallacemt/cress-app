@@ -1,4 +1,4 @@
-import { NavLink, Outlet } from "react-router";
+import { NavLink, Outlet, useLocation } from "react-router";
 import { Toaster } from "sonner";
 
 const navigation = [
@@ -10,9 +10,11 @@ const navigation = [
 ] as const;
 
 export function AppShell() {
+  const { pathname } = useLocation();
+  const isWorkspace = pathname === "/tools" || pathname === "/practice/new" || /^\/practice\/[^/]+$/.test(pathname);
   return (
-    <div className="app-shell">
-      <aside>
+    <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
+      {!isWorkspace && <aside>
         <div className="brand">
           Cress<span>·</span>
         </div>
@@ -23,12 +25,12 @@ export function AppShell() {
             </NavLink>
           ))}
         </nav>
-      </aside>
+      </aside>}
       <main>
-        <header>
+        {!isWorkspace && <header>
           <span>Workspace</span>
           <span className="session-banner">Nenhuma sessão aberta</span>
-        </header>
+        </header>}
         <Outlet />
       </main>
       <Toaster theme="dark" />

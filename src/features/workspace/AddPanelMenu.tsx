@@ -161,7 +161,7 @@ export function AddPanelMenu({
                   {scoreSubmenu && (
                     <div className="cress-submenu" role="menu">
                       <button type="button" role="menuitem" disabled>
-                        Nenhuma partitura disponível ainda
+                        Seleção de partitura chega na Fase 9
                       </button>
                     </div>
                   )}
