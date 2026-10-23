@@ -1,0 +1,85 @@
+import { useState, type FormEvent } from "react";
+import { createGoal, updateGoal } from "../../application/goals";
+import { container } from "../../app/container";
+import type { StudyGoal } from "../../domain/goal";
+
+const control =
+  "rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)] outline-none focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]";
+const button =
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-4 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)] disabled:cursor-not-allowed disabled:opacity-45";
+
+export function GoalFormDialog({
+  repertoireItemId,
+  goal,
+  onClose,
+  onSaved,
+}: {
+  repertoireItemId: string;
+  goal?: StudyGoal;
+  onClose: () => void;
+  onSaved: () => void;
+}) {
+  const [description, setDescription] = useState(goal?.description ?? "");
+  const [targetBpm, setTargetBpm] = useState(goal?.targetBpm?.toString() ?? "");
+  const [startMeasure, setStartMeasure] = useState(goal?.startMeasure?.toString() ?? "");
+  const [endMeasure, setEndMeasure] = useState(goal?.endMeasure?.toString() ?? "");
+  const [error, setError] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  async function save(event: FormEvent) {
+    event.preventDefault();
+    setError("");
+    setSaving(true);
+    const input = {
+      repertoireItemId,
+      description: description.trim(),
+      targetBpm: targetBpm === "" ? null : Number(targetBpm),
+      startMeasure: startMeasure === "" ? null : Number(startMeasure),
+      endMeasure: endMeasure === "" ? null : Number(endMeasure),
+    };
+    try {
+      const deps = await container.getDeps();
+      if (goal) await updateGoal(deps, { ...input, id: goal.id });
+      else await createGoal(deps, input);
+      onSaved();
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : "Não foi possível salvar o objetivo.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
+      onMouseDown={(event) => {
+        if (event.target === event.currentTarget) onClose();
+      }}
+    >
+      <section role="dialog" aria-modal="true" aria-labelledby="goal-form-title" className="w-full max-w-xl rounded-xl border border-[var(--border-default)] bg-[var(--ink-900)] p-6 text-[var(--text-primary)] shadow-2xl">
+        <h2 id="goal-form-title" className="font-display text-3xl">{goal ? "Editar objetivo" : "Adicionar objetivo"}</h2>
+        <form className="mt-6 space-y-4" onSubmit={save}>
+          <label className="block text-sm text-[var(--text-secondary)]">Descrição *
+            <input autoFocus required aria-label="Descrição" className={`${control} mt-2 h-11 w-full`} value={description} onChange={(e) => setDescription(e.target.value)} />
+          </label>
+          <label className="block text-sm text-[var(--text-secondary)]">BPM-alvo
+            <input type="number" aria-label="BPM-alvo" className={`${control} mt-2 h-11 w-full`} value={targetBpm} onChange={(e) => setTargetBpm(e.target.value)} />
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <label className="block text-sm text-[var(--text-secondary)]">Compasso inicial
+              <input type="number" aria-label="Compasso inicial" className={`${control} mt-2 h-11 w-full`} value={startMeasure} onChange={(e) => setStartMeasure(e.target.value)} />
+            </label>
+            <label className="block text-sm text-[var(--text-secondary)]">Compasso final
+              <input type="number" aria-label="Compasso final" className={`${control} mt-2 h-11 w-full`} value={endMeasure} onChange={(e) => setEndMeasure(e.target.value)} />
+            </label>
+          </div>
+          {error && <p role="alert" className="text-sm text-[var(--danger)]">{error}</p>}
+          <div className="flex justify-end gap-3">
+            <button type="button" className={`${button} border border-[var(--border-default)] text-[var(--text-secondary)]`} onClick={onClose}>Cancelar</button>
+            <button type="submit" disabled={saving} className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{saving ? "Salvando…" : "Salvar objetivo"}</button>
+          </div>
+        </form>
+      </section>
+    </div>
+  );
+}
