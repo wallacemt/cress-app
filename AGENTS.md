@@ -162,3 +162,8 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 ## 19. Persistência do Workspace — formato do layout no Dockview 8.4.1
 
 - `DockviewApi.toJSON()` serializa a grade como `grid.root`; ramos guardam filhos em `data`, e folhas guardam `views` em `data`. O sanitizador precisa tratar essa estrutura instalada, além do formato antigo coberto pelos testes, ou layouts reais serão rejeitados como inválidos (fonte: `dockview-core/dist/cjs/dockview/dockviewComponent.d.ts` e `gridview/gridview.d.ts`, issue #31).
+
+## 20. Menus do Workspace — API Dockview 8.4.1
+
+- A API pública tipada do `DockviewApi` expõe `IDockviewPanel.api.moveTo({ group, position })` para mover um painel e `IDockviewGroupPanel.api.moveTo(...)` para mover um grupo; `getPopouts()` lista grupos em janelas popout. `moveGroupOrPanel` e `floatingGroups` existem no componente interno, mas não fazem parte do `DockviewApi` público usado por `DockviewReadyEvent` (fonte: `dockview-core/dist/cjs/api/component.api.d.ts`, `dockviewPanelApi.d.ts` e `dockviewGroupPanelApi.d.ts`, pacote instalado 8.4.1, issue #32).
+- `Position` em `moveTo` usa `top/bottom/left/right/center`; não passe `above/below` (esses nomes pertencem à direção de adição de grupo em outros contratos) (fonte: `dockview-core/dist/cjs/dnd/droptarget.d.ts`, pacote instalado 8.4.1, issue #32).

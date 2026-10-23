@@ -1,7 +1,49 @@
 .cress-workspace-shell {
+  display: flex;
+  flex-direction: column;
   height: 100%;
   min-height: 0;
 }
+
+.cress-workspace-header {
+  z-index: 2;
+  display: flex;
+  height: 56px;
+  flex: 0 0 56px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--ink-850);
+  color: var(--text-primary);
+}
+.cress-session-heading { display: grid; min-width: 0; gap: 1px; }
+.cress-session-heading strong, .cress-free-title { overflow: hidden; color: var(--text-primary); font: italic 500 22px/1.1 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.cress-session-heading span { color: var(--text-muted); font-size: 11px; }
+.cress-clock-placeholder { padding-left: 8px; color: var(--text-secondary); font: 500 13px var(--font-metric); font-variant-numeric: tabular-nums; }
+.cress-header-spacer { flex: 1; }
+.cress-control, .cress-icon-control, .cress-finish-button {
+  display: inline-flex; min-height: 32px; align-items: center; justify-content: center; gap: 7px;
+  padding: 0 10px; border: 1px solid var(--border-default); border-radius: 6px;
+  background: rgb(255 255 255 / .04); color: var(--text-secondary); font: 500 12px var(--font-sans); cursor: pointer;
+}
+.cress-icon-control { width: 32px; padding: 0; }
+.cress-control:hover:not(:disabled), .cress-icon-control:hover { background: rgb(255 255 255 / .08); color: var(--text-primary); }
+.cress-control:focus-visible, .cress-icon-control:focus-visible, .cress-finish-button:focus-visible, .cress-menu button:focus-visible { outline: 2px solid var(--violet-400); outline-offset: 2px; }
+.cress-control:disabled { cursor: not-allowed; opacity: .48; }
+.cress-finish-button { border-color: transparent; background: var(--gradient-brand); color: white; }
+.cress-metronome-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--border-default); border-radius: 999px; color: var(--gold-300); font-size: 12px; }
+.cress-menu { position: relative; }
+.cress-menu-popover { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
+.cress-menu-popover button { display: flex; width: 100%; min-height: 36px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-primary); font: 400 13px var(--font-sans); text-align: left; cursor: pointer; }
+.cress-menu-popover button:hover:not(:disabled), .cress-menu-popover button:focus-visible { background: rgb(255 255 255 / .07); }
+.cress-menu-popover button:disabled { color: var(--text-muted); cursor: not-allowed; }
+.cress-menu-meta { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+.cress-menu-separator { height: 1px; margin: 6px; background: var(--border-default); }
+.cress-menu-heading { display: block; padding: 7px 10px 3px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+.cress-submenu-wrap { position: relative; }
+.cress-submenu { position: absolute; top: 0; right: calc(100% + 6px); width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
+.cress-workspace-shell > .cress-workspace { flex: 1; min-height: 0; }
 
 :root .cress-workspace {
   --dv-group-view-background-color: #111629;

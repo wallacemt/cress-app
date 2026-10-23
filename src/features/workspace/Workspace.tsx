@@ -19,14 +19,25 @@ import {
   WorkspaceWatermark,
 } from "./panelRegistry";
 import { useLayoutPersistence } from "./useLayoutPersistence";
+import { WorkspaceHeader } from "./WorkspaceHeader";
 
 export interface WorkspaceProps {
   mode: WorkspaceMode;
   pieceId?: string;
+  pieceTitle?: string;
+  goalSummary?: string;
+  onBack?: () => void;
   onReady?: (event: DockviewReadyEvent) => void;
 }
 
-export function Workspace({ mode, pieceId, onReady }: WorkspaceProps) {
+export function Workspace({
+  mode,
+  pieceId,
+  pieceTitle,
+  goalSummary,
+  onBack,
+  onReady,
+}: WorkspaceProps) {
   const [ready, setReady] = useState<DockviewReadyEvent | null>(null);
   const [deps, setDeps] = useState<Awaited<
     ReturnType<typeof container.getDeps>
@@ -127,6 +138,15 @@ export function Workspace({ mode, pieceId, onReady }: WorkspaceProps) {
       data-scope={pieceId ?? "free"}
       data-piece-id={pieceId}
     >
+      <WorkspaceHeader
+        mode={mode}
+        api={ready?.api ?? null}
+        deps={deps}
+        pieceId={pieceId}
+        pieceTitle={pieceTitle}
+        goalSummary={goalSummary}
+        onBack={onBack}
+      />
       <DockviewReact
         className="cress-workspace"
         components={panelRegistry}
