@@ -11,6 +11,7 @@ import {
 import type { Deps } from "./deps";
 import { makeSessionRepo } from "../infrastructure/repositories/sessionRepo";
 import { makeRecordingRepo } from "../infrastructure/repositories/recordingRepo";
+import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
 import type { StudySessionRow } from "../infrastructure/db/rows";
 import { stopTake } from "./recordings";
 import { completeGoal } from "./goals";
@@ -119,6 +120,22 @@ export async function updateSessionNotes(
   x: { id: string; notes: string },
 ) {
   return change(d, x.id, (s) => updateNotes(s, x.notes));
+}
+export async function setSessionGoal(
+  d: Deps,
+  x: { id: string; goalId: string | null },
+) {
+  const repo = makeSessionRepo(d.db);
+  const session = await repo.get(x.id);
+  if (!session) throw new DomainError("NOT_FOUND", "Session not found");
+  if (x.goalId) {
+    const goal = await makeGoalRepo(d.db).get(x.goalId);
+    if (!goal || goal.repertoire_item_id !== session.repertoire_item_id)
+      throw new DomainError("NOT_FOUND", "Goal not found for session piece");
+  }
+  const updated = { ...session, goal_id: x.goalId };
+  await repo.save(updated);
+  return updated;
 }
 export async function finishSession(d: Deps, x: FinishSessionInput) {
   const repo = makeSessionRepo(d.db),

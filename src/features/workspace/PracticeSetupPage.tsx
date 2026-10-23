@@ -9,6 +9,7 @@ import { makeSessionRepo } from "../../infrastructure/repositories/sessionRepo";
 import type { StudyGoal } from "../../domain/goal";
 import type { RepertoireItem } from "../../domain/repertoire";
 import { validateBpm } from "../../domain/bpm";
+import { GoalSelect } from "./GoalSelect";
 
 export function PracticeSetupPage() {
   const navigate = useNavigate();
@@ -150,26 +151,7 @@ export function PracticeSetupPage() {
             ))}
           </select>
         </label>
-        <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-          Objetivo existente
-          <select
-            aria-label="Objetivo existente"
-            className="h-12 rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)]"
-            value={goalId}
-            onChange={(event) => {
-              setGoalId(event.target.value);
-              setNewGoal("");
-            }}
-            disabled={!goals.length}
-          >
-            <option value="">Sem objetivo</option>
-            {goals.map((goal) => (
-              <option key={goal.id} value={goal.id}>
-                {goal.description}
-              </option>
-            ))}
-          </select>
-        </label>
+        <GoalSelect goals={goals} value={goalId} onChange={(id) => { setGoalId(id); setNewGoal(""); }} />
         <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
           Novo objetivo{" "}
           <span className="text-[var(--text-muted)]">

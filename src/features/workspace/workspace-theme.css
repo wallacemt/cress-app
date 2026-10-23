@@ -263,6 +263,51 @@
   font-size: 14px;
 }
 
+.cress-workspace .cress-session-panel {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-height: 100%;
+  padding: 20px;
+  color: var(--text-primary);
+}
+
+.cress-session-goal {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.cress-session-eyebrow,
+.cress-session-notes-label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .08em;
+}
+
+.cress-session-goal-description { margin: 0; font-size: 18px; line-height: 1.4; }
+.cress-session-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cress-session-chips span { padding: 4px 9px; border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--text-secondary); font-size: 12px; }
+.cress-session-complete { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cress-session-ghost, .cress-session-secondary { justify-self: start; min-height: 32px; padding: 0 10px; border-radius: 7px; font-size: 13px; }
+.cress-session-ghost { color: var(--text-secondary); }
+.cress-session-ghost:hover { background: rgb(255 255 255 / 5%); }
+.cress-session-secondary { background: var(--violet-600); color: white; }
+.cress-session-secondary:disabled { opacity: .45; }
+.cress-session-goal-select { display: grid; gap: 10px; }
+.cress-session-goal-select select { min-height: 40px; }
+.cress-session-notes-label { margin-top: 4px; }
+.cress-workspace .cress-session-notes { width: 100%; min-height: 180px; resize: vertical; border: 1px solid transparent; border-radius: 8px; outline: none; background: transparent; color: var(--text-primary); font: inherit; line-height: 1.6; }
+.cress-workspace .cress-session-notes:focus { border-color: var(--border-default); }
+.cress-session-note-footer { display: flex; justify-content: space-between; gap: 12px; color: var(--text-muted); font-size: 12px; }
+.cress-session-note-footer [role="alert"] { color: var(--danger); }
+.cress-session-save-status { margin-left: auto; }
+
 .cress-workspace .dv-watermark-container {
   display: grid;
   place-items: center;

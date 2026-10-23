@@ -2,6 +2,7 @@ import type { FunctionComponent } from "react";
 import { PanelsTopLeft } from "lucide-react";
 import type { IDockviewPanelProps } from "dockview-react";
 import { PANEL_CATALOG } from "../../domain/workspace";
+import { SessionPanel } from "./panels/SessionPanel";
 
 type PanelId = keyof typeof PANEL_CATALOG;
 const titles: Record<PanelId, string> = {
@@ -25,9 +26,12 @@ function EmptyPanel({ api }: IDockviewPanelProps) {
 export const panelRegistry: Record<
   string,
   FunctionComponent<IDockviewPanelProps>
-> = Object.fromEntries(
+> = {
+  ...Object.fromEntries(
   Object.values(PANEL_CATALOG).map(({ component }) => [component, EmptyPanel]),
-);
+  ),
+  session: SessionPanel,
+};
 
 export function panelRenderer(component: string): "onlyWhenVisible" | "always" {
   return component === PANEL_CATALOG.score.component

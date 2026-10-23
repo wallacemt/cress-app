@@ -87,6 +87,9 @@ export function Workspace({
           id: panel.id,
           component: panel.component,
           title: panel.title,
+          params: panel.component === "session" && session && activeDeps
+            ? { session, pieceId, deps: activeDeps }
+            : undefined,
         });
       }
     };
@@ -111,6 +114,11 @@ export function Workspace({
               typeof event.api.fromJSON
             >[0],
           );
+          for (const panel of event.api.panels) {
+            if (panel.api.component === "session" && session && activeDeps) {
+              panel.api.updateParameters({ session, pieceId, deps: activeDeps });
+            }
+          }
         } catch (error) {
           console.warn(
             "Não foi possível restaurar o layout; usando o padrão.",

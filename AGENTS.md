@@ -173,3 +173,8 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 - `/practice/new` carrega repertório e objetivos pelas funções da aplicação no componente, seguindo o padrão de `PieceDetailPage`; `/practice/:sessionId` lê a sessão pelo repositório e resolve obra/objetivo antes de montar `Workspace` (fonte: issue #33 e implementação local, 2026-10-23).
 - `AppShell` mantém o mesmo roteador e omite aside/header globais nas rotas `/tools` e `/practice/*`; a classe de tela inteira precisa dar ao shell `height: 100vh` para o Workspace preencher a janela (fonte: implementação local, 2026-10-23).
 - O catálogo e `AddPanelMenu` filtram `recorder` e `session` fora de modo `session`; o submenu de partitura pode comunicar que a seleção completa chega na Fase 9 (fonte: `src/domain/workspace.ts`, `src/features/workspace/AddPanelMenu.tsx`, confirmado na issue #33).
+
+## 22. Painel de sessão no Workspace
+
+- Painéis Dockview leem contexto específico pela propriedade `params` do `addPanel`; layouts restaurados podem receber os dados atualizados via `panel.api.updateParameters` (fonte: integração da issue #35, pacote dockview-react 8.4.1).
+- Alterar o objetivo associado à sessão passa por `setSessionGoal` em `application/sessions.ts`, que valida que o objetivo pertence à obra da sessão antes de persistir (fonte: implementação da issue #35, 2026-10-23).
