@@ -5,6 +5,8 @@ import { container } from "../../app/container";
 import { INSTRUMENTS, type InstrumentCode } from "../../domain/profile";
 import { normalizeName } from "../../domain/score";
 import type { RepertoireItem } from "../../domain/repertoire";
+import { Navigate } from "react-router";
+import { PieceFormDialog } from "./PieceFormDialog";
 
 const columns =
   "grid min-w-[760px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)_120px_88px_88px_120px] items-center gap-4";
@@ -52,6 +54,8 @@ export function RepertoirePage() {
   const [selected, setSelected] = useState(-1);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [creating, setCreating] = useState(false);
+  const [destination, setDestination] = useState("");
 
   useEffect(() => {
     let active = true;
@@ -81,6 +85,8 @@ export function RepertoirePage() {
         normalizeName(piece.composer ?? "").includes(normalized),
     );
   }, [pieces, query]);
+
+  if (destination) return <Navigate to={destination} />;
 
   if (loading)
     return (
@@ -138,6 +144,7 @@ export function RepertoirePage() {
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
           <button
             type="button"
+            onClick={() => setCreating(true)}
             className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--violet-600)] px-5 text-sm font-medium text-white transition-colors hover:bg-[var(--violet-500)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)]"
           >
             <span aria-hidden="true">+</span> Adicionar obra
@@ -151,6 +158,12 @@ export function RepertoirePage() {
             Importar pasta de partituras
           </button>
         </div>
+        {creating && (
+          <PieceFormDialog
+            onClose={() => setCreating(false)}
+            onSaved={(piece) => setDestination(`/repertoire/${piece.id}`)}
+          />
+        )}
       </main>
     );
 
@@ -211,8 +224,10 @@ export function RepertoirePage() {
               } else if (event.key === "ArrowUp") {
                 event.preventDefault();
                 setSelected((index) => Math.max(index - 1, 0));
+              } else if (event.key === "Enter" && filtered[selected]) {
+                event.preventDefault();
+                setDestination(`/repertoire/${filtered[selected].id}`);
               }
-              // Enter will open the piece detail when issue #28 adds that route.
             }}
           >
             {filtered.map((piece, index) => (
@@ -220,6 +235,7 @@ export function RepertoirePage() {
                 key={piece.id}
                 role="option"
                 aria-selected={selected === index}
+                onClick={() => setDestination(`/repertoire/${piece.id}`)}
                 className={`${columns} relative h-11 border-b border-[var(--border-subtle)] px-4 text-sm transition-colors hover:bg-white/[0.04] ${selected === index ? "bg-[var(--ink-600)] before:absolute before:inset-y-0 before:left-0 before:w-0.5 before:bg-[image:var(--gradient-hairpin)]" : ""}`}
               >
                 <span

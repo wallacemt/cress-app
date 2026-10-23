@@ -7,6 +7,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { MemoryRouter } from "react-router";
 import type { Deps } from "../../application/deps";
 import type { RepertoireItem } from "../../domain/repertoire";
 
@@ -38,7 +39,11 @@ describe("RepertoirePage", () => {
 
   it("shows both entry actions when the repertoire is empty", async () => {
     listPieces.mockResolvedValue([]);
-    render(<RepertoirePage />);
+    render(
+      <MemoryRouter>
+        <RepertoirePage />
+      </MemoryRouter>,
+    );
 
     expect(
       await screen.findByRole("heading", { name: /Seu repertório/ }),
@@ -52,7 +57,11 @@ describe("RepertoirePage", () => {
   });
 
   it("filters titles without regard to accents or case", async () => {
-    render(<RepertoirePage />);
+    render(
+      <MemoryRouter>
+        <RepertoirePage />
+      </MemoryRouter>,
+    );
     const search = await screen.findByRole("searchbox", {
       name: "Buscar por título ou compositor",
     });
