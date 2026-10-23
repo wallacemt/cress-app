@@ -5,6 +5,7 @@ import { onboardingLoader, rootLoader } from "./boot";
 import { OnboardingPage } from "../features/onboarding/OnboardingPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { RepertoirePage } from "../features/repertoire/RepertoirePage";
+import { PieceDetailPage } from "../features/repertoire/PieceDetailPage";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -40,6 +41,7 @@ export const router = createHashRouter([
       { index: true, element: <Placeholder name="Dashboard" /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "repertoire", element: <RepertoirePage /> },
+      { path: "repertoire/:pieceId", element: <PieceDetailPage /> },
       ...placeholderRoutes.map((path) => ({
         path: path.slice(1),
         element: <Placeholder name={path} />,

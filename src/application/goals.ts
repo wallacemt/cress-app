@@ -3,6 +3,7 @@ import { createStudyGoal } from "../domain/goal";
 import type { Deps } from "./deps";
 import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
 import type { StudyGoalRow } from "../infrastructure/db/rows";
+import type { StudyGoal } from "../domain/goal";
 export interface GoalInput {
   id?: string;
   repertoireItemId?: string;
@@ -11,6 +12,21 @@ export interface GoalInput {
   startMeasure?: number | null;
   endMeasure?: number | null;
   completed?: boolean;
+}
+export async function listGoals(
+  d: Deps,
+  { repertoireItemId }: { repertoireItemId: string },
+): Promise<StudyGoal[]> {
+  return (await makeGoalRepo(d.db).list())
+    .filter((goal) => goal.repertoire_item_id === repertoireItemId)
+    .map((goal) => ({
+      id: goal.id,
+      description: goal.description,
+      targetBpm: goal.target_bpm,
+      startMeasure: goal.measure_start,
+      endMeasure: goal.measure_end,
+      completed: goal.completed_at !== null,
+    }));
 }
 const row = (d: Deps, x: GoalInput, old?: StudyGoalRow): StudyGoalRow => ({
   id: x.id ?? d.newId(),
