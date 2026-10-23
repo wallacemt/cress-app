@@ -178,3 +178,17 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 
 - Painéis Dockview leem contexto específico pela propriedade `params` do `addPanel`; layouts restaurados podem receber os dados atualizados via `panel.api.updateParameters` (fonte: integração da issue #35, pacote dockview-react 8.4.1).
 - Alterar o objetivo associado à sessão passa por `setSessionGoal` em `application/sessions.ts`, que valida que o objetivo pertence à obra da sessão antes de persistir (fonte: implementação da issue #35, 2026-10-23).
+
+## 23. Mudança de processo: Milestone 5 em uma branch só, uma issue por commit (2026-10-23)
+
+- Diferente das Milestones 3/4 (uma branch + PR por issue), a Milestone 5 foi pedida
+  pelo usuário com um processo diferente: uma única branch
+  `milestone-05/workspace-shell-fluxo-sessao`, com cada issue (#30–#35) como um commit
+  separado terminando em `Closes #NN`, e um único PR (#85) da branch para `main`. Ao
+  mergear (merge normal, não squash), cada commit individual fecha sua issue, porque o
+  GitHub escaneia por `Closes #N` em qualquer commit que chega na branch default, não só
+  no corpo do PR. **Não squash-mergear este PR** — perderia esse vínculo por issue.
+- Se futuras milestones pedirem o mesmo padrão, repetir: branch única a partir de `main`
+  atualizada, um `codex exec` por issue (nunca várias issues no mesmo prompt), validar
+  (`bun run lint && bun run typecheck && bun run test -- --no-isolate`) e comitar antes
+  de passar para a próxima issue, PR único ao final.
