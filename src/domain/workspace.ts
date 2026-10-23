@@ -15,6 +15,19 @@ export interface LayoutPlan {
   id: string;
   title?: string;
 }
+export function chooseLayoutSource(
+  saved: SerializedDockview | null,
+  mode: WorkspaceMode,
+  hasScores: boolean,
+  firstScoreId?: string,
+) {
+  return saved
+    ? { kind: "saved" as const, layout: saved }
+    : {
+        kind: "default" as const,
+        plan: defaultLayoutPlan(mode, hasScores, firstScoreId),
+      };
+}
 export function defaultLayoutPlan(
   mode: WorkspaceMode,
   hasScores = false,
@@ -46,17 +59,19 @@ export const layoutKey = (scope: { pieceId?: string }) =>
     : "workspace.layout.free";
 export interface DockviewBranch {
   type: "branch";
-  children: DockviewNode[];
+  children?: DockviewNode[];
+  data?: DockviewNode[];
   [key: string]: unknown;
 }
 export interface DockviewLeaf {
   type: "leaf";
-  views: string[];
+  views?: string[];
+  data?: { views: string[]; [key: string]: unknown };
   [key: string]: unknown;
 }
 export type DockviewNode = DockviewBranch | DockviewLeaf;
 export interface SerializedDockview {
-  grid: DockviewNode;
+  grid: DockviewNode | { root: DockviewNode; [key: string]: unknown };
   panels: Record<
     string,
     { contentComponent: string; params?: unknown; title?: string }
@@ -95,17 +110,35 @@ export function sanitizeLayout(
   }
   const clean = (node: DockviewNode): DockviewNode | null => {
     if (node.type === "branch") {
-      const children = node.children
-        .map(clean)
-        .filter((child): child is DockviewNode => child !== null);
-      return children.length ? { ...node, children } : null;
+      const key = Array.isArray(node.children) ? "children" : "data";
+      const children =
+        (node[key] as DockviewNode[] | undefined)
+          ?.map(clean)
+          .filter((child): child is DockviewNode => child !== null) ?? [];
+      return children.length ? { ...node, [key]: children } : null;
     }
     if (node.type === "leaf") {
-      const views = node.views.filter((id) => id in layout.panels);
-      return views.length ? { ...node, views } : null;
+      const inData = !!node.data;
+      const views = (inData ? node.data!.views : (node.views ?? [])).filter(
+        (id) => id in layout.panels,
+      );
+      return views.length
+        ? inData
+          ? { ...node, data: { ...node.data, views } }
+          : { ...node, views }
+        : null;
     }
     return null;
   };
-  layout.grid = clean(layout.grid) as DockviewNode;
-  return layout.grid && Object.keys(layout.panels).length ? layout : null;
+  const grid = layout.grid as DockviewNode | { root: DockviewNode };
+  if ("root" in grid) {
+    const root = clean(grid.root as DockviewNode);
+    if (!root) return null;
+    layout.grid = { ...grid, root };
+  } else {
+    const cleanGrid = clean(grid);
+    if (!cleanGrid) return null;
+    layout.grid = cleanGrid;
+  }
+  return Object.keys(layout.panels).length ? layout : null;
 }

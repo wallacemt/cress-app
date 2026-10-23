@@ -158,3 +158,7 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 
 - `defaultRenderer` configura o padrão do Workspace; a API 8.4.1 não tem `rendererOverride`. O modo de renderização é por painel em `addPanel({ renderer })` ou `panel.api.setRenderer(...)`. Para score, aplique `always` em `onDidAddPanel` (e nos painéis já existentes ao iniciar); os demais usam `onlyWhenVisible` (fonte: `dockview-core/dist/cjs/dockview/options.d.ts` e `dockviewPanelApi.d.ts`, pacote instalado 8.4.1, issue #30).
 - As variáveis CSS do tema devem seguir `dockview-react/dist/styles/dockview.css` — por exemplo `--dv-group-view-background-color`, `--dv-tabs-and-actions-container-background-color`, `--dv-drag-over-background-color`; nomes antigos sem `-color` não têm efeito (fonte: CSS instalado 8.4.1, issue #30).
+
+## 19. Persistência do Workspace — formato do layout no Dockview 8.4.1
+
+- `DockviewApi.toJSON()` serializa a grade como `grid.root`; ramos guardam filhos em `data`, e folhas guardam `views` em `data`. O sanitizador precisa tratar essa estrutura instalada, além do formato antigo coberto pelos testes, ou layouts reais serão rejeitados como inválidos (fonte: `dockview-core/dist/cjs/dockview/dockviewComponent.d.ts` e `gridview/gridview.d.ts`, issue #31).

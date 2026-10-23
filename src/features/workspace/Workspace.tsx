@@ -1,25 +1,41 @@
-import { useMemo } from "react";
+import { useMemo, useState } from "react";
 import {
   DockviewReact,
   type DockviewReadyEvent,
   type DockviewTheme,
 } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
-import type { WorkspaceMode } from "../../domain/workspace";
+import {
+  chooseLayoutSource,
+  defaultLayoutPlan,
+  type WorkspaceMode,
+} from "../../domain/workspace";
+import { container } from "../../app/container";
+import { loadLayout } from "../../application/workspace";
+import { listScores } from "../../application/scores";
 import {
   panelRegistry,
   panelRenderer,
   WorkspaceWatermark,
 } from "./panelRegistry";
+import { useLayoutPersistence } from "./useLayoutPersistence";
 
 export interface WorkspaceProps {
   mode: WorkspaceMode;
-  scope: string;
   pieceId?: string;
   onReady?: (event: DockviewReadyEvent) => void;
 }
 
-export function Workspace({ mode, scope, pieceId, onReady }: WorkspaceProps) {
+export function Workspace({ mode, pieceId, onReady }: WorkspaceProps) {
+  const [ready, setReady] = useState<DockviewReadyEvent | null>(null);
+  const [deps, setDeps] = useState<Awaited<
+    ReturnType<typeof container.getDeps>
+  > | null>(null);
+  useLayoutPersistence(
+    ready?.api ?? null,
+    deps,
+    mode === "session" ? pieceId : undefined,
+  );
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -39,12 +55,68 @@ export function Workspace({ mode, scope, pieceId, onReady }: WorkspaceProps) {
     dndOverlayBorder: "1px solid rgb(167 139 250 / 0.60)",
   };
 
-  const handleReady = (event: DockviewReadyEvent) => {
+  const handleReady = async (event: DockviewReadyEvent) => {
     const setRenderer = (panel: (typeof event.api.panels)[number]) => {
       panel.api.setRenderer(panelRenderer(panel.api.component));
     };
     event.api.panels.forEach(setRenderer);
     event.api.onDidAddPanel(setRenderer);
+    let activeDeps: Awaited<ReturnType<typeof container.getDeps>> | null = null;
+    let hasScores = false;
+    let firstScoreId: string | undefined;
+    let scoreIds = new Set<string>();
+    const scopedPieceId = mode === "session" ? pieceId : undefined;
+    const applyDefault = () => {
+      event.api.closeAllGroups();
+      for (const panel of defaultLayoutPlan(mode, hasScores, firstScoreId)) {
+        event.api.addPanel({
+          id: panel.id,
+          component: panel.component,
+          title: panel.title,
+        });
+      }
+    };
+    try {
+      activeDeps = await container.getDeps();
+      if (scopedPieceId) {
+        const scores = await listScores(activeDeps, { pieceId: scopedPieceId });
+        scoreIds = new Set(scores.map((score) => score.id));
+        hasScores = scores.length > 0;
+        firstScoreId = scores[0]?.id;
+      }
+      const saved = await loadLayout(activeDeps, {
+        pieceId: scopedPieceId,
+        mode,
+        scoreIds,
+      });
+      const source = chooseLayoutSource(saved, mode, hasScores, firstScoreId);
+      if (source.kind === "saved") {
+        try {
+          event.api.fromJSON(
+            source.layout as unknown as Parameters<
+              typeof event.api.fromJSON
+            >[0],
+          );
+        } catch (error) {
+          console.warn(
+            "Não foi possível restaurar o layout; usando o padrão.",
+            error,
+          );
+          applyDefault();
+        }
+      } else {
+        console.warn("Layout salvo ausente ou inválido; usando o padrão.");
+        applyDefault();
+      }
+    } catch (error) {
+      console.warn(
+        "Não foi possível carregar o layout; usando o padrão.",
+        error,
+      );
+      applyDefault();
+    }
+    if (activeDeps) setDeps(activeDeps);
+    setReady(event);
     onReady?.(event);
   };
 
@@ -52,7 +124,7 @@ export function Workspace({ mode, scope, pieceId, onReady }: WorkspaceProps) {
     <div
       className="cress-workspace-shell"
       data-mode={mode}
-      data-scope={scope}
+      data-scope={pieceId ?? "free"}
       data-piece-id={pieceId}
     >
       <DockviewReact
