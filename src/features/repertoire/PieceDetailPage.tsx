@@ -24,6 +24,11 @@ export function PieceDetailPage() {
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
 
+  async function reloadGoals() {
+    const deps = await container.getDeps();
+    setGoals(await listGoals(deps, { repertoireItemId: pieceId }));
+  }
+
   useEffect(() => {
     let active = true;
     void container
@@ -148,7 +153,7 @@ export function PieceDetailPage() {
           {error}
         </p>
       )}
-      <GoalList goals={goals} />
+      <GoalList goals={goals} repertoireItemId={pieceId} onChanged={reloadGoals} />
       {editing && (
         <PieceFormDialog
           piece={piece}
