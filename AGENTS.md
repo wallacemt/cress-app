@@ -349,3 +349,8 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
   mesmo com o arquivo já salvo e `mtime` atualizado. **Reiniciar o `vite`/`bun run dev` do zero**
   depois de qualquer edição é a forma confiável de garantir que o servidor está servindo o código
   atual neste ambiente — não confiar em HMR para validar uma correção aqui.
+
+## 29. Scheduler puro do metrônomo
+
+- `scheduleBlock` calcula cada subdivisão como `positionFrame + round(index * framesPerSubdivision)` a partir da origem fixa do metrônomo; não acumula intervalos arredondados entre blocos. Os eventos retornam `frame` relativo ao bloco e beat/compasso começando em 1 (fonte: `src/domain/scheduler.ts`, issue #36, 2026-10-24).
+- **Bug real pego na validação (a Codex relatou testes passando, mas não passavam):** a primeira versão de `framesPerSubdivision` dividia por `60000` (`(sampleRate * getBeatInterval(bpm)) / 60000 / pattern.length`), quando `getBeatInterval` já retorna ms por batida — a conversão correta de ms para frames é `/ 1000`, não `/ 60000`. Isso deixava `framesPerSubdivision` 60× menor que o real (400 em vez de 24000 frames por batida a 120 BPM/48 kHz), e os 4 testes do próprio `scheduler.test.ts` (escritos pela mesma execução da Codex) falhavam. Corrigido trocando `/ 60000` por `/ 1000`; `bun run test -- --no-isolate src/domain/scheduler.test.ts` passa limpo depois. Lição: sempre rodar a suíte de verdade depois de uma execução da Codex, mesmo quando o resumo final dela diz "testes passaram" — já houve inconsistência entre o que a Codex reporta e o resultado real (fonte: validação desta issue, 2026-10-24).
