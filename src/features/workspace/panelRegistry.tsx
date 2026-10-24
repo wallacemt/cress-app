@@ -4,6 +4,7 @@ import type { IDockviewPanelProps } from "dockview-react";
 import { PANEL_CATALOG, PANEL_ICON_NAMES, PANEL_TITLES } from "../../domain/workspace";
 import { MetronomeIcon } from "../../components/icons/MetronomeIcon";
 import { SessionPanel } from "./panels/SessionPanel";
+import { MetronomePanel } from "./panels/MetronomePanel";
 
 const icons = { metronome: MetronomeIcon, gauge: Gauge, "file-music": FileMusic, "audio-lines": AudioLines, "notebook-pen": NotebookPen };
 export function PanelTab({ api }: IDockviewPanelProps) {
@@ -31,6 +32,7 @@ export const panelRegistry: Record<
   Object.values(PANEL_CATALOG).map(({ component }) => [component, EmptyPanel]),
   ),
   session: SessionPanel,
+  metronome: MetronomePanel,
 };
 
 export function panelRenderer(component: string): "onlyWhenVisible" | "always" {

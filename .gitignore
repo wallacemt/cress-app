@@ -18,6 +18,7 @@ dist-ssr
 .serena/
 .impeccable
 public/pdfjs/
+public/metronome-processor.js
 src-tauri/target/
 .impeccable
 coverage/

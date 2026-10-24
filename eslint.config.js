@@ -18,6 +18,7 @@ export default tseslint.config(
     ignores: [
       "dist/**",
       "public/pdfjs/**",
+      "public/metronome-processor.js",
       "src-tauri/target/**",
       "graphify-out/**",
     ],
