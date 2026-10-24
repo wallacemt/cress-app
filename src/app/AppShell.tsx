@@ -1,69 +1,119 @@
-import { NavLink, Outlet, useLocation, useNavigate } from "react-router";
-import { useEffect, useState } from "react";
-import { Toaster } from "sonner";
+import { useEffect, useRef, useState } from "react";
+import { NavLink, Outlet, useLocation } from "react-router";
+import {
+  BookOpen,
+  Home,
+  Music2,
+  Search,
+  SlidersHorizontal,
+} from "lucide-react";
+import { Toaster, toast } from "sonner";
 import { container } from "./container";
-import { makeSessionRepo } from "../infrastructure/repositories/sessionRepo";
-import { listPieces } from "../application/repertoire";
-import { resumeSession } from "../application/sessions";
-import type { StudySessionRow } from "../infrastructure/db/rows";
+import { getProfile } from "../application/profile";
 
-const navigation = [
-  ["/", "Dashboard"],
-  ["/repertoire", "Repertório"],
-  ["/sessions", "Sessões"],
-  ["/tools", "Ferramentas"],
-  ["/settings", "Configurações"],
+const destinations = [
+  { to: "/", label: "Início", icon: Home, end: true },
+  { to: "/repertoire", label: "Repertório", icon: BookOpen, end: false },
+  { to: "/sessions", label: "Sessões", icon: SlidersHorizontal, end: false },
+  { to: "/tools", label: "Prática livre", icon: Music2, end: false },
 ] as const;
+
+function initials(name: string) {
+  const parts = name.trim().split(/\s+/).filter(Boolean);
+  return (
+    (parts[0]?.[0] ?? "") + (parts.length > 1 ? (parts[parts.length - 1]?.[0] ?? "") : "")
+  ).toUpperCase();
+}
 
 export function AppShell() {
   const { pathname } = useLocation();
-  const navigate = useNavigate();
-  const [openSession, setOpenSession] = useState<StudySessionRow | null>(null);
-  const [pieceTitle, setPieceTitle] = useState("");
-  const [busy, setBusy] = useState(false);
+  const [hidden, setHidden] = useState(false);
+  const [avatarInitials, setAvatarInitials] = useState("—");
+  const railRef = useRef<HTMLElement>(null);
   useEffect(() => {
     let active = true;
-    void container.getDeps().then(async (deps) => {
-      const row = (await makeSessionRepo(deps.db).open())[0] ?? null;
-      if (!active) return;
-      setOpenSession(row);
-      if (row) setPieceTitle((await listPieces(deps)).find((piece) => piece.id === row.repertoire_item_id)?.title ?? "Sessão");
-    }).catch(() => { if (active) setOpenSession(null); });
-    return () => { active = false; };
-  }, [pathname]);
-  async function resumeOpenSession() {
-    if (!openSession) return;
-    const deps = await container.getDeps();
-    setBusy(true);
-    try {
-      const resumed = openSession.status === "PAUSED" ? await resumeSession(deps, { id: openSession.id }) : null;
-      if (resumed) setOpenSession({ ...openSession, status: "ACTIVE", resumed_at: resumed.resumedAt?.getTime() ?? null });
-      navigate(`/practice/${openSession.id}`);
-    } catch { window.alert("Não foi possível retomar a sessão."); }
-    finally { setBusy(false); }
-  }
-  const isWorkspace = pathname === "/tools" || pathname === "/practice/new" || /^\/practice\/[^/]+$/.test(pathname);
+    void container
+      .getDeps()
+      .then((deps) => getProfile(deps))
+      .then((profile) => {
+        if (active && profile?.displayName) setAvatarInitials(initials(profile.displayName));
+      })
+      .catch(() => {});
+    return () => {
+      active = false;
+    };
+  }, []);
+  const isWorkspace =
+    pathname === "/tools" ||
+    pathname === "/practice/new" ||
+    /^\/practice\/[^/]+$/.test(pathname);
+
+  useEffect(() => {
+    let previousY = window.scrollY;
+    const onScroll = () => {
+      const currentY = window.scrollY;
+      if (railRef.current?.contains(document.activeElement)) {
+        setHidden(false);
+      } else if (Math.abs(currentY - previousY) > 2) {
+        setHidden(currentY > previousY && currentY > 40);
+      }
+      previousY = currentY;
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
   return (
     <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
-      {!isWorkspace && <aside>
-        <div className="brand">
-          Cress<span>·</span>
-        </div>
-        <nav aria-label="Navegação principal">
-          {navigation.map(([to, label]) => (
-            <NavLink key={to} to={to} end={to === "/"}>
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-      </aside>}
-      <main>
-        {!isWorkspace && <header>
-          <span>Workspace</span>
-          {openSession ? <button type="button" className="session-banner" disabled={busy} onClick={() => void resumeOpenSession()}>{pieceTitle} · {openSession.status === "ACTIVE" ? "Em andamento" : "Pausada"} · Retomar</button> : <span className="session-banner">Nenhuma sessão aberta</span>}
-        </header>}
+      <main className={isWorkspace ? "" : "app-shell-content"}>
         <Outlet />
       </main>
+      {!isWorkspace && (
+        <nav
+          ref={railRef}
+          className={`navigation-rail${hidden ? " is-hidden" : ""}`}
+          aria-label="Navegação principal"
+          onFocus={() => setHidden(false)}
+        >
+          <span className="navigation-brand" aria-label="Cress">
+            C<span>·</span>
+          </span>
+          <span className="navigation-divider" aria-hidden="true" />
+          <div className="navigation-destinations">
+            {destinations.map(({ to, label, icon: Icon, end }) => (
+              <NavLink
+                key={to}
+                to={to}
+                end={end}
+                aria-label={label}
+                className={({ isActive }) =>
+                  `navigation-link${isActive ? " active" : ""}`
+                }
+              >
+                <Icon size={16} aria-hidden="true" />
+                <span className="navigation-label">{label}</span>
+              </NavLink>
+            ))}
+          </div>
+          <span className="navigation-divider" aria-hidden="true" />
+          <button
+            className="navigation-search"
+            type="button"
+            aria-label="Buscar (Ctrl K)"
+            onClick={() => toast("Busca chega em breve")}
+          >
+            <Search size={16} aria-hidden="true" />
+            <span>Ctrl K</span>
+          </button>
+          <NavLink
+            className="navigation-avatar"
+            to="/settings"
+            aria-label="Configurações"
+          >
+            {avatarInitials}
+          </NavLink>
+        </nav>
+      )}
       <Toaster theme="dark" />
     </div>
   );
