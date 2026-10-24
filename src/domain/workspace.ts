@@ -19,6 +19,13 @@ export const PANEL_TITLES: Record<keyof typeof PANEL_CATALOG, string> = {
   recorder: "Gravações",
   session: "Sessão",
 };
+export const PANEL_ICON_NAMES = {
+  metronome: "metronome",
+  tuner: "gauge",
+  score: "file-music",
+  recorder: "audio-lines",
+  session: "notebook-pen",
+} as const;
 export interface LayoutPanel {
   component: string;
   id: string;
@@ -48,6 +55,11 @@ export function buildDefaultLayoutPanels(
   mode: WorkspaceMode,
   hasScores = false,
   firstScoreId?: string,
+  // dockview's addPanel `initialWidth`/`initialHeight` are pixels, but the plan's
+  // `width`/`height` are percentages of the container — convert using the real
+  // container size when known (ready.api.width/height), or the splits default to
+  // a near-zero pixel size and the layout overflows (issue found 2026-10-24).
+  containerSize?: { width: number; height: number },
 ): AddPanelSpec[] {
   const specs: AddPanelSpec[] = [];
   let previousPanelId: string | undefined;
@@ -62,8 +74,16 @@ export function buildDefaultLayoutPanels(
         spec.position = { referencePanel: previousPanelId };
       } else if (groupIndex > 0 && previousPanelId) {
         spec.position = { referencePanel: previousPanelId, direction: group.split };
-        if (group.width !== undefined) spec.initialWidth = group.width;
-        if (group.height !== undefined) spec.initialHeight = group.height;
+        if (group.width !== undefined) {
+          spec.initialWidth = containerSize
+            ? Math.round((containerSize.width * group.width) / 100)
+            : group.width;
+        }
+        if (group.height !== undefined) {
+          spec.initialHeight = containerSize
+            ? Math.round((containerSize.height * group.height) / 100)
+            : group.height;
+        }
       }
       specs.push(spec);
       previousPanelId = panel.id;

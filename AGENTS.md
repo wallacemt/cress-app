@@ -220,3 +220,132 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
   atualizada, um `codex exec` por issue (nunca várias issues no mesmo prompt), validar
   (`bun run lint && bun run typecheck && bun run test -- --no-isolate`) e comitar antes
   de passar para a próxima issue, PR único ao final.
+
+## 25. Bug real: Tauri intercepta DnD nativo e quebra o drag-and-drop HTML5 do dockview no Windows (2026-10-24)
+
+- **Sintoma relatado pelo usuário:** testando o app empacotado no Windows, a manipulação de
+  UI/UX do dockview (arrastar abas, dividir, flutuar painel) não aparece/não funciona —
+  mesmo com `disableFloatingGroups={false}` e o tema de drag configurado em `Workspace.tsx`.
+- **Causa raiz confirmada no schema da CLI Tauri instalada**
+  (`node_modules/@tauri-apps/cli/config.schema.json`): `app.windows[].dragDropEnabled` tem
+  **padrão `true`** e mapeia para o handler nativo de drag/drop do WebView2 — que intercepta
+  os eventos antes de chegarem ao DOM, quebrando o HTML5 Drag-and-Drop API usado internamente
+  pelo `dockview-react` para arrastar abas/painéis. O schema documenta explicitamente que essa
+  flag precisa ser `false` quando o app depende de HTML5 DnD no frontend no Windows.
+- **Correção aplicada:** `"dragDropEnabled": false` em `src-tauri/tauri.conf.json` (janela
+  única do app; `tauri.microsoftstore.conf.json` não define `windows`, então herda esse
+  valor sem precisar duplicar). O app não usa drop de arquivo do Explorer em lugar nenhum
+  (importação de partituras é via diálogo nativo Rust, `scores_pick_and_scan_folder`), então
+  não há custo funcional conhecido em desabilitar.
+- **Não validado em runtime real** — exige rebuild + reinstalação no Windows (uma instalação
+  já empacotada não incorpora a mudança de config) e repetição manual do AC-M7 (abrir os 5
+  painéis, flutuar, dividir, redimensionar, persistir/restaurar layout). Se o sintoma persistir
+  após o rebuild, não assumir que a causa era essa — isolar se o handler ainda está ativo antes
+  de procurar outra causa.
+- Relatório completo da auditoria que originou este achado (gaps das issues #30–#35 vs.
+  implementação real, alinhamento com o Dossier §8.2–§8.3/§8.8, achados classificados por
+  severidade): `AUDIT-milestone5.md` na raiz do repo.
+
+## 26. Navegação Atril — Issue #86 (2026-10-24)
+
+- O shell global usa uma régua glass fixa no rodapé, omitida nas mesmas rotas Workspace já
+  detectadas pelo `AppShell`. O scroll esconde a régua ao descer e a revela ao subir; foco
+  dentro dela impede que seja escondida. O botão `Ctrl K` é apenas visual e o avatar leva a
+  `/settings`, sem dropdown.
+- Ícones dos destinos: `Home` (Início), `Library` (Repertório), `CalendarDays` (Sessões) e
+  `AudioLines` (Prática livre → `/tools`, que monta `Workspace` em modo `free`). `/practice/new`
+  é o setup de sessão, não prática livre. O símbolo usa o asset existente
+  `src/assets/brand/cress-symbol-gold.svg`; as iniciais do avatar vêm de
+  `useProfileStore.profile.displayName`.
+- O fallback `prefers-reduced-transparency` está no CSS, mas jsdom não testa `backdrop-filter`.
+  **Revalidado após a implementação** (não pela própria execução da Codex, que teve timeouts de
+  worker/lint pontuais): `bun run lint` e `bun run typecheck` passam limpos; `bun run test --
+  --no-isolate` falhou com 10 timeouts de worker na primeira tentativa e passou limpo
+  (33 arquivos/96 testes) na repetição — mais um caso do padrão já descrito no §17, não uma
+  regressão desta mudança.
+## 27. Workspace livre — cabeçalho, abas e altura (2026-10-24)
+
+- **Bug real corrigido após a implementação inicial:** a primeira versão desta tarefa registrou
+  o ícone de aba via `tabComponents={{ panel: PanelTab }}` no `DockviewReact`, mas **nenhum**
+  `addPanel()` do projeto (nem em `Workspace.tsx`, nem em `AddPanelMenu.tsx`/`LayoutMenu.tsx`)
+  passa `tabComponent: "panel"` por painel — a chave do mapa `tabComponents` só é usada quando
+  um painel individual pede aquele renderer explicitamente. Sem isso, o dockview cai no tab
+  renderer padrão (texto puro) e os ícones **nunca apareciam em runtime**, apesar de `lint`/
+  `typecheck`/testes passarem (nada ali exercita o DOM real do dockview o suficiente para pegar
+  isso). Causa raiz confirmada nos tipos instalados: `IDockviewReactProps` (`dockview-react/dist/
+  cjs/dockview/dockview.d.ts`) também expõe `defaultTabComponent?: React.FunctionComponent<...>`
+  — essa é a prop certa para "um único tab renderer para todos os painéis", recebendo o
+  **componente diretamente**, não uma chave de string. Corrigido para
+  `<DockviewReact defaultTabComponent={PanelTab} .../>` (removido o `tabComponents` map, que não
+  tinha mais uso). Lição: ao customizar algo do dockview que deveria valer para todo painel, usar
+  a prop `default*`, não uma tabela de lookup que precisa ser referenciada em todo lugar que cria
+  um painel — é fácil esquecer um dos pontos de criação (3 arquivos diferentes aqui).
+- `PANEL_ICON_NAMES` (`src/domain/workspace.ts`) é a fonte única do mapeamento painel→ícone,
+  reaproveitada pela aba (`PanelTab` em `panelRegistry.tsx`); `metronome` usa um componente SVG
+  próprio (`src/components/icons/MetronomeIcon.tsx`, copiado de
+  `docs/dossiers/assets/icon-metronome.svg` — fora do repo `cress-app`, não importável direto),
+  os demais são ícones `lucide-react` (`gauge`/`file-music`/`audio-lines`/`notebook-pen`).
+- A pílula do metrônomo no cabeçalho do modo livre mostra ponto neutro, nota, `—` e botão Square
+  desabilitado enquanto não há estado/BPM real (fonte: estado atual sem painel funcional de
+  metrônomo, Fase 6) — estrutura visual bate com o Penpot, dados ficam para a Fase 6.
+- Para impedir rolagem de página especificamente no Workspace, `.app-shell-workspace` recorta o
+  shell (`overflow: hidden`), `main` ganha `min-height: 0` (a causa raiz: sem isso um item flex
+  não encolhe abaixo da altura do seu conteúdo, então o `body` crescia além de 100vh) e
+  `html`/`body`/`#root` têm `height: 100%` para a cadeia de alturas ser previsível; rotas comuns
+  (Dashboard, Repertório…) mantêm scroll natural de página, só o shell do Workspace é travado
+  (fonte: inspeção de `src/index.css` e `workspace-theme.css`, tarefa de alinhamento Penpot).
+- Revalidado após a correção do bug de `tabComponent`: `bun run lint` (arquivos tocados e
+  completo), `bun run typecheck` e `bun run test -- --no-isolate` (33 arquivos/96 testes) passam
+  limpos.
+
+## 28. Bug real: scroll/overflow persistente no Workspace apesar do CSS "correto" (2026-10-24)
+
+- **Sintoma relatado pelo usuário após a correção do §27:** o scroll na "Prática livre" continuava
+  presente e os painéis não ocupavam o espaço disponível direito. O CSS do §27 (`min-height: 0`,
+  `overflow: hidden` no shell) estava de fato correto e **não** era a causa restante — confirmado
+  medindo o DOM real num Chrome headless (`--remote-debugging-port` + CDP via `websocket` Python,
+  já que não há navegador/Playwright disponível neste WSL): `document.documentElement.scrollHeight`
+  batia exatamente com `window.innerHeight`, sem overflow de página nenhum.
+- **Causa raiz real #1 (a mais grave):** `defaultLayoutPlan` (`src/domain/workspace.ts`) descreve
+  `width`/`height` dos grupos como **porcentagem** (`50`, `62`, `38` — somam 100), mas
+  `buildDefaultLayoutPanels` passava esse número direto para `spec.initialWidth`/`initialHeight`,
+  que no dockview **são pixels, não porcentagem** (`AddPanelOptions.initialWidth?: number` em
+  `dockview-core/dist/cjs/dockview/options.d.ts`, sem unidade documentada, mas consistente com todo
+  o resto da API de tamanho do dockview, que é sempre em px). Resultado real observado (screenshot
+  de um Chrome headless local): pedir `initialWidth: 50` ("50%" pretendido) criava um grupo de
+  pouco mais de 50 **pixels**, cortado fora da viewport — não overflow de CSS, um bug de dado
+  (unidade errada) que acontecia de parecer com "scroll". Corrigido: `buildDefaultLayoutPanels`
+  ganhou um 4º parâmetro opcional `containerSize: {width, height}`; quando presente, converte
+  porcentagem → pixels (`Math.round(containerSize.width * group.width / 100)`). Os dois call sites
+  (`Workspace.tsx` na montagem inicial, `LayoutMenu.tsx` no "Restaurar layout padrão") agora passam
+  `{ width: api.width, height: api.height }` do próprio `DockviewApi` (propriedade real, medida).
+  Sem `containerSize`, o comportamento antigo (porcentagem crua) é mantido — os testes existentes
+  de `workspace.test.ts` que afirmam `initialWidth: 38`/`initialHeight: 50` continuam válidos
+  porque chamam a função sem esse parâmetro.
+- **Causa raiz real #2 (residual, só aparece depois de corrigir #1):** mesmo com os grupos do
+  dockview dimensionados certo, o próprio `.dv-view` interno do dockview (`dockview-react/dist/
+  styles/dockview.css`: `.dv-split-view-container .dv-view-container .dv-view { overflow: auto;
+  position: absolute; }`) relatava ~23px de overflow em largura E altura — medido ao vivo via CDP
+  (`scrollHeight`/`clientWidth` do elemento `.dv-view.visible`), não um artefato de screenshot. É
+  um resíduo de arredondamento do próprio dockview nos grupos posicionados em `absolute`; não achamos
+  (nem vale a pena brigar com) a causa exata dentro da lib. Corrigido pragmaticamente, já que o
+  requisito de design é "zero scroll" no Workspace: `.cress-workspace .dv-view.visible { overflow:
+  hidden !important; }` em `workspace-theme.css`. O `!important` é necessário porque a regra do
+  dockview tem a mesma especificidade (3 classes) e o `<style>` dele é injetado DEPOIS do nosso
+  (import tardio dentro de `Workspace.tsx`), vencendo o empate de especificidade por ordem — uma
+  regra sem `!important` com a mesma especificidade perde silenciosamente nesse caso.
+- **Método de validação usado (não há Playwright/MCP de browser funcional neste ambiente):**
+  `google-chrome` (binário do sistema, `/usr/bin/google-chrome`) em modo `--headless=new
+  --disable-gpu --no-sandbox`, servido por `bun run dev` real. Para medir DOM/CSS computado (não só
+  screenshot), usar `--remote-debugging-port=N --remote-allow-origins=*` + um cliente CDP Python
+  (`pip`/ambiente já tem `websocket-client` e `requests` instalados) chamando `Runtime.evaluate`.
+  Rotas protegidas por loader (`rootLoader`/`onboardingLoader`) quebram em browser puro porque
+  chamam `TauriSqlDb.open()` → `@tauri-apps/plugin-sql` → `invoke` indefinido fora do runtime Tauri;
+  para inspecionar uma página sob `/` sem mockar IPC, adicionar uma rota solta temporária fora da
+  árvore `/` (sem `loader`) e remover antes de terminar.
+- **Armadilha do ambiente que custou tempo nesta validação:** o watcher de arquivos do Vite neste
+  checkout (`/mnt/e`, 9p/WSL — mesma limitação do §9/§17) não pegou edições em `router.tsx` nem em
+  `workspace-theme.css` por HMR; o dev server continuou servindo o módulo antigo por vários minutos
+  mesmo com o arquivo já salvo e `mtime` atualizado. **Reiniciar o `vite`/`bun run dev` do zero**
+  depois de qualquer edição é a forma confiável de garantir que o servidor está servindo o código
+  atual neste ambiente — não confiar em HMR para validar uma correção aqui.

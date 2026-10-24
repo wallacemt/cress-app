@@ -64,7 +64,8 @@ export function LayoutMenu({
     if (!api) return;
     if (deps) await resetLayouts(deps);
     api.closeAllGroups();
-    const plan = buildDefaultLayoutPanels(mode, hasScores, firstScoreId);
+    const containerSize = { width: api.width, height: api.height };
+    const plan = buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize);
     for (const panel of plan)
       api.addPanel({
         ...panel,

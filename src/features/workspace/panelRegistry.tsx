@@ -1,8 +1,15 @@
 import type { FunctionComponent } from "react";
-import { PanelsTopLeft } from "lucide-react";
+import { AudioLines, FileMusic, Gauge, NotebookPen, PanelsTopLeft } from "lucide-react";
 import type { IDockviewPanelProps } from "dockview-react";
-import { PANEL_CATALOG, PANEL_TITLES } from "../../domain/workspace";
+import { PANEL_CATALOG, PANEL_ICON_NAMES, PANEL_TITLES } from "../../domain/workspace";
+import { MetronomeIcon } from "../../components/icons/MetronomeIcon";
 import { SessionPanel } from "./panels/SessionPanel";
+
+const icons = { metronome: MetronomeIcon, gauge: Gauge, "file-music": FileMusic, "audio-lines": AudioLines, "notebook-pen": NotebookPen };
+export function PanelTab({ api }: IDockviewPanelProps) {
+  const Icon = icons[PANEL_ICON_NAMES[api.component as keyof typeof PANEL_ICON_NAMES]];
+  return <span className="cress-panel-tab"><Icon size={16} /><span>{api.title}</span></span>;
+}
 
 type PanelId = keyof typeof PANEL_CATALOG;
 
