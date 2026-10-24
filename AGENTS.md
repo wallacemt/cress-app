@@ -257,3 +257,30 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
   projeto (incluindo o novo `AppShell.dom.test.tsx`) falhou a iniciar o worker jsdom nesta
   validação (`free -h` ~749 Mi livres) — não é regressão desta mudança; revalidar no
   Windows ou numa máquina com mais memória antes do merge.
+- **Regressão real encontrada ao testar `/tools` (Prática livre) no Windows:** a tela
+  ficava completamente em branco (sem dockview, sem header funcional, "+ Painel" sem
+  efeito nenhum). Causa: a reescrita do CSS desta mesma issue removeu `display: flex` de
+  `.app-shell` ao tirar a sidebar — sem isso, `main { flex: 1 }` não faz nada (não há mais
+  container flex pai), `main` perde altura definida, e toda a cadeia de `height: 100%`
+  encadeada que o Workspace depende (`.cress-workspace-shell` → `.cress-workspace` →
+  dockview) colapsa para 0. Corrigido restaurando `display: flex` em `.app-shell`
+  (commit `2dcd25f`). **Lição:** ao remover um elemento de layout (sidebar), conferir se
+  alguma propriedade do container pai (aqui, `display: flex`) existia só por causa dele
+  e ainda é necessária para outros filhos — não é óbvio pela leitura isolada do elemento
+  removido.
+- **Marca/logo real:** existe um SVG oficial em `src/assets/brand/cress-symbol-gold.svg`
+  (já usado no onboarding, `h-8`/32px) — a primeira versão desta issue tinha renderizado
+  a letra "C" estilizada em vez do símbolo real, o que é por si só um desvio do Penpot
+  (fonte de verdade) e explicava a letra pequena/pouco visível reportada pelo usuário.
+  Corrigido usando o asset real em 24px na régua Atril.
+- **MCP do Penpot self-hosted na `personal-vps`:** stack `rt-penpot-*` (ver
+  `global_memory/vps_personal.md`). O frontend (`rt-penpot-penpot-frontend-1`) já tem
+  rotas internas prontas em `/etc/nginx/overrides/server.d/mcp-locations.conf`:
+  `/mcp/stream` → `penpot-mcp:4401/mcp` (usado pelo cliente MCP, HTTP simples) e
+  `/mcp/ws` → `penpot-mcp:4402` (usado pelo plugin no navegador, exige upgrade de
+  WebSocket). O Proxy Host do NPM para `penpot.wallacedev.com.br` não tinha
+  "Websockets Support" habilitado — por isso o cliente MCP funcionava (HTTP puro) mas o
+  plugin do navegador nunca conseguia casar a sessão ("No Penpot instance connected for
+  user token", sem nenhum log de tentativa do lado do servidor). Corrigido habilitando
+  Websockets Support no Proxy Host existente — **não precisa de domínio/porta novos**,
+  não criar um host separado para a porta 4402 se isso acontecer de novo.
