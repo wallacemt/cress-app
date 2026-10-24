@@ -220,3 +220,40 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
   atualizada, um `codex exec` por issue (nunca várias issues no mesmo prompt), validar
   (`bun run lint && bun run typecheck && bun run test -- --no-isolate`) e comitar antes
   de passar para a próxima issue, PR único ao final.
+
+## 25. Fidelidade ao Penpot fora do Workspace — shell "Atril" (issue #86, 2026-10-23)
+
+- **Achado:** o usuário reportou (com screenshot real do Windows) que a UI diverge do
+  Penpot. Dois bugs reais do Workspace já documentados no §24 explicavam parte disso, mas
+  havia um problema maior: `AppShell` usava sidebar lateral clássica, enquanto a decisão
+  final de design (Dossier §8.13.1, 2026-10-08) é a direção **F ("Atril")** — régua
+  flutuante no rodapé com acabamento glass. Essa troca nunca tinha issue própria (a
+  sidebar é anterior à decisão de 08/10). Criada a issue #86, corrigida em
+  `feature/atril-nav-shell` (PR #87), empilhada sobre `milestone-05/
+  workspace-shell-fluxo-sessao` porque depende da variável `isWorkspace`/rotas que só
+  existem ali — **quando o PR #85 mergear, retargetar o #87 para `main`**
+  (`gh pr edit 87 --base main`).
+- **Regra de processo que fica valendo:** sempre que uma tarefa nova depender de uma
+  branch de feature ainda não mergeada (não só de `main`), empilhar a branch nova sobre
+  ela em vez de branch a partir de `main` desatualizada — e deixar escrito no PR qual é a
+  base real e quando retargetar.
+- **Armadilhas reais encontradas na primeira versão gerada pelo codex** (corrigidas antes
+  do commit): (1) erro de tipo real — só o primeiro item do array `destinations` tinha a
+  prop `end`, os demais não, TS falhava ao desestruturar `end` do union; corrigido dando
+  `end: false` explícito a todos. (2) o avatar deveria mostrar iniciais do `displayName`
+  do perfil (pedido explícito no prompt) mas renderizava um ícone genérico `UserRound` —
+  e o mesmo ícone `UserRound` também estava sendo usado para o destino "Prática livre",
+  uma colisão semântica sem sentido (ícone de pessoa para "praticar livremente"). Trocado
+  por `Music2` em "Prática livre" e por iniciais reais (via `getProfile`) no avatar.
+- **Gap pré-existente identificado, não corrigido nesta tarefa:** `body { min-width: 1100px }`
+  em `src/index.css` (pré-existente, de antes desta mudança) torna a media query
+  responsiva `@media (max-width: 1100px)` do novo shell de navegação inatingível — o
+  conteúdo nunca encolhe abaixo de 1100px porque o `body` força esse mínimo, mesmo que o
+  Dossier §8.13.1 preveja esse breakpoint operando até a janela em 960px
+  (`tauri.conf.json minWidth: 960`). Não mexi nisso para não expandir o escopo desta
+  issue — mas é um bug real que bloqueia a responsividade prometida pelo design e deveria
+  virar sua própria issue quando a janela em 960–1100px for testada de verdade.
+- **Mesma limitação de ambiente do §24 confirmada de novo:** todo `*.dom.test.tsx` do
+  projeto (incluindo o novo `AppShell.dom.test.tsx`) falhou a iniciar o worker jsdom nesta
+  validação (`free -h` ~749 Mi livres) — não é regressão desta mudança; revalidar no
+  Windows ou numa máquina com mais memória antes do merge.
