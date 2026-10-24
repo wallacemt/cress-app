@@ -107,6 +107,7 @@ body {
   display: flex;
   min-height: 100vh;
 }
+.app-shell-workspace { height: 100vh; min-height: 0; }
 aside {
   width: 240px;
   background: var(--ink-850);

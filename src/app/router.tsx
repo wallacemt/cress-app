@@ -6,6 +6,9 @@ import { OnboardingPage } from "../features/onboarding/OnboardingPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { RepertoirePage } from "../features/repertoire/RepertoirePage";
 import { PieceDetailPage } from "../features/repertoire/PieceDetailPage";
+import { PracticeSetupPage } from "../features/workspace/PracticeSetupPage";
+import { PracticePage } from "../features/workspace/PracticePage";
+import { ToolsPage } from "../features/workspace/ToolsPage";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -17,13 +20,7 @@ function Placeholder({ name }: { name: string }) {
   );
 }
 
-const placeholderRoutes = [
-  "/practice/new",
-  "/practice/:sessionId",
-  "/sessions",
-  "/sessions/:sessionId",
-  "/tools",
-];
+const placeholderRoutes = ["/sessions", "/sessions/:sessionId"];
 
 export const router = createHashRouter([
   {
@@ -42,6 +39,9 @@ export const router = createHashRouter([
       { path: "settings", element: <SettingsPage /> },
       { path: "repertoire", element: <RepertoirePage /> },
       { path: "repertoire/:pieceId", element: <PieceDetailPage /> },
+      { path: "practice/new", element: <PracticeSetupPage /> },
+      { path: "practice/:sessionId", element: <PracticePage /> },
+      { path: "tools", element: <ToolsPage /> },
       ...placeholderRoutes.map((path) => ({
         path: path.slice(1),
         element: <Placeholder name={path} />,

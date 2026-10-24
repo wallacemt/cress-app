@@ -153,3 +153,70 @@ Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh is
 - Ao adicionar `SettingsPage.dom.test.tsx`, duas execuções de `bun run test -- --maxWorkers=1` não iniciaram os workers DOM de onboarding e settings (`Timeout waiting for worker to respond`); 22 arquivos/62 testes passaram nas duas tentativas. A execução isolada do teste de settings com pool `threads` também expirou antes de executar testes. Isto confirma uma falha de inicialização do worker neste checkout 9p, não uma falha de asserção; os testes DOM precisam ser reexecutados em um ambiente onde os workers iniciem (fonte: execuções locais desta issue).
 - **Causa raiz confirmada:** não é flakiness aleatória — o pool padrão (`forks`/`threads` com `isolate: true`) sobe um worker novo por arquivo, e nesta máquina o setup do ambiente `jsdom` é lento demais pra responder dentro do timeout de start quando isso acontece pra cada arquivo `*.dom.test.tsx`. `bun run test -- --no-isolate` reaproveita o worker entre arquivos (paga o custo de setup do `jsdom` uma vez só) e passou limpo: **24 arquivos/66 testes, 0 erros** (fonte: validação da issue #25, 2026-10-17). Usar esse flag só para validação local nesta máquina — não é para mudar o `isolate` padrão do projeto/CI sem motivo mais forte.
 - Na validação da issue #27, `bun run test -- --no-isolate` teve timeout nos três workers DOM na primeira tentativa e passou na repetição: **25 arquivos/68 testes, 0 erros**. Se ocorrer, repetir o comando uma vez antes de concluir que há falha no teste (fonte: validação local, 2026-10-17).
+
+## 18. Dockview React 8.4.1 — renderers e tema
+
+- `defaultRenderer` configura o padrão do Workspace; a API 8.4.1 não tem `rendererOverride`. O modo de renderização é por painel em `addPanel({ renderer })` ou `panel.api.setRenderer(...)`. Para score, aplique `always` em `onDidAddPanel` (e nos painéis já existentes ao iniciar); os demais usam `onlyWhenVisible` (fonte: `dockview-core/dist/cjs/dockview/options.d.ts` e `dockviewPanelApi.d.ts`, pacote instalado 8.4.1, issue #30).
+- As variáveis CSS do tema devem seguir `dockview-react/dist/styles/dockview.css` — por exemplo `--dv-group-view-background-color`, `--dv-tabs-and-actions-container-background-color`, `--dv-drag-over-background-color`; nomes antigos sem `-color` não têm efeito (fonte: CSS instalado 8.4.1, issue #30).
+
+## 19. Persistência do Workspace — formato do layout no Dockview 8.4.1
+
+- `DockviewApi.toJSON()` serializa a grade como `grid.root`; ramos guardam filhos em `data`, e folhas guardam `views` em `data`. O sanitizador precisa tratar essa estrutura instalada, além do formato antigo coberto pelos testes, ou layouts reais serão rejeitados como inválidos (fonte: `dockview-core/dist/cjs/dockview/dockviewComponent.d.ts` e `gridview/gridview.d.ts`, issue #31).
+
+## 20. Menus do Workspace — API Dockview 8.4.1
+
+- A API pública tipada do `DockviewApi` expõe `IDockviewPanel.api.moveTo({ group, position })` para mover um painel e `IDockviewGroupPanel.api.moveTo(...)` para mover um grupo; `getPopouts()` lista grupos em janelas popout. `moveGroupOrPanel` e `floatingGroups` existem no componente interno, mas não fazem parte do `DockviewApi` público usado por `DockviewReadyEvent` (fonte: `dockview-core/dist/cjs/api/component.api.d.ts`, `dockviewPanelApi.d.ts` e `dockviewGroupPanelApi.d.ts`, pacote instalado 8.4.1, issue #32).
+- `Position` em `moveTo` usa `top/bottom/left/right/center`; não passe `above/below` (esses nomes pertencem à direção de adição de grupo em outros contratos) (fonte: `dockview-core/dist/cjs/dnd/droptarget.d.ts`, pacote instalado 8.4.1, issue #32).
+
+## 21. Rotas Workspace — setup e shell em tela inteira
+
+- `/practice/new` carrega repertório e objetivos pelas funções da aplicação no componente, seguindo o padrão de `PieceDetailPage`; `/practice/:sessionId` lê a sessão pelo repositório e resolve obra/objetivo antes de montar `Workspace` (fonte: issue #33 e implementação local, 2026-10-23).
+- `AppShell` mantém o mesmo roteador e omite aside/header globais nas rotas `/tools` e `/practice/*`; a classe de tela inteira precisa dar ao shell `height: 100vh` para o Workspace preencher a janela (fonte: implementação local, 2026-10-23).
+- O catálogo e `AddPanelMenu` filtram `recorder` e `session` fora de modo `session`; o submenu de partitura pode comunicar que a seleção completa chega na Fase 9 (fonte: `src/domain/workspace.ts`, `src/features/workspace/AddPanelMenu.tsx`, confirmado na issue #33).
+
+## 22. Painel de sessão no Workspace
+
+- Painéis Dockview leem contexto específico pela propriedade `params` do `addPanel`; layouts restaurados podem receber os dados atualizados via `panel.api.updateParameters` (fonte: integração da issue #35, pacote dockview-react 8.4.1).
+- Alterar o objetivo associado à sessão passa por `setSessionGoal` em `application/sessions.ts`, que valida que o objetivo pertence à obra da sessão antes de persistir (fonte: implementação da issue #35, 2026-10-23).
+
+## 24. Bug real: layout padrão do Workspace sem grupos/splits (reportado em teste manual no Windows, 2026-10-23)
+
+- **Sintoma:** usuário testou o app real no Windows e viu só 1-2 painéis em abas simples, sem o
+  grid/split esperado, e DnD aparentemente quebrado.
+- **Causa raiz confirmada via Penpot (fonte de design real, não só o Dossier):** `defaultLayoutPlan`
+  (`src/domain/workspace.ts`) retornava uma lista PLANA de painéis, e `Workspace.tsx`/`LayoutMenu.tsx`
+  chamavam `api.addPanel()` sem `position` — pela API real do dockview 8.4.1, isso empilha tudo como
+  abas de um único grupo, nunca cria os splits (modo livre: Afinador|Metrônomo lado a lado; modo
+  sessão: Partitura 62% + coluna direita dividida em Gravações/Sessão sobre Metrônomo/Afinador).
+- **Correção:** `defaultLayoutPlan` agora retorna `LayoutPlan[]` com grupos (`panels`, `split`,
+  `width`, `height`); nova função `buildDefaultLayoutPanels()` (mesmo arquivo) é a única fonte que
+  caminha esses grupos e monta as opções reais de `addPanel` (`position: {referencePanel,
+  direction}`, `initialWidth`/`initialHeight`) — usada tanto por `Workspace.tsx` (montagem inicial)
+  quanto por `LayoutMenu.tsx` ("Restaurar layout padrão"), evitando duplicar essa lógica duas vezes.
+- **Armadilha evitada:** a primeira versão do fix (gerada por codex) decidia width/height por
+  **índice do grupo** (`groupIndex === 1` → largura, `groupIndex === 2` → altura), o que quebra
+  quando o grupo da partitura não existe (sem obra importada) e os índices dos demais grupos mudam.
+  `buildDefaultLayoutPanels` usa o `width`/`height` do próprio grupo, nunca o índice.
+- **Limitação do ambiente observada nesta validação:** todo arquivo `*.dom.test.tsx` do projeto
+  (não só os tocados por esta correção) falhou a iniciar o worker jsdom em 3 tentativas seguidas
+  (`--no-isolate`, `--no-isolate --maxWorkers=1`, e um único arquivo isolado) — mesmo os 10 arquivos
+  DOM do projeto inteiro, enquanto os 22 arquivos/65 testes não-DOM passaram limpos em todas as
+  tentativas. `free -h` no momento mostrava ~769 Mi livres e ~2,4 GiB de swap em uso — pressão de
+  memória mais severa que o caso parcial já documentado no §17, não um bug desta correção (nenhum
+  teste `*.dom.test.tsx` tocado por esta mudança teve asserção nova; `LayoutMenu.dom.test.tsx`
+  cobre só `move()`, não `reset()`). Revalidar os testes DOM tocados (`LayoutMenu.dom.test.tsx`)
+  num ambiente com memória livre, ou no Windows.
+
+## 23. Mudança de processo: Milestone 5 em uma branch só, uma issue por commit (2026-10-23)
+
+- Diferente das Milestones 3/4 (uma branch + PR por issue), a Milestone 5 foi pedida
+  pelo usuário com um processo diferente: uma única branch
+  `milestone-05/workspace-shell-fluxo-sessao`, com cada issue (#30–#35) como um commit
+  separado terminando em `Closes #NN`, e um único PR (#85) da branch para `main`. Ao
+  mergear (merge normal, não squash), cada commit individual fecha sua issue, porque o
+  GitHub escaneia por `Closes #N` em qualquer commit que chega na branch default, não só
+  no corpo do PR. **Não squash-mergear este PR** — perderia esse vínculo por issue.
+- Se futuras milestones pedirem o mesmo padrão, repetir: branch única a partir de `main`
+  atualizada, um `codex exec` por issue (nunca várias issues no mesmo prompt), validar
+  (`bun run lint && bun run typecheck && bun run test -- --no-isolate`) e comitar antes
+  de passar para a próxima issue, PR único ao final.

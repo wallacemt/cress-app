@@ -1,1 +1,395 @@
-.cress-workspace{--dv-group-view-background:#111629;--dv-tabs-and-actions-container-background:#0D1020;--dv-activegroup-visiblepanel-tab-background:#161B30;--dv-activegroup-hiddenpanel-tab-background:#111629;--dv-separator-border:#232A4C;--dv-drag-over-background:#7C3AED}
+.cress-workspace-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.cress-workspace-header {
+  z-index: 2;
+  display: flex;
+  height: 56px;
+  flex: 0 0 56px;
+  align-items: center;
+  gap: 12px;
+  padding: 0 20px;
+  border-bottom: 1px solid var(--border-subtle);
+  background: var(--ink-850);
+  color: var(--text-primary);
+}
+.session-dialog-backdrop { position: fixed; z-index: 50; inset: 0; display: grid; place-items: center; padding: 20px; background: rgb(0 0 0 / .65); }
+.session-dialog { display: grid; width: min(100%, 420px); gap: 14px; padding: 24px; border: 1px solid var(--border-default); border-radius: 12px; background: var(--ink-850); color: var(--text-primary); }
+.session-dialog h2 { margin: 0; font: 600 20px var(--font-display); }
+.session-dialog label { display: grid; gap: 6px; color: var(--text-secondary); font-size: 13px; }
+.session-dialog input:not([type=checkbox]), .session-dialog textarea { width: 100%; padding: 9px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--ink-700); color: var(--text-primary); font: inherit; }
+.session-dialog textarea { min-height: 90px; resize: vertical; }
+.session-dialog .session-dialog-check { display: flex; align-items: center; gap: 8px; }
+.session-dialog footer { display: flex; justify-content: flex-end; gap: 8px; }
+.session-dialog footer button { padding: 8px 12px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--ink-700); color: var(--text-primary); cursor: pointer; }
+.cress-session-heading { display: grid; min-width: 0; gap: 1px; }
+.cress-session-heading strong, .cress-free-title { overflow: hidden; color: var(--text-primary); font: italic 500 22px/1.1 var(--font-display); text-overflow: ellipsis; white-space: nowrap; }
+.cress-session-heading span { color: var(--text-muted); font-size: 11px; }
+.cress-clock-placeholder { padding-left: 8px; color: var(--text-secondary); font: 500 13px var(--font-metric); font-variant-numeric: tabular-nums; }
+.cress-header-spacer { flex: 1; }
+.cress-control, .cress-icon-control, .cress-finish-button {
+  display: inline-flex; min-height: 32px; align-items: center; justify-content: center; gap: 7px;
+  padding: 0 10px; border: 1px solid var(--border-default); border-radius: 6px;
+  background: rgb(255 255 255 / .04); color: var(--text-secondary); font: 500 12px var(--font-sans); cursor: pointer;
+}
+.cress-icon-control { width: 32px; padding: 0; }
+.cress-control:hover:not(:disabled), .cress-icon-control:hover { background: rgb(255 255 255 / .08); color: var(--text-primary); }
+.cress-control:focus-visible, .cress-icon-control:focus-visible, .cress-finish-button:focus-visible, .cress-menu button:focus-visible { outline: 2px solid var(--violet-400); outline-offset: 2px; }
+.cress-control:disabled { cursor: not-allowed; opacity: .48; }
+.cress-finish-button { border-color: transparent; background: var(--gradient-brand); color: white; }
+.cress-metronome-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--border-default); border-radius: 999px; color: var(--gold-300); font-size: 12px; }
+.cress-menu { position: relative; }
+.cress-menu-popover { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
+.cress-menu-popover button { display: flex; width: 100%; min-height: 36px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-primary); font: 400 13px var(--font-sans); text-align: left; cursor: pointer; }
+.cress-menu-popover button:hover:not(:disabled), .cress-menu-popover button:focus-visible { background: rgb(255 255 255 / .07); }
+.cress-menu-popover button:disabled { color: var(--text-muted); cursor: not-allowed; }
+.cress-menu-meta { display: inline-flex; align-items: center; gap: 5px; color: var(--text-muted); font-size: 11px; white-space: nowrap; }
+.cress-menu-separator { height: 1px; margin: 6px; background: var(--border-default); }
+.cress-menu-heading { display: block; padding: 7px 10px 3px; color: var(--text-muted); font-size: 10px; text-transform: uppercase; }
+.cress-submenu-wrap { position: relative; }
+.cress-submenu { position: absolute; top: 0; right: calc(100% + 6px); width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
+.cress-workspace-shell > .cress-workspace { flex: 1; min-height: 0; }
+
+:root .cress-workspace {
+  --dv-group-view-background-color: #111629;
+  --dv-tabs-and-actions-container-background-color: #0d1020;
+  --dv-tabs-and-actions-container-height: 36px;
+  --dv-tabs-and-actions-container-font-size: 14px;
+  --dv-tab-font-size: 14px;
+  --dv-tab-margin: 0;
+  --dv-tab-border-radius: 6px 6px 0 0;
+  --dv-tab-close-icon-size: 16px;
+  --dv-tab-divider-color: transparent;
+  --dv-border-radius: 8px;
+  --dv-dropdown-border-radius: 12px;
+  --dv-activegroup-visiblepanel-tab-background-color: #111629;
+  --dv-activegroup-visiblepanel-tab-color: #f5f3ef;
+  --dv-activegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-activegroup-hiddenpanel-tab-color: #8a90a3;
+  --dv-inactivegroup-visiblepanel-tab-background-color: #111629;
+  --dv-inactivegroup-visiblepanel-tab-color: #a7adbd;
+  --dv-inactivegroup-hiddenpanel-tab-background-color: transparent;
+  --dv-inactivegroup-hiddenpanel-tab-color: #8a90a3;
+  --dv-icon-hover-background-color: rgb(255 255 255 / 0.06);
+  --dv-separator-border: transparent;
+  --dv-paneview-header-border-color: rgb(255 255 255 / 0.06);
+  --dv-sash-color: transparent;
+  --dv-active-sash-color: rgb(167 139 250 / 0.55);
+  --dv-active-sash-transition-duration: 120ms;
+  --dv-active-sash-transition-delay: 150ms;
+  --dv-sash-border-radius: 9999px;
+  --dv-drag-over-background-color: rgb(124 58 237 / 0.14);
+  --dv-drag-over-border-color: rgb(167 139 250 / 0.6);
+  --dv-drag-over-border: 1px solid rgb(167 139 250 / 0.6);
+  --dv-edge-dock-indicator-color: rgb(167 139 250 / 0.9);
+  --dv-floating-box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.12), 0 24px 48px -12px rgb(0 0 0 / 0.65),
+    0 0 48px -8px rgb(124 58 237 / 0.2);
+  --dv-floating-border: 1px solid rgb(255 255 255 / 0.12);
+  --dv-floating-group-border: 1px solid rgb(255 255 255 / 0.12);
+  --dv-floating-group-dragging-opacity: 0.85;
+  --dv-floating-titlebar-height: 20px;
+  --dv-floating-titlebar-background-color: #1c2240;
+  --dv-floating-titlebar-border-bottom: 1px solid rgb(255 255 255 / 0.12);
+  --dv-context-menu-background-color: #1c2240;
+  --dv-context-menu-color: #f5f3ef;
+  --dv-scrollbar-background-color: rgb(255 255 255 / 0.12);
+  --dv-tabs-container-scrollbar-color: rgb(255 255 255 / 0.12);
+
+  height: 100%;
+  min-height: 0;
+  padding: 8px;
+  background: #05070d;
+}
+
+.cress-workspace .dv-dockview,
+.cress-workspace .dv-groupview,
+.cress-workspace .dv-content-container {
+  background: #111629;
+}
+
+.cress-workspace .dv-tabs-and-actions-container {
+  border: 0;
+}
+
+.cress-workspace .dv-tab {
+  position: relative;
+  min-width: 0;
+  max-width: 224px;
+  padding-inline: 12px;
+  border-radius: 6px 6px 0 0;
+  font-weight: 500;
+}
+
+.cress-workspace .dv-tab::before {
+  position: absolute;
+  top: 0;
+  right: 0;
+  left: 0;
+  height: 2px;
+  content: "";
+  pointer-events: none;
+  background: transparent;
+  clip-path: polygon(0 100%, 100% 0, 100% 100%);
+}
+
+.cress-workspace .dv-groupview.dv-active-group .dv-tab.dv-active-tab::before {
+  background: var(--gradient-hairpin);
+}
+
+.cress-workspace .dv-groupview.dv-inactive-group .dv-tab.dv-active-tab::before {
+  background: rgb(255 255 255 / 0.16);
+}
+
+.cress-workspace .dv-tab.dv-inactive-tab:hover {
+  color: #f5f3ef;
+  background: rgb(255 255 255 / 0.04);
+}
+
+.cress-workspace .dv-tab:focus-visible,
+.cress-workspace .dv-tab:has(:focus-visible) {
+  outline: 2px solid #a78bfa;
+  outline-offset: -2px;
+}
+
+.cress-workspace .dv-tab .dv-default-tab-content {
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cress-workspace .dv-drop-target-anchor,
+.cress-workspace .dv-drop-target-selection,
+.cress-workspace .dv-dnd-compass-cell,
+.cress-workspace .dv-dnd-compass-edge-preview {
+  border-radius: 8px;
+}
+
+.cress-workspace .dv-dnd-compass-cell {
+  border-color: rgb(167 139 250 / 0.6);
+  background-color: rgb(124 58 237 / 0.14);
+}
+
+.cress-workspace .dv-sash {
+  border-radius: 9999px;
+}
+
+.cress-workspace .dv-sash:hover,
+.cress-workspace .dv-sash:active {
+  background-color: transparent;
+}
+
+.cress-workspace .dv-sash::after {
+  position: absolute;
+  content: "";
+  border-radius: 9999px;
+  background: var(--dv-active-sash-color);
+  opacity: 0;
+  transition: opacity var(--dv-active-sash-transition-duration) ease-in-out
+    var(--dv-active-sash-transition-delay);
+  pointer-events: none;
+}
+
+.cress-workspace .dv-split-view-container.dv-horizontal .dv-sash::after {
+  top: 0;
+  bottom: 0;
+  left: 50%;
+  width: 2px;
+  transform: translateX(-50%);
+}
+
+.cress-workspace .dv-split-view-container.dv-vertical .dv-sash::after {
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 2px;
+  transform: translateY(-50%);
+}
+
+.cress-workspace .dv-sash:hover::after {
+  opacity: 0.55;
+}
+
+.cress-workspace .dv-sash:active::after {
+  opacity: 1;
+  transition-delay: 0ms;
+}
+
+.cress-workspace .dv-floating-titlebar {
+  position: relative;
+  border-radius: 12px 12px 0 0;
+}
+
+.cress-workspace .dv-floating-titlebar::after {
+  position: absolute;
+  top: 7px;
+  left: 50%;
+  width: 28px;
+  height: 6px;
+  content: "";
+  transform: translateX(-50%);
+  background: radial-gradient(circle, #686f82 1px, transparent 1.5px) 0 0 / 6px
+    6px repeat-x;
+  pointer-events: none;
+}
+
+.cress-workspace .dv-resize-container {
+  border-radius: 12px;
+}
+
+.cress-workspace .cress-panel-placeholder {
+  display: grid;
+  min-height: 100%;
+  align-content: center;
+  justify-items: center;
+  gap: 8px;
+  padding: 32px;
+  color: #8a90a3;
+  text-align: center;
+}
+
+.cress-panel-placeholder h2 {
+  margin: 0;
+  color: #f5f3ef;
+  font: 600 24px/1.2 var(--font-display);
+}
+
+.cress-panel-placeholder p {
+  margin: 0;
+  font-size: 14px;
+}
+
+.cress-workspace .cress-session-panel {
+  display: grid;
+  align-content: start;
+  gap: 18px;
+  min-height: 100%;
+  padding: 20px;
+  color: var(--text-primary);
+}
+
+.cress-session-goal {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+  background: rgb(255 255 255 / 2%);
+}
+
+.cress-session-eyebrow,
+.cress-session-notes-label {
+  margin: 0;
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 650;
+  letter-spacing: .08em;
+}
+
+.cress-session-goal-description { margin: 0; font-size: 18px; line-height: 1.4; }
+.cress-session-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cress-session-chips span { padding: 4px 9px; border: 1px solid var(--border-subtle); border-radius: 999px; color: var(--text-secondary); font-size: 12px; }
+.cress-session-complete { display: flex; align-items: center; gap: 8px; font-size: 13px; }
+.cress-session-ghost, .cress-session-secondary { justify-self: start; min-height: 32px; padding: 0 10px; border-radius: 7px; font-size: 13px; }
+.cress-session-ghost { color: var(--text-secondary); }
+.cress-session-ghost:hover { background: rgb(255 255 255 / 5%); }
+.cress-session-secondary { background: var(--violet-600); color: white; }
+.cress-session-secondary:disabled { opacity: .45; }
+.cress-session-goal-select { display: grid; gap: 10px; }
+.cress-session-goal-select select { min-height: 40px; }
+.cress-session-notes-label { margin-top: 4px; }
+.cress-workspace .cress-session-notes { width: 100%; min-height: 180px; resize: vertical; border: 1px solid transparent; border-radius: 8px; outline: none; background: transparent; color: var(--text-primary); font: inherit; line-height: 1.6; }
+.cress-workspace .cress-session-notes:focus { border-color: var(--border-default); }
+.cress-session-note-footer { display: flex; justify-content: space-between; gap: 12px; color: var(--text-muted); font-size: 12px; }
+.cress-session-note-footer [role="alert"] { color: var(--danger); }
+.cress-session-save-status { margin-left: auto; }
+
+.cress-workspace .dv-watermark-container {
+  display: grid;
+  place-items: center;
+}
+
+.cress-watermark {
+  position: relative;
+  display: grid;
+  width: min(100%, 480px);
+  justify-items: center;
+  gap: 8px;
+  overflow: hidden;
+  padding: 32px;
+  text-align: center;
+}
+
+.cress-watermark-staff {
+  position: absolute;
+  top: 50%;
+  left: 20%;
+  width: 60%;
+  height: 100px;
+  transform: translateY(-50%);
+  pointer-events: none;
+}
+
+.cress-watermark-staff line {
+  stroke: rgb(138 144 163 / 0.05);
+  stroke-width: 1;
+}
+
+.cress-watermark-icon,
+.cress-watermark h2,
+.cress-watermark p,
+.cress-watermark-button {
+  position: relative;
+}
+
+.cress-watermark-icon {
+  width: 32px;
+  height: 32px;
+  color: #686f82;
+  stroke-width: 1.5;
+}
+
+.cress-watermark h2 {
+  margin: 8px 0 0;
+  color: #f5f3ef;
+  font: 600 20px/1.3 var(--font-display);
+}
+
+.cress-watermark p {
+  margin: 0;
+  color: #8a90a3;
+  font-size: 14px;
+}
+
+.cress-watermark-button {
+  margin-top: 8px;
+  padding: 6px 12px;
+  border: 1px solid rgb(255 255 255 / 0.1);
+  border-radius: 6px;
+  background: rgb(255 255 255 / 0.05);
+  color: #f5f3ef;
+  font: inherit;
+  font-size: 14px;
+}
+
+.cress-watermark-button:focus-visible {
+  outline: 2px solid #a78bfa;
+  outline-offset: 2px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :root .cress-workspace,
+  .cress-workspace .dv-drop-target-container,
+  .cress-workspace .dv-drop-target {
+    --dv-transition-duration: 0ms;
+  }
+
+  :root .cress-workspace {
+    --dv-active-sash-transition-duration: 0ms;
+    --dv-active-sash-transition-delay: 0ms;
+  }
+}
