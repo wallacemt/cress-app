@@ -15,7 +15,10 @@ export async function start(config: MetronomeConfig): Promise<void> {
   const audioContext = context;
   const resumed = audioContext.state === "running" ? Promise.resolve() : audioContext.resume();
   starting ??= (async () => {
-    await audioContext.audioWorklet.addModule(new URL("./processor.ts?worker&url", import.meta.url));
+    // Pre-bundled by scripts/build-metronome-worklet.mjs (predev/prebuild) into a real
+    // static .js file -- Vite's `?worker&url` import does not actually bundle/transpile
+    // this project's worklet (see AGENTS.md), so it can't be loaded via import.meta.url.
+    await audioContext.audioWorklet.addModule("/metronome-processor.js");
     node = new AudioWorkletNode(audioContext, "cress-metronome", {
       numberOfInputs: 0,
       numberOfOutputs: 1,
