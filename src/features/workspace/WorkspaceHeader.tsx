@@ -1,4 +1,4 @@
-import { ArrowLeft, Pause, Play, Square } from "lucide-react";
+import { ArrowLeft, ChevronLeft, Pause, Play, Square } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
 import { finishSession, pauseSession, resumeSession } from "../../application/sessions";
@@ -88,11 +88,13 @@ export function WorkspaceHeader({
         </>
       ) : (
         <>
+          <button type="button" className="cress-icon-control" aria-label="Voltar ao início" onClick={onBack ?? (() => navigate("/"))}><ChevronLeft size={20} /></button>
           <strong className="cress-free-title">Prática livre</strong>
-          <span className="cress-metronome-pill">
-            ♩ <span>Metrônomo</span>
-          </span>
           <div className="cress-header-spacer" />
+          <span className="cress-metronome-pill" aria-label="Metrônomo, BPM indisponível">
+            <i aria-hidden="true" /> ♩ <span>—</span>
+            <button type="button" aria-label="Parar metrônomo" disabled><Square size={13} /></button>
+          </span>
           <AddPanelMenu api={api} mode={mode} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />
         </>

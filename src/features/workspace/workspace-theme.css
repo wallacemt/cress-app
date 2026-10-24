@@ -42,6 +42,11 @@
 .cress-control:disabled { cursor: not-allowed; opacity: .48; }
 .cress-finish-button { border-color: transparent; background: var(--gradient-brand); color: white; }
 .cress-metronome-pill { display: inline-flex; align-items: center; gap: 7px; padding: 6px 10px; border: 1px solid var(--border-default); border-radius: 999px; color: var(--gold-300); font-size: 12px; }
+.cress-metronome-pill i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted); }
+.cress-metronome-pill button { display: grid; width: 22px; height: 22px; place-items: center; padding: 0; border: 0; border-radius: 50%; background: transparent; color: inherit; }
+.cress-metronome-pill button:disabled { opacity: .45; }
+.cress-panel-tab { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
+.cress-panel-tab > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cress-menu { position: relative; }
 .cress-menu-popover { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
 .cress-menu-popover button { display: flex; width: 100%; min-height: 36px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-primary); font: 400 13px var(--font-sans); text-align: left; cursor: pointer; }
@@ -110,6 +115,18 @@
 .cress-workspace .dv-groupview,
 .cress-workspace .dv-content-container {
   background: #111629;
+}
+
+/* dockview's own stylesheet sets `.dv-split-view-container .dv-view-container
+   .dv-view { overflow: auto }` (dockview.css, same specificity as this rule);
+   its <style> tag is injected after ours (Workspace.tsx imports it lazily),
+   so it wins cascade ties without `!important`. Its absolutely positioned
+   groups report a few px of scrollable overflow from rounding even when
+   every group fits the container (measured live, 2026-10-24) — the design
+   requires zero scroll in the Workspace, so clip it here instead of fighting
+   dockview's internal layout math. */
+.cress-workspace .dv-view.visible {
+  overflow: hidden !important;
 }
 
 .cress-workspace .dv-tabs-and-actions-container {

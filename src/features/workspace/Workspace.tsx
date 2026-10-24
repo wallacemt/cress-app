@@ -17,6 +17,7 @@ import {
   panelRegistry,
   panelRenderer,
   WorkspaceWatermark,
+  PanelTab,
 } from "./panelRegistry";
 import { useLayoutPersistence } from "./useLayoutPersistence";
 import { WorkspaceHeader } from "./WorkspaceHeader";
@@ -82,7 +83,8 @@ export function Workspace({
     const scopedPieceId = mode === "session" ? pieceId : undefined;
     const applyDefault = () => {
       event.api.closeAllGroups();
-      for (const spec of buildDefaultLayoutPanels(mode, hasScores, firstScoreId)) {
+      const containerSize = { width: event.api.width, height: event.api.height };
+      for (const spec of buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize)) {
         event.api.addPanel({
           ...spec,
           params: spec.component === "session" && session && activeDeps
@@ -160,6 +162,7 @@ export function Workspace({
       <DockviewReact
         className="cress-workspace"
         components={panelRegistry}
+        defaultTabComponent={PanelTab}
         onReady={handleReady}
         disableFloatingGroups={false}
         theme={theme}
