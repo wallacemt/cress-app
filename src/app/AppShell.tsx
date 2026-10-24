@@ -10,6 +10,7 @@ import {
 import { Toaster, toast } from "sonner";
 import { container } from "./container";
 import { getProfile } from "../application/profile";
+import cressSymbol from "../assets/brand/cress-symbol-gold.svg";
 
 const destinations = [
   { to: "/", label: "Início", icon: Home, end: true },
@@ -75,9 +76,7 @@ export function AppShell() {
           aria-label="Navegação principal"
           onFocus={() => setHidden(false)}
         >
-          <span className="navigation-brand" aria-label="Cress">
-            C<span>·</span>
-          </span>
+          <img className="navigation-brand" src={cressSymbol} alt="Cress" />
           <span className="navigation-divider" aria-hidden="true" />
           <div className="navigation-destinations">
             {destinations.map(({ to, label, icon: Icon, end }) => (

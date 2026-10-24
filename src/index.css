@@ -104,6 +104,7 @@ body {
   -webkit-font-smoothing: antialiased;
 }
 .app-shell {
+  display: flex;
   min-height: 100vh;
 }
 .app-shell-workspace { height: 100vh; min-height: 0; }
@@ -145,14 +146,11 @@ main {
   transform: translateX(-50%);
 }
 .navigation-brand {
-  display: grid;
-  width: 28px;
-  height: 34px;
-  place-items: center;
-  color: var(--text-primary);
-  font: 24px/1 var(--font-display);
+  width: 24px;
+  height: 24px;
+  flex: none;
+  object-fit: contain;
 }
-.navigation-brand span { color: var(--gold-400); }
 .navigation-divider {
   width: 1px;
   height: 24px;
@@ -161,7 +159,7 @@ main {
 .navigation-destinations {
   display: flex;
   align-items: center;
-  gap: 2px;
+  gap: 4px;
 }
 .navigation-link,
 .navigation-search,
