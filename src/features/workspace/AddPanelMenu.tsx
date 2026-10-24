@@ -1,15 +1,9 @@
 import { useEffect, useRef, useState } from "react";
 import { Check, ChevronRight, Plus } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
-import { PANEL_CATALOG, type WorkspaceMode } from "../../domain/workspace";
+import { PANEL_CATALOG, PANEL_TITLES, type WorkspaceMode } from "../../domain/workspace";
 
-const labels = {
-  metronome: "Metrônomo",
-  tuner: "Afinador",
-  score: "Partitura",
-  recorder: "Gravações",
-  session: "Sessão",
-} as const;
+const labels = PANEL_TITLES;
 const shortcuts = ["1", "2", "3", "4", "5"] as const;
 
 export function openWorkspacePanel(

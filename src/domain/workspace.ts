@@ -10,6 +10,15 @@ export const PANEL_CATALOG = {
   recorder: { component: "recorder", singleton: true, modes: ["session"] },
   session: { component: "session", singleton: true, modes: ["session"] },
 } as const;
+// ponytail: single source for panel display labels (PT-BR), reused by the tab
+// title (addPanel), the AddPanelMenu entries and the placeholder heading/aria-label.
+export const PANEL_TITLES: Record<keyof typeof PANEL_CATALOG, string> = {
+  metronome: "Metrônomo",
+  tuner: "Afinador",
+  score: "Partitura",
+  recorder: "Gravações",
+  session: "Sessão",
+};
 export interface LayoutPanel {
   component: string;
   id: string;
@@ -80,11 +89,16 @@ export function defaultLayoutPlan(
   hasScores = false,
   firstScoreId?: string,
 ): LayoutPlan[] {
+  const panel = (component: keyof typeof PANEL_CATALOG, id: string): LayoutPanel => ({
+    component,
+    id,
+    title: PANEL_TITLES[component],
+  });
   if (mode === "free")
     return [
-      { panels: [{ component: "tuner", id: "tuner" }] },
+      { panels: [panel("tuner", "tuner")] },
       {
-        panels: [{ component: "metronome", id: "metronome" }],
+        panels: [panel("metronome", "metronome")],
         split: "right",
         width: 50,
       },
@@ -92,15 +106,15 @@ export function defaultLayoutPlan(
   // ponytail: when no score is imported, the recorder group anchors the grid; add the score group when one exists.
   return [
     ...(hasScores && firstScoreId
-      ? [{ panels: [{ component: "score", id: `score:${firstScoreId}` }], width: 62 }]
+      ? [{ panels: [panel("score", `score:${firstScoreId}`)], width: 62 }]
       : []),
     {
-      panels: [{ component: "recorder", id: "recorder" }, { component: "session", id: "session" }],
+      panels: [panel("recorder", "recorder"), panel("session", "session")],
       split: hasScores && firstScoreId ? "right" : undefined,
       width: hasScores && firstScoreId ? 38 : undefined,
     },
     {
-      panels: [{ component: "metronome", id: "metronome" }, { component: "tuner", id: "tuner" }],
+      panels: [panel("metronome", "metronome"), panel("tuner", "tuner")],
       split: "below",
       height: 50,
     },

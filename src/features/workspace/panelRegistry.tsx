@@ -1,23 +1,16 @@
 import type { FunctionComponent } from "react";
 import { PanelsTopLeft } from "lucide-react";
 import type { IDockviewPanelProps } from "dockview-react";
-import { PANEL_CATALOG } from "../../domain/workspace";
+import { PANEL_CATALOG, PANEL_TITLES } from "../../domain/workspace";
 import { SessionPanel } from "./panels/SessionPanel";
 
 type PanelId = keyof typeof PANEL_CATALOG;
-const titles: Record<PanelId, string> = {
-  metronome: "Metrônomo",
-  tuner: "Afinador",
-  score: "Partitura",
-  recorder: "Gravações",
-  session: "Sessão",
-};
 
 function EmptyPanel({ api }: IDockviewPanelProps) {
   const id = api.component as PanelId;
   return (
-    <section className="cress-panel-placeholder" aria-label={titles[id]}>
-      <h2>{titles[id]}</h2>
+    <section className="cress-panel-placeholder" aria-label={PANEL_TITLES[id]}>
+      <h2>{PANEL_TITLES[id]}</h2>
       <p>Este painel estará disponível em uma próxima fase.</p>
     </section>
   );

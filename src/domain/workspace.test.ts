@@ -32,24 +32,24 @@ describe("workspace", () => {
     // there is no score, and its split sibling must still get initialHeight.
     const noScore = buildDefaultLayoutPanels("session", false);
     expect(noScore).toEqual([
-      { id: "recorder", component: "recorder", title: undefined },
+      { id: "recorder", component: "recorder", title: "Gravações" },
       {
         id: "session",
         component: "session",
-        title: undefined,
+        title: "Sessão",
         position: { referencePanel: "recorder" },
       },
       {
         id: "metronome",
         component: "metronome",
-        title: undefined,
+        title: "Metrônomo",
         position: { referencePanel: "session", direction: "below" },
         initialHeight: 50,
       },
       {
         id: "tuner",
         component: "tuner",
-        title: undefined,
+        title: "Afinador",
         position: { referencePanel: "metronome" },
       },
     ]);
@@ -57,14 +57,14 @@ describe("workspace", () => {
     expect(withScore[1]).toEqual({
       id: "recorder",
       component: "recorder",
-      title: undefined,
+      title: "Gravações",
       position: { referencePanel: "score:p1", direction: "right" },
       initialWidth: 38,
     });
     expect(withScore[3]).toEqual({
       id: "metronome",
       component: "metronome",
-      title: undefined,
+      title: "Metrônomo",
       position: { referencePanel: "session", direction: "below" },
       initialHeight: 50,
     });
