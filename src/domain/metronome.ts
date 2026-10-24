@@ -17,12 +17,17 @@ export interface MetronomeConfig {
   subdivision: (typeof SUBDIVISIONS)[number];
 }
 // ponytail: faixas de andamento convencionais (Dossier S4), ajustáveis por ouvido.
-const TEMPO_MARKINGS = [
+export const TEMPO_MARKINGS = [
   [20, "Grave"], [40, "Largo"], [60, "Larghetto"], [66, "Adagio"],
   [76, "Andante"], [108, "Moderato"], [120, "Allegro"], [156, "Vivace"],
   [176, "Presto"], [200, "Prestissimo"],
 ] as const;
 export type TempoMarking = (typeof TEMPO_MARKINGS)[number][1];
+export function getTempoMarkingRange(name: TempoMarking): readonly [number, number] {
+  const index = TEMPO_MARKINGS.findIndex(([, marking]) => marking === name);
+  const [minimum] = TEMPO_MARKINGS[index]!;
+  return [minimum, TEMPO_MARKINGS[index + 1]?.[0] ? TEMPO_MARKINGS[index + 1]![0] - 1 : 300];
+}
 export function getTempoMarking(bpm: number): TempoMarking {
   validateBpm(bpm);
   return [...TEMPO_MARKINGS].reverse().find(([min]) => bpm >= min)![1];

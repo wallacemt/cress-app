@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
-import { Minus, Plus, Play, Square, Volume2 } from "lucide-react";
-import { getTempoMarking, SUBDIVISIONS, TEMPO_MARKING_MIDPOINTS } from "../../../domain/metronome";
+import { Minus, Plus, Play, Settings2, Square, Volume2, X } from "lucide-react";
+import { getTempoMarking, getTempoMarkingRange, SUBDIVISIONS, TEMPO_MARKING_MIDPOINTS } from "../../../domain/metronome";
 import { changeBpm, validateBpm } from "../../../domain/bpm";
 import { container } from "../../../app/container";
 import { loadMetronomeConfig, saveMetronomeConfig } from "../../../application/metronome";
@@ -20,23 +20,25 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   const [bpmInput, setBpmInput] = useState(String(config.bpm));
   const [volume, setVolume] = useState(70);
   const [unit, setUnit] = useState<4 | 8>(4);
-  const [details, setDetails] = useState(false);
-  const [compact, setCompact] = useState(false);
+  const [configModal, setConfigModal] = useState(false);
+  const [tempoOpen, setTempoOpen] = useState(false);
   const [tapBpm, setTapBpm] = useState(0);
   const [error, setError] = useState("");
   const root = useRef<HTMLElement>(null);
+  const tempoMenu = useRef<HTMLDivElement>(null);
   const taps = useRef<number[]>([]);
   const tapTimeout = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
   const tapHandler = useRef<() => void>(() => {});
 
   useEffect(() => {
-    const node = root.current;
-    if (!node || typeof ResizeObserver === "undefined") return;
-    const observer = new ResizeObserver(([entry]) => { if (entry) setCompact(entry.contentRect.width < 430); });
-    observer.observe(node);
-    return () => observer.disconnect();
-  }, []);
+    if (!tempoOpen) return;
+    const close = (event: MouseEvent) => { if (!tempoMenu.current?.contains(event.target as Node)) setTempoOpen(false); };
+    const key = (event: KeyboardEvent) => { if (event.key === "Escape") setTempoOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", key); };
+  }, [tempoOpen]);
   useEffect(() => {
     let alive = true;
     void container.getDeps().then(loadMetronomeConfig).then((value) => { if (alive) setConfig(value); }).catch(() => setError("Não foi possível carregar a configuração."));
@@ -89,7 +91,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   function update(patch: Partial<typeof config>) { setConfig({ ...config, ...patch }); }
   const isBeat = (index: number) => running && index === beat - 1;
   const row = <div className="cress-metronome-beat-row" aria-label="Tempos do compasso">{Array.from({ length: config.beatsPerBar }, (_, i) => <span key={i} className={`${config.accentBeat && i === 0 ? "is-accented " : ""}${isBeat(i) ? "is-current" : ""}`} />)}</div>;
-  const bpm = <div className="cress-metronome-metric"><span className="cress-metronome-label">BPM</span>{editing ? <input autoFocus type="number" min="20" max="300" value={bpmInput} aria-label="BPM" onChange={(event) => setBpmInput(event.target.value)} onBlur={submitBpm} onKeyDown={(event) => { if (event.key === "Enter") submitBpm(); if (event.key === "Escape") setEditing(false); }} /> : <button className="cress-metronome-number" type="button" aria-label={`BPM ${config.bpm}, editar`} onClick={() => { setBpmInput(String(config.bpm)); setEditing(true); }}>{config.bpm}</button>}<button type="button" className="cress-metronome-marking" aria-label={`Andamento ${getTempoMarking(config.bpm)}, escolher andamento`} onClick={() => setDetails(!details)}>{getTempoMarking(config.bpm)}</button>{details && <select aria-label="Andamento" value={getTempoMarking(config.bpm)} onChange={(event) => setBpm(validateBpm(TEMPO_MARKING_MIDPOINTS[event.target.value as keyof typeof TEMPO_MARKING_MIDPOINTS]))}>{Object.entries(TEMPO_MARKING_MIDPOINTS).map(([name]) => <option key={name}>{name}</option>)}</select>}</div>;
+  const bpm = <div className="cress-metronome-metric"><span className="cress-metronome-label">BPM</span>{editing ? <input autoFocus type="number" min="20" max="300" value={bpmInput} aria-label="BPM" onChange={(event) => setBpmInput(event.target.value)} onBlur={submitBpm} onKeyDown={(event) => { if (event.key === "Enter") submitBpm(); if (event.key === "Escape") setEditing(false); }} /> : <button className="cress-metronome-number" type="button" aria-label={`BPM ${config.bpm}, editar`} onClick={() => { setBpmInput(String(config.bpm)); setEditing(true); }}>{config.bpm}</button>}<div ref={tempoMenu} className="cress-metronome-tempo"><button type="button" className="cress-metronome-marking" aria-label={`Andamento ${getTempoMarking(config.bpm)}, escolher andamento`} aria-haspopup="menu" aria-expanded={tempoOpen} onClick={() => setTempoOpen(!tempoOpen)}>{getTempoMarking(config.bpm)}⌄</button>{tempoOpen && <div role="menu" aria-label="Andamento" className="cress-menu-popover cress-metronome-tempo-menu">{Object.keys(TEMPO_MARKING_MIDPOINTS).map((name) => { const range = getTempoMarkingRange(name as keyof typeof TEMPO_MARKING_MIDPOINTS); return <button key={name} type="button" role="menuitemradio" aria-checked={getTempoMarking(config.bpm) === name} className={getTempoMarking(config.bpm) === name ? "is-selected" : ""} onClick={() => { setBpm(validateBpm(TEMPO_MARKING_MIDPOINTS[name as keyof typeof TEMPO_MARKING_MIDPOINTS])); setTempoOpen(false); }}>{name}<small>{range[0]}–{range[1]} BPM</small></button>; })}</div>}</div></div>;
   const adjustment = <div className="cress-metronome-adjust">{([-5, -1] as const).map((delta) => <button key={delta} type="button" aria-label={`Diminuir ${Math.abs(delta)} BPM`} onClick={() => { try { setBpm(changeBpm(config.bpm, delta)); } catch { /* BPM limit */ } }}><Minus size={12} />{Math.abs(delta)}</button>)}<input aria-label="Ajustar BPM" type="range" min="20" max="300" value={config.bpm} onChange={(event) => setBpm(Number(event.target.value))} />{([1, 5] as const).map((delta) => <button key={delta} type="button" aria-label={`Aumentar ${delta} BPM`} onClick={() => { try { setBpm(changeBpm(config.bpm, delta)); } catch { /* BPM limit */ } }}><Plus size={12} />{delta}</button>)}</div>;
   const play = <button type="button" className="cress-metronome-play" aria-label={running ? "Parar metrônomo" : "Iniciar metrônomo"} onClick={() => { setError(""); void toggle().catch(() => setError("Não foi possível iniciar o áudio.")); }}>{running ? <Square size={24} /> : <Play size={24} />}</button>;
   const controls = <>
@@ -98,10 +100,13 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
     <div className="cress-metronome-section"><span className="cress-metronome-label">SUBDIVISÃO</span><div className="cress-metronome-subdivisions">{SUBDIVISIONS.map((item) => <button key={item} type="button" title={item.split("-").map((x) => x === "1" ? "Toca" : "Pausa").join(" · ")} aria-label={`Subdivisão ${item}`} aria-pressed={config.subdivision === item} onClick={() => update({ subdivision: item })}>{item.split("-").map((x, i) => <i key={i} className={x === "1" ? "is-on" : ""} />)}</button>)}</div></div>
     <label className="cress-metronome-volume"><Volume2 size={16} /><input aria-label="Volume" type="range" min="0" max="100" value={volume} onChange={(event) => setVolume(Number(event.target.value))} /><output>{volume}%</output></label>
   </>;
-  return <section ref={root} tabIndex={0} className={`cress-metronome-panel${compact ? " panel-compact" : " panel-wide"}`} aria-label="Painel Metrônomo" onClick={() => root.current?.focus({ preventScroll: true })}>
+  return <section ref={root} tabIndex={0} className="cress-metronome-panel" aria-label="Painel Metrônomo" onClick={() => root.current?.focus({ preventScroll: true })}>
     {error && <div className="cress-metronome-warning" role="alert">{error}</div>}
-    {row}<Pendulum /><div className="cress-metronome-main">{bpm}<button type="button" className="cress-metronome-tap" onClick={tap}>Tap{tapBpm ? ` · ${tapBpm}` : ""}</button></div>{adjustment}
-    {compact ? <><button className="cress-metronome-details" type="button" onClick={() => setDetails(!details)}>Compasso e som</button>{details && <div className="cress-metronome-extra">{controls}</div>}</> : <div className="cress-metronome-extra">{controls}</div>}
+    {row}<div className="cress-metronome-feature"><Pendulum /><div className="cress-metronome-main">{bpm}</div></div>
+    {adjustment}<button type="button" className="cress-metronome-tap" onClick={tap}>Tap{tapBpm ? ` · ${tapBpm}` : ""}</button>
+    <button className="cress-metronome-details" type="button" onClick={() => setConfigModal(true)}><Settings2 size={16} /> Configurações</button>
+    <div className="cress-metronome-extra">{controls}</div>
+    {configModal && <div className="session-dialog-backdrop cress-metronome-config-backdrop" onMouseDown={(event) => { if (event.target === event.currentTarget) setConfigModal(false); }}><section className="session-dialog cress-metronome-config-modal" role="dialog" aria-modal="true" aria-label="Configurações do metrônomo"><header><h2>Configurações</h2><button type="button" aria-label="Fechar configurações" onClick={() => setConfigModal(false)}><X size={18} /></button></header>{controls}<footer><button type="button" onClick={() => setConfigModal(false)}>Concluir</button></footer></section></div>}
     <footer>{play}</footer>
   </section>;
 }

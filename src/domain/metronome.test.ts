@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getBeatInterval, getTempoMarking, TEMPO_MARKING_MIDPOINTS, tapTempo } from "./metronome";
+import { getBeatInterval, getTempoMarking, getTempoMarkingRange, TEMPO_MARKING_MIDPOINTS, tapTempo } from "./metronome";
 describe("metronome", () => {
   it("calculates interval and tap tempo", () => {
     expect(getBeatInterval(60)).toBe(1000);
@@ -15,5 +15,10 @@ describe("metronome", () => {
       "Grave", "Largo", "Largo", "Larghetto", "Larghetto", "Adagio", "Adagio", "Andante", "Andante", "Moderato", "Moderato", "Allegro", "Allegro", "Vivace", "Vivace", "Presto", "Presto", "Prestissimo",
     ]);
     expect(getTempoMarking(TEMPO_MARKING_MIDPOINTS.Allegro)).toBe("Allegro");
+  });
+  it("derives tempo marking ranges from the midpoint table", () => {
+    expect(getTempoMarkingRange("Grave")).toEqual([20, 39]);
+    expect(getTempoMarkingRange("Allegro")).toEqual([120, 155]);
+    expect(getTempoMarkingRange("Prestissimo")).toEqual([200, 300]);
   });
 });

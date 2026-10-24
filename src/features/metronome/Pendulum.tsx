@@ -1,7 +1,8 @@
+import { getBeatInterval } from "../../domain/metronome";
 import { useMetronomeStore } from "../../stores/metronomeStore";
 
 export function Pendulum() {
   const running = useMetronomeStore((state) => state.running);
-  const beat = useMetronomeStore((state) => state.beat);
-  return <div className={`cress-metronome-pendulum${running ? " is-running" : ""}`} aria-hidden="true"><span style={{ transform: `rotate(${running && beat % 2 === 1 ? 18 : running ? -18 : 0}deg)` }}><i /></span></div>;
+  const bpm = useMetronomeStore((state) => state.config.bpm);
+  return <div className={`cress-metronome-pendulum${running ? " is-running" : ""}`} style={{ "--beat-ms": `${getBeatInterval(bpm)}ms` } as React.CSSProperties} aria-hidden="true"><div className="cress-metronome-frame"><span className="cress-metronome-arm"><i /></span></div></div>;
 }

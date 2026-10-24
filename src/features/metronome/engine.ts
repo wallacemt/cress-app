@@ -12,10 +12,15 @@ const listeners = new Set<Listener>();
 export async function start(config: MetronomeConfig): Promise<void> {
   // Call from a user gesture so the browser permits AudioContext.resume().
   if (!context) context = new AudioContext();
+  const audioContext = context;
+  const resumed = audioContext.state === "running" ? Promise.resolve() : audioContext.resume();
   starting ??= (async () => {
-    await context!.audioWorklet.addModule(new URL("./processor.ts?worker&url", import.meta.url));
-    node = new AudioWorkletNode(context!, "cress-metronome", {
-      processorOptions: { ...config, sampleRate: context!.sampleRate },
+    await audioContext.audioWorklet.addModule(new URL("./processor.ts?worker&url", import.meta.url));
+    node = new AudioWorkletNode(audioContext, "cress-metronome", {
+      numberOfInputs: 0,
+      numberOfOutputs: 1,
+      outputChannelCount: [1],
+      processorOptions: { ...config, sampleRate: audioContext.sampleRate },
     });
     node.port.onmessage = ({ data }: MessageEvent<BeatMessage>) => {
       if (data.type === "beat" || data.type === "accent") listeners.forEach((listener) => listener(data));
@@ -24,11 +29,11 @@ export async function start(config: MetronomeConfig): Promise<void> {
     starting = null;
     throw error;
   });
+  await resumed;
   await starting;
-  node!.connect(context.destination);
-  node!.port.postMessage({ type: "config", config: { ...config, sampleRate: context.sampleRate } });
+  node!.port.postMessage({ type: "config", config: { ...config, sampleRate: audioContext.sampleRate } });
   node!.port.postMessage({ type: "start" });
-  await context.resume();
+  node!.connect(audioContext.destination);
   running = true;
 }
 
