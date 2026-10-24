@@ -11,6 +11,7 @@ import type { WorkspaceMode } from "../../domain/workspace";
 import type { Deps } from "../../application/deps";
 import { AddPanelMenu, useWorkspacePanelShortcuts } from "./AddPanelMenu";
 import { LayoutMenu } from "./LayoutMenu";
+import { useMetronomeStore } from "../../stores/metronomeStore";
 
 export function WorkspaceHeader({
   mode,
@@ -35,6 +36,9 @@ export function WorkspaceHeader({
   const navigate = useNavigate();
   const [dialog, setDialog] = useState(false);
   const [busy, setBusy] = useState(false);
+  const metronome = useMetronomeStore((state) => state.config);
+  const metronomeRunning = useMetronomeStore((state) => state.running);
+  const stopMetronome = useMetronomeStore((state) => state.stop);
   const [current, setCurrent] = useState(session ?? null);
   useEffect(() => setCurrent(session ?? null), [session]);
   const elapsed = useSessionClock(current);
@@ -91,9 +95,9 @@ export function WorkspaceHeader({
           <button type="button" className="cress-icon-control" aria-label="Voltar ao início" onClick={onBack ?? (() => navigate("/"))}><ChevronLeft size={20} /></button>
           <strong className="cress-free-title">Prática livre</strong>
           <div className="cress-header-spacer" />
-          <span className="cress-metronome-pill" aria-label="Metrônomo, BPM indisponível">
-            <i aria-hidden="true" /> ♩ <span>—</span>
-            <button type="button" aria-label="Parar metrônomo" disabled><Square size={13} /></button>
+          <span className={`cress-metronome-pill${metronomeRunning ? " is-running" : ""}`} aria-label={`Metrônomo, ${metronome.bpm} BPM${metronomeRunning ? ", tocando" : " parado"}`}>
+            <i aria-hidden="true" /> ♩ <span>{metronome.bpm}</span>
+            <button type="button" aria-label="Parar metrônomo" disabled={!metronomeRunning} onClick={stopMetronome}><Square size={13} /></button>
           </span>
           <AddPanelMenu api={api} mode={mode} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />

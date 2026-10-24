@@ -1,6 +1,5 @@
 import { scheduleBlock, type SchedulerState } from "../../domain/scheduler";
 
-declare const sampleRate: number;
 declare const registerProcessor: (name: string, processor: typeof AudioWorkletProcessor) => void;
 declare class AudioWorkletProcessor {
   readonly port: MessagePort;
