@@ -27,6 +27,12 @@ describe("scheduler", () => {
     ]);
   });
 
+  it("rejects invalid beatsPerBar, sampleRate, and block frames", () => {
+    expect(() => scheduleBlock({ ...state, beatsPerBar: 13 }, 0, 128)).toThrow("beatsPerBar");
+    expect(() => scheduleBlock({ ...state, sampleRate: 0 }, 0, 128)).toThrow("sampleRate");
+    expect(() => scheduleBlock(state, 0, -1)).toThrow("block frames");
+  });
+
   it("keeps absolute timing within one frame across ten simulated minutes", () => {
     const blockLength = 128;
     const duration = 600 * state.sampleRate;

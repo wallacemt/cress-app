@@ -41,6 +41,6 @@ export function tapTempo(times: number[], now = Date.now()): number {
   if (recent.length < 2) return 0;
   const total = recent
     .slice(1)
-    .reduce((a, t, i) => a + t - (recent[i] ?? t), 0);
+    .reduce((a, t, i) => a + t - recent[i]!, 0);
   return Math.round(60000 / (total / (recent.length - 1)));
 }
