@@ -1,373 +1,108 @@
 # AGENTS.md — Cress
 
-Regras e descobertas acumuladas para qualquer agente (ou pessoa) trabalhando neste repositório. Objetivo: nunca reconsultar/redescobrir algo que já está aqui — economiza tokens e evita retrabalho.
+Regras e descobertas acumuladas para qualquer agente (ou pessoa) trabalhando neste repositório. Objetivo: nunca reconsultar/redescobrir algo que já está aqui.
 
 ## Regra permanente
 
-**Toda descoberta nova relevante (decisão, correção de premissa, fato verificado sobre uma lib/API, armadilha evitada, padrão comprovado em outro projeto) entra neste arquivo antes de a tarefa ser considerada concluída.** Formato: seção curta, factual, com a fonte. Não duplicar o que já está documentado em `docs/` (Blueprint, Dossier, PRD, arch.md) — aqui só entra o que *não* está lá, ou o que corrige/atualiza o que está lá.
+**Toda descoberta nova relevante (decisão, correção de premissa, fato verificado sobre uma lib/API, armadilha evitada) entra neste arquivo antes de a tarefa ser considerada concluída.** Formato: bullet curto e factual, com a fonte. Não duplicar o que já está em `docs/` (Blueprint, Dossier, PRD, arch.md) — só o que não está lá ou corrige o que está lá.
 
-Ao atualizar: adicionar nas seções abaixo, nunca reescrever o histórico de decisões já tomadas sem marcar a mudança.
+**Mantenha este arquivo compacto.** Registre apenas decisões/armadilhas que afetam trabalho futuro — não narrativa de depuração, não histórico resolvido de uma sessão específica. Ao fechar uma milestone, revise e corte o que não é mais acionável.
 
 ---
 
 ## 1. Onde está cada coisa
 
-- **Repositório deste código:** `cress-app/` — GitHub `wallacemt/cress-app` (remote configurado, `gh auth status` OK).
-- **Documentação de produto/arquitetura/design vive FORA deste repo**, em `../docs/` (pasta pai `cress/docs/`, que não é um repo git): `PRD.md`, `arch.md`, `briefing-design.md`, `blueprints/The-Blueprint-001.md`, `dossiers/Dossier-de-Creation-001.md` + `design-tokens.json`.
-  - **Implicação:** referências a essa documentação em issues/PRs do GitHub não podem ser links de arquivo clicáveis (o arquivo não está no repo). Usar referência textual (seção/ADR) ou, se algum dia pedirem, copiar `docs/` para dentro de `cress-app/`.
-- **Milestones e Issues já criadas no GitHub** (`wallacemt/cress-app`): 12 milestones mapeando as 11 fases do Blueprint-001 + uma 12ª milestone nova ("Distribuição — Store") que o Blueprint deixa fora do MVP de implementação (ADR-20). ~73 issues. Não recriar — editar/complementar as existentes.
-- **Caso de sucesso de referência para distribuição/CI:** `../CRITIX/critix_vault_desktop/` — app Tauri já publicado, com pipeline de MSIX/updater funcionando em produção. Ver §4.
+- Código: `cress-app/` — GitHub `wallacemt/cress-app`.
+- Documentação de produto/arquitetura/design vive **fora deste repo**, em `../docs/`: `PRD.md`, `arch.md`, `briefing-design.md`, `blueprints/The-Blueprint-001.md`, `dossiers/Dossier-de-Creation-001.md` + `design-tokens.json`. Referências em issues/PRs do GitHub são textuais (seção/ADR), nunca links de arquivo.
+- 12 milestones no GitHub mapeando as 11 fases do Blueprint-001 + uma 12ª ("Distribuição — Store", fora do MVP, ADR-20). Não recriar — editar as existentes.
+- Caso de sucesso de referência para MSIX/distribuição: `../CRITIX/critix_vault_desktop/` (app Tauri já publicado em produção).
 
 ## 2. Stack e versões travadas (Blueprint-001 §4) — não atualizar sem motivo forte
 
-| Camada      | Lib                                               | Versão exata                                                     |
-| ----------- | ------------------------------------------------- | ----------------------------------------------------------------- |
-| Desktop     | `tauri` / `tauri-build`                       | 2.12.1 / 2.7.1                                                    |
-| CLI/API     | `@tauri-apps/cli` / `@tauri-apps/api`         | 2.12.1 / 2.12.1                                                   |
-| DB          | `tauri-plugin-sql`                              | 2.5.0                                                             |
-| Dialogs     | `tauri-plugin-dialog` (só Rust, sem pacote JS) | 2.8.1                                                             |
-| Log         | `tauri-plugin-log`                              | 2.10.0                                                            |
-| Áudio      | `cpal`                                          | **=0.18.2** (fixo; 0.19 troca `play()`→`start()`)      |
-| Ring buffer | `rtrb`                                          | 0.4.0                                                             |
-| WAV         | `hound`                                         | 3.5.1                                                             |
-| Hash        | `sha2`                                          | 0.11.0                                                            |
-| UI          | `react`/`react-dom`                           | 19.3.0                                                            |
-| Build       | `vite`                                          | 8.3.3                                                             |
-| TS          | `typescript`                                    | 6.0.3 (travado por`typescript-eslint` 8.71.1 exigir `<6.1.0`) |
-| CSS         | `tailwindcss`                                   | 4.3.3                                                             |
-| Docking     | `dockview-react`                                | 8.4.1                                                             |
-| PDF         | `pdfjs-dist`                                    | 6.4.299                                                           |
-| Rotas       | `react-router`                                  | 8.4.0 (`createHashRouter`)                                      |
-| Estado      | `zustand`                                       | 5.0.15 (só runtime, nunca fonte de verdade persistida)           |
+| Camada | Lib | Versão |
+|---|---|---|
+| Desktop | `tauri` / `tauri-build` | 2.12.1 / 2.7.1 |
+| CLI/API | `@tauri-apps/cli` / `@tauri-apps/api` | 2.12.1 / 2.12.1 |
+| DB | `tauri-plugin-sql` | 2.5.0 |
+| Dialogs | `tauri-plugin-dialog` (só Rust) | 2.8.1 |
+| Áudio | `cpal` | **=0.18.2** fixo (0.19 troca `play()`→`start()`) |
+| Ring buffer / WAV / Hash | `rtrb` / `hound` / `sha2` | 0.4.0 / 3.5.1 / 0.11.0 |
+| UI | `react`/`react-dom` | 19.3.0 |
+| Build | `vite` | 8.3.3 |
+| TS | `typescript` | 6.0.3 (travado por `typescript-eslint` exigir `<6.1.0`) |
+| CSS | `tailwindcss` | 4.3.3 |
+| Docking | `dockview-react` | 8.4.1 |
+| PDF | `pdfjs-dist` | 6.4.299 |
+| Rotas | `react-router` | 8.4.0 (`createHashRouter`) |
+| Estado | `zustand` | 5.0.15 (só runtime, nunca fonte de verdade persistida) |
 
-Regra do Blueprint: `npm i -E` sempre. Se uma versão não estiver disponível no momento da instalação, **parar e reportar**, não aceitar um `^` próximo.
+Regra: `-E`/exato sempre. Versão indisponível → parar e reportar, nunca aceitar `^` próximo.
 
-## 3. Decisões arquiteturais que já foram tomadas (não reabrir sem novo fato)
+## 3. Decisões arquiteturais fixadas (não reabrir sem novo fato)
 
-- Domínio e aplicação **só em TypeScript**; Rust é só áudio nativo + arquivos (ADR-01).
-- `StudySession`: estados `ACTIVE ⇄ PAUSED → FINISHED` (não o `IDLE/PREPARING/RECORDING/PAUSED/FINISHED` do `arch.md` antigo) — ADR-06.
-- Nenhum caminho absoluto de arquivo cruza o webview em nenhuma direção — diálogos de arquivo/pasta são abertos **pelo Rust** (`tauri-plugin-dialog`, zero permissão `dialog:*` ao webview) — ADR-17.
-- Heurística de importação de partituras por pasta: agrupamento por **nome-base dentro do mesmo diretório**, nunca entre diretórios; "obra = subpasta" não é regra — ADR-18 (algoritmo completo documentado lá, não reimplementar do zero).
-- Workspace dockável via `dockview-react`; popout (janela nativa separada) **desligado deliberadamente** — ADR-14.
-- `identifier = "dev.wallacesantana.cress"` e `publisher = "Wallace Santana"` — **imutáveis a partir da primeira publicação**, não propor mudança — ADR-20.
-- Ambiente oficial de `tauri dev`/`tauri build` é **Windows nativo**, nunca WSL (áudio/cpal não funciona igual no WSLg) — ADR-04, §4. WSL só roda `vitest`/`cargo test` sem hardware.
+- Domínio e aplicação só em TypeScript; Rust é só áudio nativo + arquivos (ADR-01).
+- `StudySession`: `ACTIVE ⇄ PAUSED → FINISHED` (ADR-06).
+- Nenhum caminho absoluto de arquivo cruza o webview; diálogos são abertos pelo Rust (ADR-17).
+- Importação de partituras agrupa por nome-base **dentro do mesmo diretório**, nunca entre diretórios (ADR-18, algoritmo já implementado, não reimplementar).
+- Workspace via `dockview-react`; popout nativo desligado deliberadamente (ADR-14).
+- `identifier`/`publisher` do Tauri são imutáveis a partir da primeira publicação (ADR-20).
+- Ambiente oficial de `tauri dev`/`build` é Windows nativo, nunca WSL (ADR-04) — áudio/cpal não funciona igual no WSLg.
 
-## 4. Correções feitas sobre o Blueprint-001, a partir do caso real do Critix Vault
+## 4. Decisões de processo com o usuário
 
-O Blueprint-001 (ADR-20) assumia que "o Tauri gera EXE (NSIS) e MSI, não MSIX" e que a submissão na Store seria de um "app Win32 que aponta para o instalador". **Isso está desatualizado/incompleto** — o Critix Vault (`../CRITIX/critix_vault_desktop`), já publicado, prova um caminho funcional para gerar um `.msix` real:
+- Nunca atribuição de IA em commits/issues/PRs (regra do `CLAUDE.md` global do usuário).
+- Design aprovado até "03 · Dashboard — Nav F (atril)" com efeito glass (Dossier §8.13.1) — não reabrir alternativas de navegação sem pedido explícito.
+- Cada milestone/issue roda em branch separada a partir de `main` atualizada, PR de volta pra `main` ao concluir — nunca commitar direto em `main`.
+- Padrão alternativo já usado (Milestones 5 e 6, a pedido do usuário): uma única branch `milestone-<NN>/<slug>` para toda a milestone, um commit por issue terminando em `Closes #NN`, um PR único ao final (merge normal, nunca squash — perderia o vínculo `Closes` por commit). Ao delegar para Codex: **um `codex exec` por issue**, nunca várias no mesmo prompt; validar (`lint`+`typecheck`+`test`) e comitar antes de passar para a próxima.
+- `gh issue create --milestone` espera o **título** da milestone, não o número.
+- **Nunca confiar no resumo final da Codex sem validar de verdade.** Já aconteceu 3x na Milestone 6 dela reportar sucesso (ou dizer que não validou) e o código real ter bug: unidade errada (`/60000` em vez de `/1000` num cálculo de frames), 2 erros de typecheck não vistos, e um off-by-one de índice. Sempre rodar `typecheck`/`lint`/`test` você mesmo, ler a saída até o fim, e revisar o diff real antes de comitar.
 
-1. `tauri build` normal com `msi` nos `bundle.targets`.
-2. Extrair os arquivos do app de dentro do `.msi` via instalação administrativa: `msiexec /a app.msi TARGETDIR=staging /qn` (não instala de verdade, só extrai).
-3. Montar a pasta do pacote MSIX: copiar os arquivos extraídos + gerar `Assets/` (ícones redimensionados com `System.Drawing` do .NET, sem dependência nova) + preencher um `AppxManifest.xml` próprio (não existe no scaffold do Tauri — precisa ser escrito à mão).
-4. Empacotar com `makeappx.exe` (vem no Windows SDK): `makeappx.exe pack /d <pasta> /p saida.msix /o`.
-5. **Não assinar localmente** — a Microsoft Store assina o `.msix` na publicação (confirmado no próprio script do Critix: "Do NOT sign the package locally - the Store signs it for you"). Um certificado Authenticode de assinatura de código **só é necessário se também distribuir fora da Store** (download direto com updater próprio).
-6. Upload do `.msix` em Partner Center → Submissions → Upload packages.
+## 5. Distribuição — MSIX (do caso real Critix Vault)
 
-Referências no código do Critix: `.github/workflows/msix-build.yml`, `scripts/build-msix.ps1`, `src-tauri/packaging/AppxManifest.xml`. Issues do Cress já atualizadas com isso: `#66`, `#67`, `#69`, `#70`, `#72` (milestone 12) e `#73` (milestone 11).
+O Blueprint-001 assumia que a Store receberia um instalador Win32; na prática, o caminho funcional é gerar um `.msix` real:
+1. `tauri build` com `msi` nos `bundle.targets`.
+2. Extrair via `msiexec /a app.msi TARGETDIR=staging /qn` (só extrai, não instala).
+3. Montar a pasta do pacote: arquivos extraídos + `Assets/` (ícones via `System.Drawing` do .NET) + `AppxManifest.xml` escrito à mão (não existe no scaffold do Tauri).
+4. `makeappx.exe pack /d <pasta> /p saida.msix /o` (vem no Windows SDK).
+5. **Não assinar localmente** — a Store assina na publicação. Certificado Authenticode só é necessário para distribuição fora da Store.
+- Chave do `tauri-plugin-updater` (minisign) **não tem relação** com certificado Authenticode — mecanismos independentes, fácil de confundir.
+- `tauri build` não gera `latest.json` do updater sozinho — só via `tauri-apps/tauri-action`, ou montar manualmente a partir dos `.sig`.
+- Referências no Critix: `.github/workflows/msix-build.yml`, `scripts/build-msix.ps1`, `src-tauri/packaging/AppxManifest.xml`.
 
-### Outras descobertas do caso Critix (aplicáveis com adaptação)
+## 6. Limitações conhecidas deste ambiente (WSL, checkout em `/mnt/e` via 9p)
 
-- `tauri build` **não gera** um `latest.json` agregado do updater por conta própria — isso só existe via a GitHub Action `tauri-apps/tauri-action`. Sem usá-la, o manifesto precisa ser montado manualmente a partir dos arquivos `.sig` gerados ao lado de cada instalador.
-- Chave de assinatura do updater (`tauri-plugin-updater`) é um par minisign gerado por `npm run tauri signer generate` — **não tem relação** com certificado Authenticode. São dois mecanismos de assinatura independentes, fácil de confundir.
-- O Critix embute um servidor Node.js (Next.js) dentro do bundle Tauri e por isso precisa de passos extras (Node portátil, rebuild do `better-sqlite3` para a ABI certa, capability `privateNetworkClientServer` no `AppxManifest.xml`, regra de firewall para `node.exe`). **O Cress não tem esse servidor** (usa `tauri-plugin-sql` direto) — não copiar esses passos, só os de empacotamento MSIX em si.
-- O CI do Critix (`ci.yml`) deixa `cargo check` comentado como débito técnico. **Não repetir isso no Cress** — `cargo test`/`clippy` entram no CI desde o início (ADR-12 já exige isso localmente).
+- `cargo check`/`test`/`clippy` falham aqui por falta de `libasound2-dev` (dependência Linux do `cpal`) — não é bug de código; precisa `sudo apt-get install -y libasound2-dev` uma vez. O CI do GitHub instala isso sozinho, então o lado Rust é verificável lá mesmo sem rodar aqui.
+- O mount 9p é lento/não-atômico para pacotes com muitos arquivos pequenos e pode corromper `node_modules` sem erro visível — se lint/typecheck falharem com módulo ausente sem motivo aparente, `rm -rf node_modules && bun install` antes de depurar módulo a módulo.
+- **Workers DOM do Vitest** (`*.dom.test.tsx`) frequentemente dão `Timeout waiting for worker to respond` nesta máquina (setup do jsdom é lento demais pro timeout de start, mais pressão de memória/swap). `bun run test -- --no-isolate` reduz isso (reaproveita o worker entre arquivos); mesmo assim, **repita o comando uma vez** antes de concluir que há falha real — é quase sempre esse padrão, não uma regressão. Não mudar o `isolate` padrão do projeto/CI por causa disso.
+- **HMR do Vite não é confiável aqui** — edições em arquivos (visto em `router.tsx`, `.css`) podem não ser servidas por vários minutos mesmo com `mtime` atualizado. Ao validar visualmente, reinicie o `bun run dev` do zero em vez de confiar no HMR.
+- Sem Playwright/MCP de browser funcional. Para validação visual real: `google-chrome --headless=new --disable-gpu --no-sandbox --remote-debugging-port=N --remote-allow-origins=*` + CDP via `websocket` Python (`Runtime.evaluate`) para medir DOM/CSS computado, não só screenshot. Rotas sob o loader `rootLoader`/`onboardingLoader` quebram em browser puro (`TauriSqlDb`/`invoke` indefinido fora do Tauri) — para inspecionar uma rota protegida, adicionar uma rota solta temporária fora da árvore `/` e remover antes de terminar.
+- Build/runtime real do `src-tauri/` (áudio, dialog, etc.) só é confiável no Windows nativo — vários bugs já só apareceram lá (ex.: `blocking_pick_folder()` retorna `Option<FilePath>` direto, não `Result`; `plugins.sql.preload` é connection string, não caminho de arquivo).
 
-## 5. Ferramental para gerenciar milestones/issues
+## 7. Dockview React 8.4.1 — fatos da API real (confirmados no pacote instalado, não só na doc)
 
-Criação/edição em massa de issues e milestones é feita via `gh` CLI (`gh issue create/edit`, `gh api repos/wallacemt/cress-app/milestones`) chamado por um script Python descartável (não versionado — vive em scratch de sessão). `gh issue create --milestone` espera o **título** da milestone, não o número.
+- `initialWidth`/`initialHeight` de `addPanel` são **pixels**, não porcentagem — se seu plano de layout usa porcentagem, converta usando `api.width`/`api.height` (propriedades reais medidas) antes de passar.
+- `addPanel()` sem `position` empilha tudo como abas de um único grupo — nunca cria split. Para grid/split real, usar `position: {referencePanel, direction}`.
+- Para customizar algo que vale para **todo** painel (ex. tab renderer), usar a prop `default*` (`defaultTabComponent`), não uma tabela de lookup (`tabComponents`) que precisa ser referenciada em cada `addPanel` — fácil esquecer um dos pontos de criação.
+- `toJSON()` serializa como `grid.root`; ramos guardam filhos em `data`, folhas guardam `views` em `data` — sanitizador de layout salvo precisa tratar essa estrutura.
+- `Position` em `moveTo` usa `top/bottom/left/right/center`, nunca `above/below`.
+- Variáveis de tema seguem `dockview-react/dist/styles/dockview.css` exatamente (ex. `--dv-group-view-background-color`) — nomes sem `-color` não têm efeito.
+- No Windows, `app.windows[].dragDropEnabled: true` (padrão do Tauri) intercepta o HTML5 Drag-and-Drop nativo do WebView2 antes de chegar ao DOM, quebrando o DnD do dockview. Setar `false` em `tauri.conf.json` se o app não usa drop de arquivo do Explorer em lugar nenhum. **Não revalidado em runtime real** (precisa rebuild+reinstall no Windows).
 
-## 6. Decisões de processo com o usuário
+## 8. Armadilhas de runtime já confirmadas (evitar repetir)
 
-- Nunca adicionar atribuição de IA (Co-Authored-By Claude, menção a Claude Code) em commits/issues/PRs — regra do `CLAUDE.md` global do usuário.
-- Design do app já está decidido e aprovado até a direção "03 · Dashboard — Nav F (atril)" com efeito glass — ver Dossier §8.13.1. Não reabrir alternativas de navegação (A–E) sem pedido explícito.
-- **Toda milestone e toda feature (cada issue, na prática) é trabalhada em uma branch separada.** Nunca commitar direto em `main`. Convenção de nome: `milestone-<NN>/<slug-da-milestone>` para trabalho guarda-chuva de uma milestone, ou `feature/<slug-da-issue>` (ou `fix/<slug>` para correções) para o trabalho de uma issue específica — abrir a partir de `main` atualizada, e abrir PR de volta para `main` ao concluir. Isso vale também para trabalho de agente (ex.: `EnterWorktree`/branch dedicada), nunca editar o checkout compartilhado do usuário na `main`.
+- **Checksum de migration SQL:** `include_str!` embute o arquivo em tempo de compilação, e `tauri-plugin-sql`/sqlx grava um checksum na 1ª aplicação. Qualquer mudança de *bytes* (até CRLF↔LF) sem re-rodar a migration quebra o app com "migration was previously applied but has been modified". `.gitattributes` já força `eol=lf` nas migrations — qualquer outro arquivo embutido no Rust com checksum persistido precisa do mesmo tratamento.
+- CSS com a mesma especificidade: a regra cujo `<style>` é injetado depois vence o empate, não a ordem no código-fonte. Ao sobrescrever CSS de uma lib importada tardiamente (ex. `dockview.css` importado dentro de um componente), pode precisar de `!important` mesmo com specificity igual.
+- Container flex sem `min-height: 0` não encolhe abaixo da altura do conteúdo — causa de overflow de página que parece "scroll bug" mas é CSS flex básico.
 
-## 7. Descobertas da Milestone 1
+## 9. Pendências conhecidas (não escondidas, aguardando validação/decisão)
 
-- O registry npm mantém `vite@8.3.3` disponível; a primeira tentativa deixou uma instalação parcial por cache npm em `/home`, então instalações neste workspace devem usar `npm_config_cache` apontando para `/tmp` (fato verificado por `npm view` e pela falha EROFS).
-- O adaptador `node:sqlite` precisa habilitar explicitamente `PRAGMA foreign_keys = ON`; `NodeSqliteDb` faz isso no construtor e o teste de integração confirma rejeição de FK inválida (fonte: teste local `src/infrastructure/db/nodeSqliteDb.test.ts`).
-- A validação dos itens de áudio, asset protocol, dockview e diálogo exige WebView2/WASAPI nativos; WSL só fornece evidência para o adaptador SQLite (fonte: `SPIKE.md`, execução desta milestone).
+- **AC-M7** (DnD do Workspace no Windows) e **AC-M1** (metrônomo 120 BPM / 5 min, janela minimizada, fechar painel não para o som) — ambas pendentes de validação manual no Windows real, não reproduzíveis no WSL.
+- Metrônomo: volume do painel é só visual (`engine.ts` não tem `GainNode` ainda); `audioSuspended` no `metronomeStore` nunca é setado (banner "áudio suspenso pelo sistema" do Dossier §8.4 não implementado); `engine.start()` não guarda contra `connect()` duplicado se chamado duas vezes sem `stop()` entre elas (mitigado pela store, que só chama `start` se não `running`).
+- `recoverOnBoot` (gravações) retorna `recoveredTakes: 0` fixo — regra real de recuperação de um take `RECORDING` após crash ainda não definida; decidir na Fase 7/8 com hardware real.
+- Relatório de auditoria da Milestone 5 (gaps vs. Dossier, achados por severidade): `AUDIT-milestone5.md` na raiz do repo.
 
-## 8. Limitação conhecida deste ambiente (WSL)
+## 10. CI (GitHub Actions)
 
-- `cargo check`/`cargo test`/`cargo clippy` falham neste WSL com `failed to run custom build command for alsa-sys v0.4.0` — falta o pacote de sistema `libasound2-dev` (dependência Linux do `cpal`, já prevista em `arch.md` §15/ADR-04 "Consequences"). Não é bug de código. Requer `sudo apt-get install -y libasound2-dev` (uma vez, precisa de senha — não automatizável por um agente sem acesso a sudo interativo). Depois de instalado, re-rodar `npm run check`/`cargo check` normalmente.
-
-## 9. Descobertas da correção da Milestone 1
-
-- O `node_modules` compartilhado no checkout WSL pode ficar parcialmente reificado: `npm install` termina, mas módulos internos de ESLint/Vitest podem faltar. Uma cópia temporária limpa com `npm ci` é uma verificação válida do projeto; nessa cópia, lint, typecheck e Vitest passaram (fonte: execução desta correção).
-- O CLI `shadcn@4.21.3 init -d` foi executado, mas não completou por módulo ausente no `node_modules` compartilhado (`zod-to-json-schema/.../any.js`). `components.json` e `src/components/ui/.gitkeep` foram preparados conforme o contrato; repetir o CLI em uma instalação limpa quando os componentes forem adicionados (fonte: execução desta correção).
-- O TypeScript não inclui os tipos globais de `AudioWorkletProcessor` nem `node:sqlite` nesta combinação de libs; declarações locais mínimas em `src/features/spike/click-processor.ts` e `src/types/node-sqlite.d.ts` mantêm o fixture do spike verificável sem alterar o runtime (fonte: `npm run typecheck`).
-- **Causa raiz confirmada** do ponto acima: o repo vive em `/mnt/e/...`, montado via 9p (`drvfs` do WSL), que é lento/não-atômico para pacotes com muitos arquivos pequenos (caso do ESLint) e pode corromper a instalação sem erro visível no `npm install`. Correção: `rm -rf node_modules && npm install` (confirmado nesta máquina — lint/typecheck/test passaram limpos depois). Se voltar a acontecer, reinstalar do zero antes de depurar módulo a módulo.
-
-## 10. Correções encontradas só ao validar no Windows (cargo check fica bloqueado no WSL)
-
-- `tauri_plugin_dialog::DialogExt::blocking_pick_folder()` retorna `Option<FilePath>` diretamente, **não** `Result<Option<FilePath>, Error>` — não há `.map_err` a fazer. O command correto é `Ok(app.dialog().file().blocking_pick_folder().map(|p| p.to_string()))` (fonte: build real no Windows, 2026-10-13).
-- `tauri.conf.json` → `plugins.sql.preload` espera uma **connection string** (ex.: `"sqlite:cress.db"`), não o caminho do arquivo `.sql` de migration. O arquivo de migration entra via `include_str!` no `Migration` registrado em `lib.rs`, não no `preload` (fonte: mesmo build).
-- Esses dois bugs não aparecem em `npm run typecheck`/lint — só `cargo build`/`tauri dev` real pega. Como este WSL não compila o lado Rust (§8), **builds reais no Windows são a única verificação confiável do `src-tauri/`** até `libasound2-dev` ser instalado aqui.
-
-## 11. Descobertas da Milestone 2
-
-- A camada de domínio foi implementada sem dependências externas, na ordem definida pela Fase 2; a validação local usa `DomainError` com códigos estáveis e funções puras.
-- `src/domain/__fixtures__/violino-folder.json` é uma fixture sintética realista de placeholder (não representa os ~7.000 arquivos reais). Serve para equivalência inicial dos casos AC-S2/AC-S2b e deve ser substituída/validada pela fixture real gerada na Fase 9 (fonte: Blueprint §14 Fase 2 e §15 AC-S2).
-- Nesta máquina, o `npm` global está genuinely quebrado (a própria instalação do CLI não resolve `graceful-fs`/`semver` — `npm --version` já falha com `MODULE_NOT_FOUND`, não é um problema deste projeto). `bun add -D --exact @vitest/coverage-v8@5.0.3` funcionou normalmente e resolveu a dependência (confirmado: `node_modules/@vitest/coverage-v8` presente, `vitest run --coverage` executa). `package.json` foi atualizado manualmente para declarar a versão exata; `package-lock.json` ficou desatualizado em relação a essa entrada porque não há `npm` funcional aqui para regenerá-lo — reconciliar com `npm install` normalmente num ambiente com `npm` saudável (ex. Windows) antes de confiar nele de novo.
-- Cobertura real de `src/domain` nesta milestone (segunda passada, com testes de fato escritos): **95.83% statements / 96.23% lines / 84.97% branches / 100% funcs** — atende a meta de ≥95% da DoD da Fase 2 por statements/lines (fonte: `vitest run src/domain --coverage`, 2026-10-13).
-
-## 12. CI (GitHub Actions)
-
-- `.github/workflows/ci.yml`: dois jobs em paralelo, `push`/`pull_request` para `main`.
-  - `quality` (`ubuntu-latest`): `bun install --frozen-lockfile` → `lint` → `typecheck` → `vitest run src/domain --coverage`. Thresholds de cobertura (lines/statements/functions ≥95%, branches ≥80%) ficam em `vitest.config.ts` (`test.coverage.thresholds`, escopado a `src/domain/**/*.ts`) — o próprio Vitest falha o job se cair abaixo, não é só um número reportado.
-  - `rust` (`ubuntu-latest`): instala `libasound2-dev` + libs do Tauri (`libwebkit2gtk-4.1-dev`, `libgtk-3-dev`, `libayatana-appindicator3-dev`, `librsvg2-dev`) via `apt-get`, roda `cargo check`/`cargo test`/`cargo clippy -D warnings` contra `src-tauri/Cargo.toml`. **Diferente deste WSL (§8), o runner do GitHub tem `sudo` real e instala `libasound2-dev` sem problema** — por isso o lado Rust é verificável em CI mesmo não sendo verificável aqui.
-  - Usa `bun` (não `npm`) porque é o que está sincronizado e funcional (`bun.lock`) — ver nota da Milestone 2 sobre o `npm` global quebrado nesta máquina. Em um runner limpo o `npm` funcionaria normalmente, mas manter `bun` em CI evita duas fontes de verdade de lockfile.
-  - **Não inclui `tauri build`/MSIX/instalador** — ADR-04 exige Windows nativo para isso; fica para um pipeline de release separado (Milestone 11/12), não para o CI de toda PR.
-  - **Timeout do job `rust`:** a primeira execução (cache cold, sem `Swatinem/rust-cache` ainda) compila `tauri`+`webkit2gtk-sys` do zero e passa de 20 min (`cargo check` passou, `cargo test` foi cancelado por timeout). Ajustado para `timeout-minutes: 40`. Execuções seguintes devem ficar bem mais rápidas com o cache do `Swatinem/rust-cache` quente (fonte: run real `38479306097` em 2026-10-13).
-
-## 13. Descobertas da Milestone 3
-
-- O adaptador `NodeSqliteDb` precisa expor `exec(sql)` além de `SqlDb.execute/select`: migrations contêm vários statements e não podem passar por `prepare` como uma única instrução (fonte: implementação de `src/application/test-support.ts`, 2026-10-13).
-- O contrato de portas da §8.1 inclui métodos de captura/entrada que não são necessários nos casos de uso desta milestone; os fakes locais implementam apenas o subconjunto de gravação e importação exigido por #17–#22, sem criar runtime Rust prematuramente (fonte: escopo da Milestone 3 e `src/application/deps.ts`, 2026-10-13).
-- O SQL efetivamente versionado nesta branch usa `recordings.status IN ('RECORDING','COMPLETE')`, enquanto o tipo de domínio usa `ACTIVE/PAUSED/COMPLETE`; a persistência deve tratar `RECORDING` como o estado ativo de uma tomada para respeitar a constraint do banco (fonte: `src-tauri/migrations/0001_init.sql` e `src/domain/recording.ts`, 2026-10-13).
-- `finishSession` precisa parar o take ativo antes de persistir o fim da sessão; os parâmetros `finalBpm`, `notes` e `completeGoal` não podem ser descartados (fonte: correção da aplicação da Milestone 3, 2026-10-13).
-- Reabrir um goal exige gravar `completed_at = NULL`; usar apenas fallback do valor antigo mantém o goal concluído (fonte: teste de aplicação `src/application/goals.test.ts`, 2026-10-13).
-- O fake `ScoresPort` precisa expor `scan`/`results` com getters e setters, pois cópia por spread não permite configurar o estado usado pelos métodos assíncronos (fonte: `src/application/test-support.ts`, 2026-10-13). `pickAndImportFile` não tem um setter dedicado — os testes sobrescrevem o método direto via `Object.assign(d.scores, { pickAndImportFile: async () => (...) })`, que funciona porque o objeto retornado por `fakeScoresPort()` é um literal comum, não congelado.
-- **Revisão desta milestone (segunda correção):** a primeira passada corretiva deixou os arquivos de teste comprimidos numa linha só por `it()` (mesmo defeito de legibilidade já visto na Milestone 2) — resolvido rodando `npx prettier --write src/application src/infrastructure` (Prettier reformata estruturas de uma linha normalmente, não precisou reescrever à mão). `src/application/milestone3.test.ts` foi apagado por ficar inteiramente duplicado pelos testes novos por módulo. `scores.test.ts` ganhou os casos que faltavam (`attachScoreFile` sucesso/cancelado/duplicado, `renameScore`/`deleteScore`/`setScoreLastPage` com erros, `reorderScore` nos dois sentidos incluindo os limites).
-- **Gap sinalizado para revisão humana, não decidido silenciosamente:** `recoverOnBoot` retorna `recoveredTakes: 0` fixo. A tabela §8.2 pede `{recoveredSession, recoveredTakes}` mas nem o Blueprint nem o ADR-06 detalham a regra de recuperação de um take que ficou com `status='RECORDING'` após um crash (não existe função `recover` em `domain/recording.ts`, e a tabela não especifica se o take deveria virar `COMPLETE` com duração desconhecida, continuar `RECORDING`, ou algo definido só na Fase 7/8 quando o Rust real existir). Deixado como placeholder documentado — decidir a regra real quando a Fase 7/8 (áudio Rust) estiver sendo implementada, com contexto de hardware real.
-
-## 14. Bug real: checksum de migration quebrando o app já em uso (2026-10-15)
-
-- **Sintoma relatado pelo usuário:** o app, que já tinha rodado antes no Windows, passou a dar erro ao iniciar. Causa: `src-tauri/src/lib.rs` embute `src-tauri/migrations/0001_init.sql` via `include_str!` em tempo de compilação, e `tauri-plugin-sql` (sqlx por baixo) grava um checksum do conteúdo da migration na primeira vez que ela é aplicada (tabela interna de controle do sqlx). Se o arquivo mudar de bytes entre builds — **mesmo sem nenhuma mudança semântica** — o próximo `cargo build`/`tauri dev` embute um checksum diferente e o sqlx recusa a inicialização com algo como "migration was previously applied but has been modified".
-- **Causa raiz encontrada:** o arquivo versionado no git (commit `e8e861a`, Milestone 1) é SQL compacto de uma linha por tabela, LF. O arquivo no checkout de trabalho (`/mnt/e/...`, compartilhado entre WSL e Windows) estava reformatado em SQL multi-linha legível **e** com CRLF — mudança não commitada, provavelmente de um formatador de SQL do editor rodando "format on save" sem o arquivo ter sido re-commitado depois. Confirmado por diff ignorando espaço em branco: **zero diferença semântica**, só formatação/EOL.
-- **Correção aplicada:** adotado o SQL multi-linha (mais legível, consistente com o resto do projeto) como versão canônica, com LF. Adicionado `.gitattributes` forçando `src-tauri/migrations/*.sql text eol=lf`, para que o checkout nunca mais varie por OS/config local de `core.autocrlf` — os bytes embutidos pelo `include_str!` ficam estáveis entre qualquer máquina/clone.
-- **Esta correção não desfaz o dano já feito no banco local do usuário.** Quem já tinha a app rodando com um checksum antigo precisa apagar o banco de desenvolvimento uma vez (sem problema, é pré-release, sem dados reais): no Windows, o arquivo é `%APPDATA%\dev.wallacesantana.cress\cress.db` (identifier do `tauri.conf.json` + nome do arquivo do `plugins.sql.preload`). Apagar esse arquivo e rodar `tauri dev`/abrir o app de novo recria o banco do zero com o checksum atual.
-- **Lição geral:** qualquer arquivo lido via `include_str!`/embutido em binário e que tenha checksum/hash persistido por uma lib (migrations, assets versionados por hash, etc.) precisa ter EOL fixado via `.gitattributes` desde o início — não é só estética, é um bug de runtime latente. Reavaliar se outros arquivos embutidos no Rust (ícones, etc.) têm o mesmo risco se algum dia ganharem checksum.
-
-## 15. Descobertas da UI de onboarding
-
-- Neste checkout, o arquivo `*.dom.test.tsx` executou em ambiente `node` apesar da configuração `environmentMatchGlobs`; a diretiva `// @vitest-environment jsdom` no próprio teste fez o RTL receber `document` (fonte: execução de `bun run test`, 2026-10-15).
-
-## 16. Execução do Vitest no checkout WSL em `/mnt/e`
-
-- `bun run test` pode falhar ao iniciar o worker paralelo de `src/features/onboarding/OnboardingPage.dom.test.tsx` com `Timeout waiting for worker to respond`, mesmo quando os demais testes passam. Nesta máquina, `bun run test -- --maxWorkers=1` passou (23 arquivos/64 testes), indicando limitação de inicialização paralela neste checkout montado em 9p; não reduzir o paralelismo padrão do projeto apenas para contornar a máquina local (fonte: duas execuções padrão e uma serial em 2026-10-17).
-
-## 17. Revalidação dos workers DOM no WSL (2026-10-17)
-
-- Ao adicionar `SettingsPage.dom.test.tsx`, duas execuções de `bun run test -- --maxWorkers=1` não iniciaram os workers DOM de onboarding e settings (`Timeout waiting for worker to respond`); 22 arquivos/62 testes passaram nas duas tentativas. A execução isolada do teste de settings com pool `threads` também expirou antes de executar testes. Isto confirma uma falha de inicialização do worker neste checkout 9p, não uma falha de asserção; os testes DOM precisam ser reexecutados em um ambiente onde os workers iniciem (fonte: execuções locais desta issue).
-- **Causa raiz confirmada:** não é flakiness aleatória — o pool padrão (`forks`/`threads` com `isolate: true`) sobe um worker novo por arquivo, e nesta máquina o setup do ambiente `jsdom` é lento demais pra responder dentro do timeout de start quando isso acontece pra cada arquivo `*.dom.test.tsx`. `bun run test -- --no-isolate` reaproveita o worker entre arquivos (paga o custo de setup do `jsdom` uma vez só) e passou limpo: **24 arquivos/66 testes, 0 erros** (fonte: validação da issue #25, 2026-10-17). Usar esse flag só para validação local nesta máquina — não é para mudar o `isolate` padrão do projeto/CI sem motivo mais forte.
-- Na validação da issue #27, `bun run test -- --no-isolate` teve timeout nos três workers DOM na primeira tentativa e passou na repetição: **25 arquivos/68 testes, 0 erros**. Se ocorrer, repetir o comando uma vez antes de concluir que há falha no teste (fonte: validação local, 2026-10-17).
-
-## 18. Dockview React 8.4.1 — renderers e tema
-
-- `defaultRenderer` configura o padrão do Workspace; a API 8.4.1 não tem `rendererOverride`. O modo de renderização é por painel em `addPanel({ renderer })` ou `panel.api.setRenderer(...)`. Para score, aplique `always` em `onDidAddPanel` (e nos painéis já existentes ao iniciar); os demais usam `onlyWhenVisible` (fonte: `dockview-core/dist/cjs/dockview/options.d.ts` e `dockviewPanelApi.d.ts`, pacote instalado 8.4.1, issue #30).
-- As variáveis CSS do tema devem seguir `dockview-react/dist/styles/dockview.css` — por exemplo `--dv-group-view-background-color`, `--dv-tabs-and-actions-container-background-color`, `--dv-drag-over-background-color`; nomes antigos sem `-color` não têm efeito (fonte: CSS instalado 8.4.1, issue #30).
-
-## 19. Persistência do Workspace — formato do layout no Dockview 8.4.1
-
-- `DockviewApi.toJSON()` serializa a grade como `grid.root`; ramos guardam filhos em `data`, e folhas guardam `views` em `data`. O sanitizador precisa tratar essa estrutura instalada, além do formato antigo coberto pelos testes, ou layouts reais serão rejeitados como inválidos (fonte: `dockview-core/dist/cjs/dockview/dockviewComponent.d.ts` e `gridview/gridview.d.ts`, issue #31).
-
-## 20. Menus do Workspace — API Dockview 8.4.1
-
-- A API pública tipada do `DockviewApi` expõe `IDockviewPanel.api.moveTo({ group, position })` para mover um painel e `IDockviewGroupPanel.api.moveTo(...)` para mover um grupo; `getPopouts()` lista grupos em janelas popout. `moveGroupOrPanel` e `floatingGroups` existem no componente interno, mas não fazem parte do `DockviewApi` público usado por `DockviewReadyEvent` (fonte: `dockview-core/dist/cjs/api/component.api.d.ts`, `dockviewPanelApi.d.ts` e `dockviewGroupPanelApi.d.ts`, pacote instalado 8.4.1, issue #32).
-- `Position` em `moveTo` usa `top/bottom/left/right/center`; não passe `above/below` (esses nomes pertencem à direção de adição de grupo em outros contratos) (fonte: `dockview-core/dist/cjs/dnd/droptarget.d.ts`, pacote instalado 8.4.1, issue #32).
-
-## 21. Rotas Workspace — setup e shell em tela inteira
-
-- `/practice/new` carrega repertório e objetivos pelas funções da aplicação no componente, seguindo o padrão de `PieceDetailPage`; `/practice/:sessionId` lê a sessão pelo repositório e resolve obra/objetivo antes de montar `Workspace` (fonte: issue #33 e implementação local, 2026-10-23).
-- `AppShell` mantém o mesmo roteador e omite aside/header globais nas rotas `/tools` e `/practice/*`; a classe de tela inteira precisa dar ao shell `height: 100vh` para o Workspace preencher a janela (fonte: implementação local, 2026-10-23).
-- O catálogo e `AddPanelMenu` filtram `recorder` e `session` fora de modo `session`; o submenu de partitura pode comunicar que a seleção completa chega na Fase 9 (fonte: `src/domain/workspace.ts`, `src/features/workspace/AddPanelMenu.tsx`, confirmado na issue #33).
-
-## 22. Painel de sessão no Workspace
-
-- Painéis Dockview leem contexto específico pela propriedade `params` do `addPanel`; layouts restaurados podem receber os dados atualizados via `panel.api.updateParameters` (fonte: integração da issue #35, pacote dockview-react 8.4.1).
-- Alterar o objetivo associado à sessão passa por `setSessionGoal` em `application/sessions.ts`, que valida que o objetivo pertence à obra da sessão antes de persistir (fonte: implementação da issue #35, 2026-10-23).
-
-## 24. Bug real: layout padrão do Workspace sem grupos/splits (reportado em teste manual no Windows, 2026-10-23)
-
-- **Sintoma:** usuário testou o app real no Windows e viu só 1-2 painéis em abas simples, sem o
-  grid/split esperado, e DnD aparentemente quebrado.
-- **Causa raiz confirmada via Penpot (fonte de design real, não só o Dossier):** `defaultLayoutPlan`
-  (`src/domain/workspace.ts`) retornava uma lista PLANA de painéis, e `Workspace.tsx`/`LayoutMenu.tsx`
-  chamavam `api.addPanel()` sem `position` — pela API real do dockview 8.4.1, isso empilha tudo como
-  abas de um único grupo, nunca cria os splits (modo livre: Afinador|Metrônomo lado a lado; modo
-  sessão: Partitura 62% + coluna direita dividida em Gravações/Sessão sobre Metrônomo/Afinador).
-- **Correção:** `defaultLayoutPlan` agora retorna `LayoutPlan[]` com grupos (`panels`, `split`,
-  `width`, `height`); nova função `buildDefaultLayoutPanels()` (mesmo arquivo) é a única fonte que
-  caminha esses grupos e monta as opções reais de `addPanel` (`position: {referencePanel,
-  direction}`, `initialWidth`/`initialHeight`) — usada tanto por `Workspace.tsx` (montagem inicial)
-  quanto por `LayoutMenu.tsx` ("Restaurar layout padrão"), evitando duplicar essa lógica duas vezes.
-- **Armadilha evitada:** a primeira versão do fix (gerada por codex) decidia width/height por
-  **índice do grupo** (`groupIndex === 1` → largura, `groupIndex === 2` → altura), o que quebra
-  quando o grupo da partitura não existe (sem obra importada) e os índices dos demais grupos mudam.
-  `buildDefaultLayoutPanels` usa o `width`/`height` do próprio grupo, nunca o índice.
-- **Limitação do ambiente observada nesta validação:** todo arquivo `*.dom.test.tsx` do projeto
-  (não só os tocados por esta correção) falhou a iniciar o worker jsdom em 3 tentativas seguidas
-  (`--no-isolate`, `--no-isolate --maxWorkers=1`, e um único arquivo isolado) — mesmo os 10 arquivos
-  DOM do projeto inteiro, enquanto os 22 arquivos/65 testes não-DOM passaram limpos em todas as
-  tentativas. `free -h` no momento mostrava ~769 Mi livres e ~2,4 GiB de swap em uso — pressão de
-  memória mais severa que o caso parcial já documentado no §17, não um bug desta correção (nenhum
-  teste `*.dom.test.tsx` tocado por esta mudança teve asserção nova; `LayoutMenu.dom.test.tsx`
-  cobre só `move()`, não `reset()`). Revalidar os testes DOM tocados (`LayoutMenu.dom.test.tsx`)
-  num ambiente com memória livre, ou no Windows.
-
-## 23. Mudança de processo: Milestone 5 em uma branch só, uma issue por commit (2026-10-23)
-
-- Diferente das Milestones 3/4 (uma branch + PR por issue), a Milestone 5 foi pedida
-  pelo usuário com um processo diferente: uma única branch
-  `milestone-05/workspace-shell-fluxo-sessao`, com cada issue (#30–#35) como um commit
-  separado terminando em `Closes #NN`, e um único PR (#85) da branch para `main`. Ao
-  mergear (merge normal, não squash), cada commit individual fecha sua issue, porque o
-  GitHub escaneia por `Closes #N` em qualquer commit que chega na branch default, não só
-  no corpo do PR. **Não squash-mergear este PR** — perderia esse vínculo por issue.
-- Se futuras milestones pedirem o mesmo padrão, repetir: branch única a partir de `main`
-  atualizada, um `codex exec` por issue (nunca várias issues no mesmo prompt), validar
-  (`bun run lint && bun run typecheck && bun run test -- --no-isolate`) e comitar antes
-  de passar para a próxima issue, PR único ao final.
-
-## 25. Bug real: Tauri intercepta DnD nativo e quebra o drag-and-drop HTML5 do dockview no Windows (2026-10-24)
-
-- **Sintoma relatado pelo usuário:** testando o app empacotado no Windows, a manipulação de
-  UI/UX do dockview (arrastar abas, dividir, flutuar painel) não aparece/não funciona —
-  mesmo com `disableFloatingGroups={false}` e o tema de drag configurado em `Workspace.tsx`.
-- **Causa raiz confirmada no schema da CLI Tauri instalada**
-  (`node_modules/@tauri-apps/cli/config.schema.json`): `app.windows[].dragDropEnabled` tem
-  **padrão `true`** e mapeia para o handler nativo de drag/drop do WebView2 — que intercepta
-  os eventos antes de chegarem ao DOM, quebrando o HTML5 Drag-and-Drop API usado internamente
-  pelo `dockview-react` para arrastar abas/painéis. O schema documenta explicitamente que essa
-  flag precisa ser `false` quando o app depende de HTML5 DnD no frontend no Windows.
-- **Correção aplicada:** `"dragDropEnabled": false` em `src-tauri/tauri.conf.json` (janela
-  única do app; `tauri.microsoftstore.conf.json` não define `windows`, então herda esse
-  valor sem precisar duplicar). O app não usa drop de arquivo do Explorer em lugar nenhum
-  (importação de partituras é via diálogo nativo Rust, `scores_pick_and_scan_folder`), então
-  não há custo funcional conhecido em desabilitar.
-- **Não validado em runtime real** — exige rebuild + reinstalação no Windows (uma instalação
-  já empacotada não incorpora a mudança de config) e repetição manual do AC-M7 (abrir os 5
-  painéis, flutuar, dividir, redimensionar, persistir/restaurar layout). Se o sintoma persistir
-  após o rebuild, não assumir que a causa era essa — isolar se o handler ainda está ativo antes
-  de procurar outra causa.
-- Relatório completo da auditoria que originou este achado (gaps das issues #30–#35 vs.
-  implementação real, alinhamento com o Dossier §8.2–§8.3/§8.8, achados classificados por
-  severidade): `AUDIT-milestone5.md` na raiz do repo.
-
-## 26. Navegação Atril — Issue #86 (2026-10-24)
-
-- O shell global usa uma régua glass fixa no rodapé, omitida nas mesmas rotas Workspace já
-  detectadas pelo `AppShell`. O scroll esconde a régua ao descer e a revela ao subir; foco
-  dentro dela impede que seja escondida. O botão `Ctrl K` é apenas visual e o avatar leva a
-  `/settings`, sem dropdown.
-- Ícones dos destinos: `Home` (Início), `Library` (Repertório), `CalendarDays` (Sessões) e
-  `AudioLines` (Prática livre → `/tools`, que monta `Workspace` em modo `free`). `/practice/new`
-  é o setup de sessão, não prática livre. O símbolo usa o asset existente
-  `src/assets/brand/cress-symbol-gold.svg`; as iniciais do avatar vêm de
-  `useProfileStore.profile.displayName`.
-- O fallback `prefers-reduced-transparency` está no CSS, mas jsdom não testa `backdrop-filter`.
-  **Revalidado após a implementação** (não pela própria execução da Codex, que teve timeouts de
-  worker/lint pontuais): `bun run lint` e `bun run typecheck` passam limpos; `bun run test --
-  --no-isolate` falhou com 10 timeouts de worker na primeira tentativa e passou limpo
-  (33 arquivos/96 testes) na repetição — mais um caso do padrão já descrito no §17, não uma
-  regressão desta mudança.
-## 27. Workspace livre — cabeçalho, abas e altura (2026-10-24)
-
-- **Bug real corrigido após a implementação inicial:** a primeira versão desta tarefa registrou
-  o ícone de aba via `tabComponents={{ panel: PanelTab }}` no `DockviewReact`, mas **nenhum**
-  `addPanel()` do projeto (nem em `Workspace.tsx`, nem em `AddPanelMenu.tsx`/`LayoutMenu.tsx`)
-  passa `tabComponent: "panel"` por painel — a chave do mapa `tabComponents` só é usada quando
-  um painel individual pede aquele renderer explicitamente. Sem isso, o dockview cai no tab
-  renderer padrão (texto puro) e os ícones **nunca apareciam em runtime**, apesar de `lint`/
-  `typecheck`/testes passarem (nada ali exercita o DOM real do dockview o suficiente para pegar
-  isso). Causa raiz confirmada nos tipos instalados: `IDockviewReactProps` (`dockview-react/dist/
-  cjs/dockview/dockview.d.ts`) também expõe `defaultTabComponent?: React.FunctionComponent<...>`
-  — essa é a prop certa para "um único tab renderer para todos os painéis", recebendo o
-  **componente diretamente**, não uma chave de string. Corrigido para
-  `<DockviewReact defaultTabComponent={PanelTab} .../>` (removido o `tabComponents` map, que não
-  tinha mais uso). Lição: ao customizar algo do dockview que deveria valer para todo painel, usar
-  a prop `default*`, não uma tabela de lookup que precisa ser referenciada em todo lugar que cria
-  um painel — é fácil esquecer um dos pontos de criação (3 arquivos diferentes aqui).
-- `PANEL_ICON_NAMES` (`src/domain/workspace.ts`) é a fonte única do mapeamento painel→ícone,
-  reaproveitada pela aba (`PanelTab` em `panelRegistry.tsx`); `metronome` usa um componente SVG
-  próprio (`src/components/icons/MetronomeIcon.tsx`, copiado de
-  `docs/dossiers/assets/icon-metronome.svg` — fora do repo `cress-app`, não importável direto),
-  os demais são ícones `lucide-react` (`gauge`/`file-music`/`audio-lines`/`notebook-pen`).
-- A pílula do metrônomo no cabeçalho do modo livre mostra ponto neutro, nota, `—` e botão Square
-  desabilitado enquanto não há estado/BPM real (fonte: estado atual sem painel funcional de
-  metrônomo, Fase 6) — estrutura visual bate com o Penpot, dados ficam para a Fase 6.
-- Para impedir rolagem de página especificamente no Workspace, `.app-shell-workspace` recorta o
-  shell (`overflow: hidden`), `main` ganha `min-height: 0` (a causa raiz: sem isso um item flex
-  não encolhe abaixo da altura do seu conteúdo, então o `body` crescia além de 100vh) e
-  `html`/`body`/`#root` têm `height: 100%` para a cadeia de alturas ser previsível; rotas comuns
-  (Dashboard, Repertório…) mantêm scroll natural de página, só o shell do Workspace é travado
-  (fonte: inspeção de `src/index.css` e `workspace-theme.css`, tarefa de alinhamento Penpot).
-- Revalidado após a correção do bug de `tabComponent`: `bun run lint` (arquivos tocados e
-  completo), `bun run typecheck` e `bun run test -- --no-isolate` (33 arquivos/96 testes) passam
-  limpos.
-
-## 28. Bug real: scroll/overflow persistente no Workspace apesar do CSS "correto" (2026-10-24)
-
-- **Sintoma relatado pelo usuário após a correção do §27:** o scroll na "Prática livre" continuava
-  presente e os painéis não ocupavam o espaço disponível direito. O CSS do §27 (`min-height: 0`,
-  `overflow: hidden` no shell) estava de fato correto e **não** era a causa restante — confirmado
-  medindo o DOM real num Chrome headless (`--remote-debugging-port` + CDP via `websocket` Python,
-  já que não há navegador/Playwright disponível neste WSL): `document.documentElement.scrollHeight`
-  batia exatamente com `window.innerHeight`, sem overflow de página nenhum.
-- **Causa raiz real #1 (a mais grave):** `defaultLayoutPlan` (`src/domain/workspace.ts`) descreve
-  `width`/`height` dos grupos como **porcentagem** (`50`, `62`, `38` — somam 100), mas
-  `buildDefaultLayoutPanels` passava esse número direto para `spec.initialWidth`/`initialHeight`,
-  que no dockview **são pixels, não porcentagem** (`AddPanelOptions.initialWidth?: number` em
-  `dockview-core/dist/cjs/dockview/options.d.ts`, sem unidade documentada, mas consistente com todo
-  o resto da API de tamanho do dockview, que é sempre em px). Resultado real observado (screenshot
-  de um Chrome headless local): pedir `initialWidth: 50` ("50%" pretendido) criava um grupo de
-  pouco mais de 50 **pixels**, cortado fora da viewport — não overflow de CSS, um bug de dado
-  (unidade errada) que acontecia de parecer com "scroll". Corrigido: `buildDefaultLayoutPanels`
-  ganhou um 4º parâmetro opcional `containerSize: {width, height}`; quando presente, converte
-  porcentagem → pixels (`Math.round(containerSize.width * group.width / 100)`). Os dois call sites
-  (`Workspace.tsx` na montagem inicial, `LayoutMenu.tsx` no "Restaurar layout padrão") agora passam
-  `{ width: api.width, height: api.height }` do próprio `DockviewApi` (propriedade real, medida).
-  Sem `containerSize`, o comportamento antigo (porcentagem crua) é mantido — os testes existentes
-  de `workspace.test.ts` que afirmam `initialWidth: 38`/`initialHeight: 50` continuam válidos
-  porque chamam a função sem esse parâmetro.
-- **Causa raiz real #2 (residual, só aparece depois de corrigir #1):** mesmo com os grupos do
-  dockview dimensionados certo, o próprio `.dv-view` interno do dockview (`dockview-react/dist/
-  styles/dockview.css`: `.dv-split-view-container .dv-view-container .dv-view { overflow: auto;
-  position: absolute; }`) relatava ~23px de overflow em largura E altura — medido ao vivo via CDP
-  (`scrollHeight`/`clientWidth` do elemento `.dv-view.visible`), não um artefato de screenshot. É
-  um resíduo de arredondamento do próprio dockview nos grupos posicionados em `absolute`; não achamos
-  (nem vale a pena brigar com) a causa exata dentro da lib. Corrigido pragmaticamente, já que o
-  requisito de design é "zero scroll" no Workspace: `.cress-workspace .dv-view.visible { overflow:
-  hidden !important; }` em `workspace-theme.css`. O `!important` é necessário porque a regra do
-  dockview tem a mesma especificidade (3 classes) e o `<style>` dele é injetado DEPOIS do nosso
-  (import tardio dentro de `Workspace.tsx`), vencendo o empate de especificidade por ordem — uma
-  regra sem `!important` com a mesma especificidade perde silenciosamente nesse caso.
-- **Método de validação usado (não há Playwright/MCP de browser funcional neste ambiente):**
-  `google-chrome` (binário do sistema, `/usr/bin/google-chrome`) em modo `--headless=new
-  --disable-gpu --no-sandbox`, servido por `bun run dev` real. Para medir DOM/CSS computado (não só
-  screenshot), usar `--remote-debugging-port=N --remote-allow-origins=*` + um cliente CDP Python
-  (`pip`/ambiente já tem `websocket-client` e `requests` instalados) chamando `Runtime.evaluate`.
-  Rotas protegidas por loader (`rootLoader`/`onboardingLoader`) quebram em browser puro porque
-  chamam `TauriSqlDb.open()` → `@tauri-apps/plugin-sql` → `invoke` indefinido fora do runtime Tauri;
-  para inspecionar uma página sob `/` sem mockar IPC, adicionar uma rota solta temporária fora da
-  árvore `/` (sem `loader`) e remover antes de terminar.
-- **Armadilha do ambiente que custou tempo nesta validação:** o watcher de arquivos do Vite neste
-  checkout (`/mnt/e`, 9p/WSL — mesma limitação do §9/§17) não pegou edições em `router.tsx` nem em
-  `workspace-theme.css` por HMR; o dev server continuou servindo o módulo antigo por vários minutos
-  mesmo com o arquivo já salvo e `mtime` atualizado. **Reiniciar o `vite`/`bun run dev` do zero**
-  depois de qualquer edição é a forma confiável de garantir que o servidor está servindo o código
-  atual neste ambiente — não confiar em HMR para validar uma correção aqui.
-
-## 29. Scheduler puro do metrônomo
-
-- `scheduleBlock` calcula cada subdivisão como `positionFrame + round(index * framesPerSubdivision)` a partir da origem fixa do metrônomo; não acumula intervalos arredondados entre blocos. Os eventos retornam `frame` relativo ao bloco e beat/compasso começando em 1 (fonte: `src/domain/scheduler.ts`, issue #36, 2026-10-24).
-- **Bug real pego na validação (a Codex relatou testes passando, mas não passavam):** a primeira versão de `framesPerSubdivision` dividia por `60000` (`(sampleRate * getBeatInterval(bpm)) / 60000 / pattern.length`), quando `getBeatInterval` já retorna ms por batida — a conversão correta de ms para frames é `/ 1000`, não `/ 60000`. Isso deixava `framesPerSubdivision` 60× menor que o real (400 em vez de 24000 frames por batida a 120 BPM/48 kHz), e os 4 testes do próprio `scheduler.test.ts` (escritos pela mesma execução da Codex) falhavam. Corrigido trocando `/ 60000` por `/ 1000`; `bun run test -- --no-isolate src/domain/scheduler.test.ts` passa limpo depois. Lição: sempre rodar a suíte de verdade depois de uma execução da Codex, mesmo quando o resumo final dela diz "testes passaram" — já houve inconsistência entre o que a Codex reporta e o resultado real (fonte: validação desta issue, 2026-10-24).
-
-## 30. Engine e AudioWorklet do metrônomo — Issue #37 (2026-10-24)
-
-- O processor real importa `scheduleBlock` e mantém o relógio de bloco e vozes em decaimento; frequências, amplitude das subdivisões e duração do clique são calibração acústica local, não domínio. O `AudioWorklet` precisa de bundle ES (`worker.format = "es"`) para importar o scheduler.
-- `src/features/metronome/engine.ts` guarda `AudioContext` e `AudioWorkletNode` fora do ciclo de vida React. `start()` deve ser chamado por gesto do usuário; `stop()` desconecta o node sem fechar o contexto.
-- **Pendente de validação manual no Windows/WebView2:** metrônomo por 5 min com janela minimizada e fechamento do painel sem interromper som (AC-M1). Nesta execução, `typecheck` e lint no checkout `/mnt/e` não produziram resultado após espera prolongada; Vitest iniciou mas foi interrompido sem completar e reportou erros não tratados ao cancelar. Não considerar essas verificações aprovadas (fonte: execução local, 2026-10-24).
-- **Validação real feita depois, fora da execução da Codex:** `bun run typecheck` pegou 2 erros reais que a Codex não viu (ela não conseguiu terminar a validação): (1) `noUncheckedIndexedAccess` (tsconfig) torna `output[frame]` do tipo `number | undefined` — a leitura em `output[frame] += ...` precisa virar `output[frame] = (output[frame] ?? 0) + ...`; (2) o construtor de `MetronomeProcessor` exigia `options: AudioWorkletNodeOptions` não-opcional, incompatível com a assinatura de `typeof AudioWorkletProcessor` que `registerProcessor` espera (construtor de 0 argumentos) — corrigido tornando `options` opcional e usando `options?.processorOptions`. `typecheck`/lint/test (exceto os `*.dom.test.tsx`, falha pré-existente do ambiente, §17) passaram depois. Lição: quando a própria Codex reporta que não conseguiu validar, rodar a validação de verdade antes de commitar é obrigatório, não opcional — já aconteceu duas vezes nesta milestone (ver também §29).
-- **Gap conhecido, não bloqueante:** `engine.start()` chama `node.connect(context.destination)` incondicionalmente a cada chamada; chamar `start()` duas vezes sem `stop()` entre elas pode duplicar a conexão (risco de dobrar o volume) em alguns navegadores. Não é coberto por teste automatizado (Web Audio real não existe no Vitest/node) e só a UI da issue #38 vai determinar se isso é alcançável na prática (ex. botão Play desabilitado enquanto já tocando evitaria o caso). Revisar ao implementar o `MetronomePanel`.
-
-## 31. UI do metrônomo — Issue #38 (2026-10-24)
-
-- Configuração global do metrônomo fica em `settings` com chave `metronome.config` (JSON versionado informalmente pelo formato atual); Zustand guarda estado de runtime/beat e não é persistência. Ao hidratar config, validar ranges e preset e cair nos defaults `{ bpm: 92, beatsPerBar: 4, accentBeat: true, subdivision: "1" }` para dados inválidos (fonte: `src/application/metronome.ts`, `src/stores/metronomeStore.ts`).
-- `MetronomePanel` é registrado diretamente como painel singleton sem `params`; chamada a `engine.start` é protegida por `running` no store, e tanto painel quanto pílula do WorkspaceHeader usam o mesmo `stop` global (fonte: issue #38 e implementação, 2026-10-24).
-- Em jsdom, `ResizeObserver` não existe por padrão; medições responsivas do painel devem checar disponibilidade e deixar o estado CSS/layout inicial renderizar nos testes (fonte: `MetronomePanel.dom.test.tsx`, validação 2026-10-24).
-- A faixa expandida do pêndulo foi dimensionada para 144px de altura (pedido explícito do usuário acima do original 64px); o pêndulo fica oculto no modo compacto.
-- **Bug real pego na validação:** `isBeat` em `MetronomePanel.tsx` comparava `index === beat % config.beatsPerBar`, mas `beat` (vindo de `scheduler.ts`/`engine.onBeat`) é 1-indexado (1..beatsPerBar), enquanto os pontos da beat row são 0-indexados — deixava o tempo em destaque sempre um à frente do real (e no último tempo do compasso, acendia errado o primeiro ponto acentuado). Corrigido para `index === beat - 1`.
-- **Gaps conhecidos, não corrigidos nesta issue (documentados, não escondidos):** (1) o slider de Volume no painel é só visual — `engine.ts`/`processor.ts` não têm nenhum caminho de ganho/volume real, então mexer no slider não muda o áudio; precisa de um `GainNode` no engine numa iteração futura. (2) `audioSuspended` existe no `metronomeStore` mas nunca é setado para `true` em lugar nenhum — o banner "Áudio foi suspenso pelo sistema" + botão "Reativar áudio" do Dossier §8.4 não está implementado; precisaria escutar `audioContext.statechange` no engine e expor isso ao store.
+- `.github/workflows/ci.yml`: job `quality` (`bun install --frozen-lockfile` → lint → typecheck → `vitest run src/domain --coverage`, thresholds em `vitest.config.ts`) e job `rust` (`cargo check`/`test`/`clippy -D warnings`, instala `libasound2-dev` e libs do Tauri via `apt-get` — funciona aqui mesmo não funcionando no WSL local). `timeout-minutes: 40` no job `rust` (cache cold passa de 20 min).
+- Usa `bun`, não `npm` (lockfile único, `npm` global já esteve quebrado nesta máquina).
+- Não inclui `tauri build`/MSIX — fica para um pipeline de release separado (Milestone 11/12).
