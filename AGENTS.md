@@ -110,3 +110,9 @@ O Blueprint-001 assumia que a Store receberia um instalador Win32; na prática, 
 - `.github/workflows/ci.yml`: job `quality` (`bun install --frozen-lockfile` → lint → typecheck → `vitest run src/domain --coverage`, thresholds em `vitest.config.ts`) e job `rust` (`cargo check`/`test`/`clippy -D warnings`, instala `libasound2-dev` e libs do Tauri via `apt-get` — funciona aqui mesmo não funcionando no WSL local). `timeout-minutes: 40` no job `rust` (cache cold passa de 20 min).
 - Usa `bun`, não `npm` (lockfile único, `npm` global já esteve quebrado nesta máquina).
 - Não inclui `tauri build`/MSIX — fica para um pipeline de release separado (Milestone 11/12).
+
+## 11. cpal 0.18.2 — API de entrada (verificado no crate local)
+
+- `SampleFormat` também expõe `I8`, `I64`, `U8`, `U32` e `U64`, além dos formatos mais comuns e `I24` (tipo `dasp_sample::I24`, representação `i32` em S24_32 com os 24 bits válidos nos bits altos; acessar via `.inner()` e deslocar 8 bits para sinal estendido. Oferece `.new(i32) -> Option<I24>`/`.new_unchecked(i32)`, sem `as_i32()` ou constantes públicas `MIN`/`MAX`). Captura deve converter os formatos inteiros suportados, não presumir apenas `I16`/`I32`/`U16`. Fonte: `cpal-0.18.2/src/sample_format.rs`, host adapters e `dasp_sample-0.11.0/src/types.rs`.
+- `DeviceId` implementa `FromStr`/`Display`, `HostTrait::device_by_id(&DeviceId)` reabre IDs persistidos, e o callback typed usa `build_input_stream(config: StreamConfig, ...)` por valor. Fonte: `cpal-0.18.2/src/lib.rs` e `src/traits.rs`.
+- Em cpal 0.18.2, `build_input_stream`, `StreamTrait::play` e `pause` retornam o mesmo `cpal::Error` (não há `BuildStreamError`/`PlayStreamError`); `SampleRate` é alias de `u32`. Fonte: `cpal-0.18.2/src/traits.rs` e `src/lib.rs`.

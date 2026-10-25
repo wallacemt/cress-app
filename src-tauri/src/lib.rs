@@ -1,8 +1,10 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+pub mod audio;
+
 #[tauri::command]
 async fn blocking_pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
     use tauri_plugin_dialog::DialogExt;
-   Ok(app
+    Ok(app
         .dialog()
         .file()
         .blocking_pick_folder()
