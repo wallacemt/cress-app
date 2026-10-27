@@ -2,7 +2,7 @@ use std::{
     str::FromStr,
     sync::{
         atomic::{AtomicU64, Ordering},
-        Arc,
+        Arc, Mutex,
     },
 };
 
@@ -75,6 +75,7 @@ pub struct InputStream {
     sample_rate: u32,
     channels: u16,
     overruns: Arc<AtomicU64>,
+    stream_error: Arc<Mutex<Option<String>>>,
 }
 
 impl InputStream {
@@ -91,12 +92,14 @@ impl InputStream {
         let capacity = sample_rate as usize * RING_BUFFER_SECONDS;
         let (producer, consumer) = RingBuffer::new(capacity);
         let overruns = Arc::new(AtomicU64::new(0));
+        let stream_error = Arc::new(Mutex::new(None));
         let stream = build_stream(
             device,
             config,
             sample_format,
             producer,
             Arc::clone(&overruns),
+            Arc::clone(&stream_error),
         )?;
 
         Ok(Self {
@@ -105,6 +108,7 @@ impl InputStream {
             sample_rate,
             channels,
             overruns,
+            stream_error,
         })
     }
 
@@ -128,6 +132,9 @@ impl InputStream {
     pub fn overruns(&self) -> u64 {
         self.overruns.load(Ordering::Relaxed)
     }
+    pub(crate) fn take_stream_error(&self) -> Option<String> {
+        self.stream_error.lock().ok()?.take()
+    }
 }
 
 fn select_device(host: &Host, device_id: Option<&str>) -> Result<Device, AudioError> {
@@ -150,17 +157,24 @@ fn build_stream(
     format: SampleFormat,
     producer: Producer<f32>,
     overruns: Arc<AtomicU64>,
+    stream_error: Arc<Mutex<Option<String>>>,
 ) -> Result<Stream, AudioError> {
     macro_rules! build {
         ($sample:ty, $convert:ident) => {{
             let channels = config.channels as usize;
             let mut producer = producer;
             let overruns = Arc::clone(&overruns);
+            let stream_error = Arc::clone(&stream_error);
             device
                 .build_input_stream::<$sample, _, _>(
                     config,
                     move |data, _| write_mono(data, channels, &mut producer, &overruns, $convert),
-                    |error| log::error!("audio input stream error: {error}"),
+                    move |error| {
+                        log::error!("audio input stream error: {error}");
+                        if let Ok(mut last_error) = stream_error.lock() {
+                            *last_error = Some(error.to_string());
+                        }
+                    },
                     None,
                 )
                 .map_err(AudioError::BuildStream)

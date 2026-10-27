@@ -29,7 +29,13 @@ pub fn run() {
         )
         .plugin(tauri_plugin_log::Builder::default().build())
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![blocking_pick_folder])
+        .manage(audio::commands::AudioInputState::default())
+        .invoke_handler(tauri::generate_handler![
+            blocking_pick_folder,
+            audio::commands::audio_list_input_devices,
+            audio::commands::audio_start_input,
+            audio::commands::audio_stop_input,
+        ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
 }
