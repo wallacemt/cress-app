@@ -21,6 +21,7 @@
 .cress-tuner-main { display: grid; min-height: 148px; place-content: center; justify-items: center; gap: 7px; }
 .cress-tuner-main strong { color: var(--text-primary); font: 500 clamp(64px, 12vw, 100px)/.9 var(--font-display); transition: color var(--duration-normal) ease, text-shadow var(--duration-normal) ease; }
 .cress-tuner-main.is-tuned strong { color: var(--gold-200); text-shadow: 0 0 34px color-mix(in srgb, var(--color-gold) 22%, transparent); }
+.cress-tuner-main.is-held, .cress-tuner-cents.is-held { opacity: .55; }
 .cress-tuner-main span { color: var(--text-muted); font: 500 13px var(--font-metric); font-variant-numeric: tabular-nums; }
 .cress-tuner-cents { display: flex; align-items: baseline; gap: 5px; margin-top: -20px; color: var(--text-muted); font: 12px var(--font-sans); }
 .cress-tuner-cents strong { color: var(--text-secondary); font: 550 16px var(--font-metric); font-variant-numeric: tabular-nums; transition: color var(--duration-fast) ease; }
