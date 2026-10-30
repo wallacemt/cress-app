@@ -20,9 +20,11 @@ export function TunerPanel() {
   const naming = useTunerStore((s) => s.noteNaming);
   const [error, setError] = useState(false);
   const [settings, setSettings] = useState(false);
+  const [deviceMenuOpen, setDeviceMenuOpen] = useState(false);
   const [lastNote, setLastNote] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number; at: number } | null>(null);
   const [, setHoldExpired] = useState(0);
   const holdTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const deviceMenu = useRef<HTMLDivElement>(null);
   const note = useMemo(() => pitch ? frequencyToNote(pitch.hz, a4) : null, [pitch, a4]);
   const liveNote = note && pitch && pitch.clarity >= 0.7;
   const isHeld = !liveNote && lastNote !== null && Date.now() - lastNote.at < HOLD_MS;
@@ -43,6 +45,16 @@ export function TunerPanel() {
     holdTimeout.current = setTimeout(() => setHoldExpired((count) => count + 1), HOLD_MS);
   }, [note, pitch]);
   useEffect(() => () => { if (holdTimeout.current) clearTimeout(holdTimeout.current); }, []);
+  useEffect(() => {
+    if (!deviceMenuOpen) return;
+    const close = (event: MouseEvent) => {
+      if (!deviceMenu.current?.contains(event.target as Node)) setDeviceMenuOpen(false);
+    };
+    const key = (event: KeyboardEvent) => { if (event.key === "Escape") setDeviceMenuOpen(false); };
+    document.addEventListener("mousedown", close);
+    document.addEventListener("keydown", key);
+    return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", key); };
+  }, [deviceMenuOpen]);
 
   const status = error ? "Sem entrada de áudio" : !pitch ? "Sem sinal · ouvindo…" : pitch.clarity < 0.7 ? "Detectando…" : Math.abs(note?.cents ?? 50) <= 5 ? "Afinado" : "Ajuste a afinação";
   return (
@@ -53,7 +65,12 @@ export function TunerPanel() {
         <div className={`cress-tuner-main${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}><strong>{displayNote ? noteLabel(displayNote.midi, naming) : "—"}</strong><span>{displayHz !== null ? `${displayHz.toFixed(1)} Hz` : "Aguardando som"}</span></div>
         <TunerGauge cents={displayNote?.cents ?? 0} inTune={!!displayNote && Math.abs(displayNote.cents) <= 5} />
         <div className={`cress-tuner-cents${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}>{displayNote ? <><strong>{displayNote.cents > 0 ? "+" : ""}{displayNote.cents}</strong><span>cents</span></> : <><strong>—</strong><span>cents</span></>}</div>
-        <label className="cress-tuner-device">Entrada de áudio<select value={deviceId ?? ""} onChange={(e) => void setDevice(e.target.value || null).catch(() => setError(true))}><option value="">Padrão do sistema</option>{devices.map((device) => <option key={device.id} value={device.id}>{device.name}{device.isDefault ? " (padrão)" : ""}</option>)}</select></label>
+        <div className="cress-tuner-device"><label htmlFor="cress-tuner-device-button">Entrada de áudio</label><div ref={deviceMenu} className="cress-tuner-device-menu">
+          <button id="cress-tuner-device-button" type="button" aria-haspopup="listbox" aria-expanded={deviceMenuOpen} onClick={() => setDeviceMenuOpen(!deviceMenuOpen)}>{devices.find((device) => device.id === deviceId)?.name ?? "Padrão do sistema"}</button>
+          {deviceMenuOpen && <div role="listbox" aria-label="Entrada de áudio" className="cress-menu-popover cress-tuner-device-options">
+            {[{ id: "", name: "Padrão do sistema", isDefault: false }, ...devices].map((device) => <button key={device.id || "default"} type="button" role="option" aria-selected={(deviceId ?? "") === device.id} className={(deviceId ?? "") === device.id ? "is-selected" : ""} onClick={() => { void setDevice(device.id || null).catch(() => setError(true)); setDeviceMenuOpen(false); }}>{device.name}{device.isDefault ? " (padrão)" : ""}</button>)}
+          </div>}
+        </div></div>
       </>}
       <TunerCarousel midi={displayNote?.midi ?? null} naming={naming} />
     </section>

@@ -24,6 +24,7 @@ import {
 } from "../../../application/metronome";
 import { useMetronomeStore } from "../../../stores/metronomeStore";
 import { Pendulum } from "../../metronome/Pendulum";
+import { CressSlider } from "../../../components/CressSlider";
 
 export function MetronomePanel({ params }: IDockviewPanelProps) {
   void params;
@@ -315,14 +316,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
           {Math.abs(delta)}
         </button>
       ))}
-      <input
-        aria-label="Ajustar BPM"
-        type="range"
-        min="20"
-        max="300"
-        value={config.bpm}
-        onChange={(event) => setBpm(Number(event.target.value))}
-      />
+      <CressSlider aria-label="Ajustar BPM" min={20} max={300} value={config.bpm} onChange={setBpm} />
       {([1, 5] as const).map((delta) => (
         <button
           key={delta}
@@ -438,14 +432,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
       </div>
       <label className="cress-metronome-volume">
         <Volume2 size={16} />
-        <input
-          aria-label="Volume"
-          type="range"
-          min="0"
-          max="100"
-          value={volume}
-          onChange={(event) => setVolume(Number(event.target.value))}
-        />
+        <CressSlider aria-label="Volume" min={0} max={100} value={volume} onChange={setVolume} />
         <output>{volume}%</output>
       </label>
     </>
