@@ -30,6 +30,9 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   const config = useMetronomeStore((state) => state.config);
   const running = useMetronomeStore((state) => state.running);
   const beat = useMetronomeStore((state) => state.beat);
+  const timerSeconds = useMetronomeStore((state) => state.timerSeconds);
+  const timerRemaining = useMetronomeStore((state) => state.timerRemaining);
+  const setTimerSeconds = useMetronomeStore((state) => state.setTimerSeconds);
   const setConfig = useMetronomeStore((state) => state.setConfig);
   const setBpm = useMetronomeStore((state) => state.setBpm);
   const toggle = useMetronomeStore((state) => state.toggle);
@@ -41,6 +44,9 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   const [tempoOpen, setTempoOpen] = useState(false);
   const [tapBpm, setTapBpm] = useState(0);
   const [error, setError] = useState("");
+  const [timerEnabled, setTimerEnabled] = useState(false);
+  const [timerMinutes, setTimerMinutes] = useState("0");
+  const [timerSecs, setTimerSecs] = useState("0");
   const root = useRef<HTMLElement>(null);
   const tempoMenu = useRef<HTMLDivElement>(null);
   const taps = useRef<number[]>([]);
@@ -189,6 +195,10 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   function update(patch: Partial<typeof config>) {
     setConfig({ ...config, ...patch });
   }
+  function updateTimer() {
+    const total = Math.max(0, Number(timerMinutes) * 60 + Number(timerSecs));
+    setTimerSeconds(timerEnabled && total > 0 ? total : null);
+  }
   const isBeat = (index: number) => running && index === beat - 1;
   const row = (
     <div className="cress-metronome-beat-row" aria-label="Tempos do compasso">
@@ -283,6 +293,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
           </div>
         )}
       </div>
+      {running && timerSeconds != null && <output className="cress-metronome-timer-badge" aria-label="Tempo restante">{`${String(Math.floor(timerRemaining / 60)).padStart(2, "0")}:${String(timerRemaining % 60).padStart(2, "0")}`}</output>}
     </div>
   );
   const adjustment = (
@@ -416,6 +427,13 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
               ))}
             </button>
           ))}
+        </div>
+      </div>
+      <div className="cress-metronome-section cress-metronome-timer">
+        <label className="cress-metronome-timer-toggle"><input type="checkbox" aria-label="Habilitar timer" checked={timerEnabled} onChange={(event) => { const enabled = event.target.checked; setTimerEnabled(enabled); const total = Math.max(0, Number(timerMinutes) * 60 + Number(timerSecs)); setTimerSeconds(enabled && total > 0 ? total : null); }} /> TIMER</label>
+        <div className="cress-metronome-timer-inputs">
+          <label>Min <input aria-label="Minutos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerMinutes} onChange={(event) => setTimerMinutes(event.target.value.replace(/\D/g, ""))} onBlur={updateTimer} /></label>
+          <label>Seg <input aria-label="Segundos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerSecs} onChange={(event) => setTimerSecs(String(Math.min(59, Number(event.target.value.replace(/\D/g, "") || 0))))} onBlur={updateTimer} /></label>
         </div>
       </div>
       <label className="cress-metronome-volume">
