@@ -400,8 +400,11 @@
 .cress-metronome-accents button[aria-pressed=true] { border-color: var(--violet-400); background: var(--violet-tint); color: var(--text-primary); }
 .cress-metronome-subdivisions button { display: flex; min-width: 34px; height: 28px; align-items: center; justify-content: center; gap: 3px; padding: 0 5px; border: 1px solid transparent; border-radius: 5px; background: transparent; cursor: pointer; }
 .cress-metronome-subdivisions button[aria-pressed=true] { border-color: var(--violet-400); background: var(--violet-tint); }
-.cress-metronome-subdivisions i { width: 5px; height: 5px; border-radius: 50%; background: var(--text-subtle); }
-.cress-metronome-subdivisions i.is-on { background: var(--violet-400); }
+.cress-metronome-subdivisions button { color: var(--text-subtle); }
+.cress-metronome-subdivisions button[aria-pressed=true] { color: var(--violet-400); }
+.cress-subdivision-icon { width: 24px; height: 24px; overflow: visible; }
+.cress-subdivision-icon .is-rest { opacity: .45; }
+.cress-subdivision-icon-tuplet { fill: currentColor; stroke: none; font: 600 5px var(--font-metric); }
 .cress-metronome-volume { display: flex; align-items: center; gap: 9px; color: var(--text-secondary); }
 .cress-metronome-volume output { width: 38px; color: var(--text-muted); font: 12px var(--font-metric); font-variant-numeric: tabular-nums; text-align: right; }
 .cress-metronome-panel footer { display: grid; width: 100%; margin-top: auto; place-items: center; padding-top: 2px; }

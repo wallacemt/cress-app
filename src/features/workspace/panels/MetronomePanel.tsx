@@ -25,6 +25,7 @@ import {
 import { useMetronomeStore } from "../../../stores/metronomeStore";
 import { Pendulum } from "../../metronome/Pendulum";
 import { CressSlider } from "../../../components/CressSlider";
+import { SubdivisionIcon } from "../../../components/icons/SubdivisionIcon";
 
 export function MetronomePanel({ params }: IDockviewPanelProps) {
   void params;
@@ -416,9 +417,10 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
               aria-pressed={config.subdivision === item}
               onClick={() => update({ subdivision: item })}
             >
-              {item.split("-").map((x, i) => (
-                <i key={i} className={x === "1" ? "is-on" : ""} />
-              ))}
+              <SubdivisionIcon
+                pattern={item}
+                active={config.subdivision === item}
+              />
             </button>
           ))}
         </div>
