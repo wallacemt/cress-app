@@ -4,6 +4,7 @@ import { frequencyToNote, noteLabel } from "../../../domain/tuner";
 import { useAudioInputStore } from "../../../stores/audioInputStore";
 import { useTunerStore } from "../../../stores/tunerStore";
 import { TunerGauge } from "./TunerGauge";
+import { TunerCarousel } from "./TunerCarousel";
 
 const HOLD_MS = 900;
 
@@ -17,8 +18,6 @@ export function TunerPanel() {
   const setDevice = useAudioInputStore((s) => s.setDevice);
   const a4 = useTunerStore((s) => s.a4);
   const naming = useTunerStore((s) => s.noteNaming);
-  const recent = useTunerStore((s) => s.recent);
-  const addRecent = useTunerStore((s) => s.addRecent);
   const [error, setError] = useState(false);
   const [settings, setSettings] = useState(false);
   const [lastNote, setLastNote] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number; at: number } | null>(null);
@@ -36,7 +35,6 @@ export function TunerPanel() {
     void acquire().catch(() => { if (active) setError(true); });
     return () => { active = false; void release().catch(() => {}); };
   }, [acquire, loadDevices, release]);
-  useEffect(() => { if (note && pitch && pitch.clarity >= 0.7) addRecent(note.midi, Math.abs(note.cents) <= 5); }, [note, pitch, addRecent]);
   useEffect(() => {
     if (!note || !pitch || pitch.clarity < 0.7) return;
     const next = { note, hz: pitch.hz, at: Date.now() };
@@ -57,7 +55,7 @@ export function TunerPanel() {
         <div className={`cress-tuner-cents${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}>{displayNote ? <><strong>{displayNote.cents > 0 ? "+" : ""}{displayNote.cents}</strong><span>cents</span></> : <><strong>—</strong><span>cents</span></>}</div>
         <label className="cress-tuner-device">Entrada de áudio<select value={deviceId ?? ""} onChange={(e) => void setDevice(e.target.value || null).catch(() => setError(true))}><option value="">Padrão do sistema</option>{devices.map((device) => <option key={device.id} value={device.id}>{device.name}{device.isDefault ? " (padrão)" : ""}</option>)}</select></label>
       </>}
-      <footer><span>Recentes <small>{recent.length}/12</small></span><div>{recent.length ? recent.map((item, i) => <span className={item.inTune ? "is-tuned" : ""} key={`${item.at}-${i}`} aria-label={`${noteLabel(item.midi, naming)}${item.inTune ? ", afinado" : ""}`}>{noteLabel(item.midi, naming)}</span>) : <p>As notas detectadas aparecerão aqui.</p>}</div></footer>
+      <TunerCarousel midi={displayNote?.midi ?? null} naming={naming} />
     </section>
   );
 }

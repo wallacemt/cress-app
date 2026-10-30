@@ -37,13 +37,10 @@
 .cress-tuner-device select { min-height: 36px; padding: 7px 10px; border: 1px solid var(--border-default); border-radius: 7px; background: var(--ink-800); color: var(--text-primary); font: 12px var(--font-sans); }
 .cress-tuner-device select:focus-visible { outline: 2px solid var(--violet-400); outline-offset: 2px; }
 .cress-tuner-error { display: grid; justify-items: center; gap: 10px; color: var(--text-secondary); text-align: center; }
-.cress-tuner-panel > footer { display: grid; width: min(100%, 560px); gap: 9px; margin-top: auto; padding-top: 13px; border-top: 1px solid var(--border-subtle); color: var(--text-muted); font-size: 11px; }
-.cress-tuner-panel > footer > span { display: flex; align-items: baseline; gap: 7px; }
-.cress-tuner-panel > footer small { color: var(--text-subtle); font: 10px var(--font-metric); }
-.cress-tuner-panel > footer > div { display: flex; min-height: 28px; flex-wrap: wrap; gap: 6px; }
-.cress-tuner-panel > footer > div span { display: inline-flex; min-width: 34px; min-height: 27px; align-items: center; justify-content: center; padding: 3px 9px; border: 1px solid var(--border-subtle); border-radius: 99px; background: rgb(255 255 255 / .025); color: var(--text-secondary); font: 12px var(--font-metric); transition: border-color var(--duration-fast) ease, color var(--duration-fast) ease, background var(--duration-fast) ease; }
-.cress-tuner-panel > footer > div span.is-tuned { border-color: color-mix(in srgb, var(--color-gold) 42%, transparent); background: var(--gold-tint); color: var(--gold-200); }
-.cress-tuner-panel > footer > div p { margin: 1px 0 0; color: var(--text-subtle); font-size: 12px; }
+.cress-tuner-carousel { display: flex; width: min(100%, 560px); min-height: 72px; align-items: center; justify-content: center; gap: clamp(7px, 2vw, 18px); margin-top: auto; padding: 13px 0 4px; border-top: 1px solid var(--border-subtle); color: var(--text-secondary); font: 500 clamp(12px, 2vw, 16px) var(--font-metric); white-space: nowrap; }
+.cress-tuner-carousel-note { transition: opacity var(--duration-fast) ease, color var(--duration-fast) ease, transform var(--duration-fast) ease; }
+.cress-tuner-carousel-note.is-active { color: var(--gold-200); font-size: clamp(20px, 4vw, 30px); transform: scale(1.08); }
+.cress-tuner-carousel.is-empty { justify-content: flex-start; color: var(--text-subtle); font: 12px var(--font-sans); white-space: normal; }
 .cress-tuner-panel .cress-tuner-error { width: min(100%, 420px); padding: 22px 18px; border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--danger-tint) 55%, transparent); }
 .cress-tuner-panel .cress-tuner-error p { max-width: 34ch; margin: 0; line-height: 1.55; }
 @media (prefers-reduced-motion: reduce) { .cress-tuner-panel *, .cress-tuner-panel *::before, .cress-tuner-panel *::after { transition-duration: 0.01ms !important; } }

@@ -99,6 +99,8 @@ O Blueprint-001 assumia que a Store receberia um instalador Win32; na prática, 
 
 ## 9. Pendências conhecidas (não escondidas, aguardando validação/decisão)
 
+- O carrossel visual do afinador deriva as notas vizinhas diretamente do MIDI de `displayNote`, preservando a nota central durante o hold de 900 ms; não depende do histórico `recent` do store. Fonte: `TunerCarousel.tsx` e `TunerPanel.tsx`.
+
 - Afinador mantém a última nota com `clarity >= 0.7` por 900 ms após perder sinal, usando timeout único e estado dimmed; `TunerPanel.tsx` e `workspace-theme.css`.
 - Mock de `useAudioInputStore` em testes DOM deve retornar objeto de estado estável (constante de módulo), nunca um literal recriado a cada chamada: componentes com `useEffect`/`useMemo` que dependem de `pitch`/`note` por referência reagem a cada render, e um mock que recria o objeto a cada chamada gera loop infinito de render (SIGABRT/OOM no worker do Vitest) — isso nunca ocorre com o Zustand real, que só muda a referência quando o store de fato atualiza. `TunerPanel.dom.test.tsx`.
 
