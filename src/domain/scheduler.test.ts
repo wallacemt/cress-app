@@ -4,7 +4,7 @@ import { getBeatInterval, scheduleBlock, type SchedulerState } from "./scheduler
 const state: SchedulerState = {
   bpm: 120,
   beatsPerBar: 4,
-  accentBeat: true,
+  accentBeats: [0],
   subdivision: "1",
   sampleRate: 48000,
   positionFrame: 0,
@@ -18,6 +18,12 @@ describe("scheduler", () => {
 
   it("marks the first beat of each bar as accented", () => {
     expect(scheduleBlock(state, 0, 96000).map(({ type }) => type)).toEqual(["accent", "beat", "beat", "beat"]);
+  });
+
+  it("accents each selected beat independently and allows no accents", () => {
+    expect(scheduleBlock({ ...state, accentBeats: [1, 3] }, 0, 96000).map(({ type }) => type)).toEqual(["beat", "accent", "beat", "accent"]);
+    expect(scheduleBlock({ ...state, accentBeats: [1, 3] }, 0, 192000).map(({ type }) => type)).toEqual(["beat", "accent", "beat", "accent", "beat", "accent", "beat", "accent"]);
+    expect(scheduleBlock({ ...state, accentBeats: [] }, 0, 48000).map(({ type }) => type)).toEqual(["beat", "beat"]);
   });
 
   it("omits zero subdivisions and labels active offbeats", () => {

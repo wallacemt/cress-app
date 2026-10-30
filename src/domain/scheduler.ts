@@ -4,7 +4,7 @@ import { validateBpm } from "./bpm";
 export interface SchedulerState {
   bpm: number;
   beatsPerBar: number;
-  accentBeat: boolean;
+  accentBeats: number[];
   subdivision: (typeof SUBDIVISIONS)[number];
   sampleRate: number;
   positionFrame: number;
@@ -50,7 +50,7 @@ export function scheduleBlock(
     const subdivisionIndex = index % pattern.length;
     events.push({
       frame: absoluteFrame - blockStartFrame,
-      type: subdivisionIndex !== 0 ? "subdivision" : state.accentBeat && beatIndex % state.beatsPerBar === 0 ? "accent" : "beat",
+      type: subdivisionIndex !== 0 ? "subdivision" : state.accentBeats.includes(beatIndex % state.beatsPerBar) ? "accent" : "beat",
       beat: (beatIndex % state.beatsPerBar) + 1,
       bar: Math.floor(beatIndex / state.beatsPerBar) + 1,
     });

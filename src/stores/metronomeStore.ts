@@ -19,7 +19,7 @@ let taps: number[] = [];
 let tapReset: ReturnType<typeof setTimeout> | undefined;
 let unsubscribe: (() => void) | undefined;
 export const useMetronomeStore = create<MetronomeState>((set, get) => ({
-  config: { bpm: 92, beatsPerBar: 4, accentBeat: true, subdivision: "1" },
+  config: { bpm: 92, beatsPerBar: 4, accentBeats: [0], subdivision: "1" },
   running: false,
   beat: -1,
   audioSuspended: false,
