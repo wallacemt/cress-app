@@ -397,14 +397,15 @@
 .cress-metronome-unit { display: flex; padding: 2px; border: 1px solid var(--border-subtle); border-radius: 6px; }
 .cress-metronome-unit button { padding: 3px 8px; border: 0; border-radius: 4px; background: none; color: var(--text-muted); cursor: pointer; }
 .cress-metronome-unit button[aria-pressed=true] { background: var(--violet-tint); color: var(--text-primary); }
-.cress-metronome-accents, .cress-metronome-subdivisions { display: flex; flex-wrap: wrap; gap: 5px; }
+.cress-metronome-accents { display: flex; flex-wrap: wrap; gap: 5px; }
+.cress-metronome-subdivisions { display: grid; width: 100%; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
 .cress-metronome-accents button { width: 28px; height: 28px; border: 1px solid var(--border-default); border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; }
 .cress-metronome-accents button[aria-pressed=true] { border-color: var(--violet-400); background: var(--violet-tint); color: var(--text-primary); }
-.cress-metronome-subdivisions button { display: flex; min-width: 34px; height: 28px; align-items: center; justify-content: center; gap: 3px; padding: 0 5px; border: 1px solid transparent; border-radius: 5px; background: transparent; cursor: pointer; }
+.cress-metronome-subdivisions button { display: flex; min-width: 0; height: clamp(40px, 10cqi, 52px); align-items: center; justify-content: center; gap: 3px; padding: 0 5px; border: 1px solid transparent; border-radius: 5px; background: transparent; cursor: pointer; }
 .cress-metronome-subdivisions button[aria-pressed=true] { border-color: var(--violet-400); background: var(--violet-tint); }
 .cress-metronome-subdivisions button { color: var(--text-subtle); }
 .cress-metronome-subdivisions button[aria-pressed=true] { color: var(--violet-400); }
-.cress-subdivision-icon { width: 24px; height: 24px; overflow: visible; }
+.cress-subdivision-icon { width: clamp(32px, 8cqi, 40px); height: clamp(32px, 8cqi, 40px); overflow: visible; }
 .cress-subdivision-icon .is-rest { opacity: .45; }
 .cress-subdivision-icon-tuplet { fill: currentColor; stroke: none; font: 600 5px var(--font-metric); }
 .cress-metronome-volume { display: flex; align-items: center; gap: 9px; color: var(--text-secondary); }
