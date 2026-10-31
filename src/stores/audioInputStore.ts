@@ -8,6 +8,7 @@ interface AudioInputState {
   deviceId: string | null;
   devices: InputDevice[];
   running: boolean;
+  error: { code: string; message: string } | null;
   acquire(): Promise<void>;
   release(): Promise<void>;
   setDevice(deviceId: string | null): Promise<void>;
@@ -18,8 +19,12 @@ export function createAudioInputStore(port: typeof audioPort = audioPort) {
   let references = 0;
   let generation = 0;
   const store = create<AudioInputState>((set, get) => ({
-    level: { rms: 0, peak: 0 }, pitch: null, deviceId: null, devices: [], running: false,
+    level: { rms: 0, peak: 0 }, pitch: null, deviceId: null, devices: [], running: false, error: null,
     acquire: async () => {
+      if (references > 0 && get().error) {
+        await restart(get().deviceId);
+        return;
+      }
       references += 1;
       if (references === 1) {
         try { await start(get().deviceId); }
@@ -29,28 +34,58 @@ export function createAudioInputStore(port: typeof audioPort = audioPort) {
     release: async () => {
       if (references === 0) return;
       references -= 1;
-      if (references === 0) { generation += 1; await port.stopInput(); set({ running: false, level: { rms: 0, peak: 0 }, pitch: null }); }
+      if (references === 0) { generation += 1; await port.stopInput(); set({ running: false, level: { rms: 0, peak: 0 }, pitch: null, error: null }); }
     },
     setDevice: async (deviceId) => {
       if (deviceId === get().deviceId) return;
-      set({ deviceId });
+      set({ deviceId, error: null });
       if (references > 0) {
-        generation += 1;
+        const requestedGeneration = ++generation;
         await port.stopInput();
-        set({ running: false });
+        if (requestedGeneration !== generation) return;
+        store.setState({ running: false, pitch: null });
+        autoRetryUsed = false;
         await start(deviceId);
       }
     },
     loadDevices: async () => set({ devices: await port.listInputDevices() }),
   }));
+  let autoRetryUsed = false;
   const start = async (deviceId: string | null) => {
     const current = ++generation;
     await port.startInput(deviceId, (event: AudioEvent) => {
-      if (current !== generation || event.event !== "frame") return;
+      if (current !== generation) return;
+      if (event.event === "error") {
+        store.setState({ error: event.data, running: false, pitch: null });
+        if (!autoRetryUsed) {
+          autoRetryUsed = true;
+          generation += 1;
+          const retryGeneration = generation;
+          void port.stopInput().catch(() => {});
+          setTimeout(() => {
+            if (references > 0 && generation === retryGeneration) void start(deviceId).catch((error: unknown) => store.setState({ error: toAudioError(error) }));
+          }, 500);
+        }
+        return;
+      }
       store.setState({ level: { rms: event.data.rms, peak: event.data.peak }, pitch: event.data.pitch });
     });
-    if (current === generation) store.setState({ running: true });
+    if (current === generation) store.setState({ running: true, error: null });
+    else if (references === 0) await port.stopInput();
   };
+
+  const restart = async (deviceId: string | null) => {
+    generation += 1;
+    await port.stopInput();
+    store.setState({ running: false, pitch: null });
+    autoRetryUsed = false;
+    try { await start(deviceId); }
+    catch (error) { store.setState({ error: toAudioError(error), running: false }); throw error; }
+  };
+
+  function toAudioError(error: unknown) {
+    return { code: "AUDIO_INPUT", message: error instanceof Error ? error.message : String(error) };
+  }
 
   return store;
 }

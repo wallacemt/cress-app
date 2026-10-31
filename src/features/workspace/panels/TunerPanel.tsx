@@ -7,9 +7,11 @@ import { TunerGauge } from "./TunerGauge";
 import { TunerCarousel } from "./TunerCarousel";
 
 const HOLD_MS = 900;
+const SWITCH_DELAY_MS = 160;
 
 export function TunerPanel() {
   const pitch = useAudioInputStore((s) => s.pitch);
+  const inputError = useAudioInputStore((s) => s.error);
   const devices = useAudioInputStore((s) => s.devices);
   const deviceId = useAudioInputStore((s) => s.deviceId);
   const acquire = useAudioInputStore((s) => s.acquire);
@@ -22,14 +24,18 @@ export function TunerPanel() {
   const [settings, setSettings] = useState(false);
   const [deviceMenuOpen, setDeviceMenuOpen] = useState(false);
   const [lastNote, setLastNote] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number; at: number } | null>(null);
+  const [stableReading, setStableReading] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number } | null>(null);
+  const stableReadingRef = useRef(stableReading);
+  const pendingReading = useRef<{ midi: number; timer: ReturnType<typeof setTimeout> } | null>(null);
   const [, setHoldExpired] = useState(0);
   const holdTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deviceMenu = useRef<HTMLDivElement>(null);
   const note = useMemo(() => pitch ? frequencyToNote(pitch.hz, a4) : null, [pitch, a4]);
-  const liveNote = note && pitch && pitch.clarity >= 0.7;
+  const liveNote = stableReading && pitch && pitch.clarity >= 0.7;
   const isHeld = !liveNote && lastNote !== null && Date.now() - lastNote.at < HOLD_MS;
-  const displayNote = liveNote ? note : isHeld ? lastNote.note : null;
-  const displayHz = liveNote ? pitch.hz : isHeld ? lastNote.hz : null;
+  const displayNote = liveNote ? stableReading.note : isHeld ? lastNote.note : null;
+  const displayHz = liveNote ? stableReading.hz : isHeld ? lastNote.hz : null;
+  stableReadingRef.current = stableReading;
 
   useEffect(() => {
     let active = true;
@@ -38,13 +44,43 @@ export function TunerPanel() {
     return () => { active = false; void release().catch(() => {}); };
   }, [acquire, loadDevices, release]);
   useEffect(() => {
-    if (!note || !pitch || pitch.clarity < 0.7) return;
-    const next = { note, hz: pitch.hz, at: Date.now() };
-    setLastNote(next);
+    setError(Boolean(inputError));
+  }, [inputError]);
+  useEffect(() => {
+    if (!note || !pitch || pitch.clarity < 0.7) {
+      if (pendingReading.current) clearTimeout(pendingReading.current.timer);
+      pendingReading.current = null;
+      return;
+    }
+    const now = Date.now();
+    if (stableReadingRef.current?.note.midi === note.midi) {
+      if (pendingReading.current) clearTimeout(pendingReading.current.timer);
+      pendingReading.current = null;
+      const hz = stableReadingRef.current.hz * 0.7 + pitch.hz * 0.3;
+      const smoothedNote = frequencyToNote(hz, a4);
+      setStableReading({ note: smoothedNote, hz });
+      setLastNote({ note: smoothedNote, hz, at: now });
+      if (holdTimeout.current) clearTimeout(holdTimeout.current);
+      holdTimeout.current = setTimeout(() => setHoldExpired((count) => count + 1), HOLD_MS);
+      return;
+    }
+    if (pendingReading.current?.midi === note.midi) return;
+    if (pendingReading.current) clearTimeout(pendingReading.current.timer);
+    const candidate = { note, hz: pitch.hz };
+    const timer = setTimeout(() => {
+      if (pendingReading.current?.midi !== note.midi) return;
+      pendingReading.current = null;
+      setStableReading(candidate);
+      setLastNote({ ...candidate, at: Date.now() });
+      if (holdTimeout.current) clearTimeout(holdTimeout.current);
+      holdTimeout.current = setTimeout(() => setHoldExpired((count) => count + 1), HOLD_MS);
+    }, SWITCH_DELAY_MS);
+    pendingReading.current = { midi: note.midi, timer };
+  }, [a4, note, pitch]);
+  useEffect(() => () => {
     if (holdTimeout.current) clearTimeout(holdTimeout.current);
-    holdTimeout.current = setTimeout(() => setHoldExpired((count) => count + 1), HOLD_MS);
-  }, [note, pitch]);
-  useEffect(() => () => { if (holdTimeout.current) clearTimeout(holdTimeout.current); }, []);
+    if (pendingReading.current) clearTimeout(pendingReading.current.timer);
+  }, []);
   useEffect(() => {
     if (!deviceMenuOpen) return;
     const close = (event: MouseEvent) => {
@@ -62,8 +98,8 @@ export function TunerPanel() {
       <header><span className={`cress-tuner-status${note && Math.abs(note.cents) <= 5 ? " is-tuned" : ""}`}><i />{status}</span><button type="button" className="cress-control" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={15} /> Configurações</button></header>
       {settings && <div className="cress-tuner-settings"><span>Referência <strong>A4 · {a4} Hz</strong></span><span className="cress-tuner-settings-divider" /><button type="button" aria-label="Alternar nomenclatura de notas" onClick={() => useTunerStore.getState().setNoteNaming(naming === "letter" ? "solfege" : "letter")}>Nomes <strong>{naming === "letter" ? "C–D–E" : "Dó–Ré–Mi"}</strong></button></div>}
       {error ? <div className="cress-tuner-error"><p>Verifique a permissão de microfone do Windows e a entrada de áudio.</p><button type="button" className="cress-control" onClick={() => { setError(false); void acquire().catch(() => setError(true)); }}>Tentar novamente</button></div> : <>
-        <div className={`cress-tuner-main${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}><strong>{displayNote ? noteLabel(displayNote.midi, naming) : "—"}</strong><span>{displayHz !== null ? `${displayHz.toFixed(1)} Hz` : "Aguardando som"}</span></div>
         <TunerGauge cents={displayNote?.cents ?? 0} inTune={!!displayNote && Math.abs(displayNote.cents) <= 5} />
+        <div className={`cress-tuner-main${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}><strong>{displayNote ? noteLabel(displayNote.midi, naming) : "—"}</strong><span>{displayHz !== null ? `${displayHz.toFixed(1)} Hz` : "Aguardando som"}</span></div>
         <div className={`cress-tuner-cents${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}>{displayNote ? <><strong>{displayNote.cents > 0 ? "+" : ""}{displayNote.cents}</strong><span>cents</span></> : <><strong>—</strong><span>cents</span></>}</div>
         <div className="cress-tuner-device"><label htmlFor="cress-tuner-device-button">Entrada de áudio</label><div ref={deviceMenu} className="cress-tuner-device-menu">
           <button id="cress-tuner-device-button" type="button" aria-haspopup="listbox" aria-expanded={deviceMenuOpen} onClick={() => setDeviceMenuOpen(!deviceMenuOpen)}>{devices.find((device) => device.id === deviceId)?.name ?? "Padrão do sistema"}</button>
