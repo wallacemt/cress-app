@@ -7,6 +7,13 @@ declare class AudioWorkletProcessor {
 
 type ProcessorConfig = Omit<SchedulerState, "positionFrame">;
 
+const PARTIALS = [
+  { ratio: 1, gain: 0.09, decayMs: 10 },
+  { ratio: 2, gain: 0.34, decayMs: 5 },
+  { ratio: 6, gain: 0.57, decayMs: 2 },
+];
+const VOICE_CUTOFF_MS = 100;
+
 class MetronomeProcessor extends AudioWorkletProcessor {
   private state: SchedulerState;
   private blockStartFrame = 0;
@@ -49,12 +56,18 @@ class MetronomeProcessor extends AudioWorkletProcessor {
         for (const voice of this.voices) {
           for (let frame = Math.max(0, voice.startFrame - this.blockStartFrame); frame < blockLength; frame += 1) {
             const elapsed = this.blockStartFrame + frame - voice.startFrame;
-            const envelope = Math.max(0, 1 - elapsed / (this.state.sampleRate * 0.03)); // ponytail: click decay duration, tune by ear.
-            if (envelope > 0) output[frame] = (output[frame] ?? 0) + Math.sin(voice.phase) * envelope * voice.amplitude;
+            let sample = 0;
+            for (const partial of PARTIALS) {
+              const decayFrames = this.state.sampleRate * (partial.decayMs / 1000);
+              sample += Math.sin(voice.phase * partial.ratio) * Math.exp(-elapsed / decayFrames) * partial.gain;
+            }
+            output[frame] = (output[frame] ?? 0) + sample * voice.amplitude;
             voice.phase += (2 * Math.PI * voice.frequency) / this.state.sampleRate;
           }
         }
-        this.voices = this.voices.filter((voice) => this.blockStartFrame + blockLength - voice.startFrame < this.state.sampleRate * 0.03);
+        this.voices = this.voices.filter((voice) =>
+          this.blockStartFrame + blockLength - voice.startFrame < this.state.sampleRate * (VOICE_CUTOFF_MS / 1000),
+        );
       }
     }
     this.blockStartFrame += blockLength;

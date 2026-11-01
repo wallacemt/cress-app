@@ -5,7 +5,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const engine = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn(), updateConfig: vi.fn(), onBeat: vi.fn(() => () => {}) }));
 vi.mock("../../metronome/engine", () => engine);
 vi.mock("../../../app/container", () => ({ container: { getDeps: vi.fn().mockResolvedValue({ db: {} }) } }));
-vi.mock("../../../application/metronome", () => ({ loadMetronomeConfig: vi.fn().mockResolvedValue({ bpm: 92, beatsPerBar: 4, accentBeat: true, subdivision: "1" }), saveMetronomeConfig: vi.fn().mockResolvedValue(undefined) }));
+vi.mock("../../../application/metronome", () => ({ loadMetronomeConfig: vi.fn().mockResolvedValue({ bpm: 92, beatsPerBar: 4, accentBeats: [0], subdivision: "1" }), saveMetronomeConfig: vi.fn().mockResolvedValue(undefined) }));
 import { MetronomePanel } from "./MetronomePanel";
 import { useMetronomeStore } from "../../../stores/metronomeStore";
 
@@ -14,7 +14,7 @@ describe("MetronomePanel", () => {
     engine.start.mockReset().mockResolvedValue(undefined);
     engine.stop.mockReset();
     engine.updateConfig.mockReset();
-    useMetronomeStore.setState({ config: { bpm: 92, beatsPerBar: 4, accentBeat: true, subdivision: "1" }, running: false, beat: -1, audioSuspended: false });
+    useMetronomeStore.setState({ config: { bpm: 92, beatsPerBar: 4, accentBeats: [0], subdivision: "1" }, running: false, beat: -1, audioSuspended: false });
   });
   it("renders BPM, edits it, and starts and stops the engine", async () => {
     render(<MetronomePanel api={{} as never} containerApi={{} as never} params={{}} />);
