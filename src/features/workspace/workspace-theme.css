@@ -12,6 +12,8 @@
 .cress-tuner-status.is-tuned { color: var(--gold-200); }
 .cress-tuner-status.is-tuned i { background: var(--color-gold); box-shadow: 0 0 12px color-mix(in srgb, var(--color-gold) 70%, transparent); }
 .cress-tuner-settings { display: flex; align-items: center; justify-content: center; gap: 16px; padding: 8px 13px; border: 1px solid var(--border-subtle); border-radius: 8px; background: rgb(255 255 255 / .025); color: var(--text-muted); font-size: 12px; }
+.cress-tuner-settings .cress-tuner-reference { display: grid; grid-template-columns: auto auto; align-items: center; gap: 2px 8px; }
+.cress-tuner-settings .cress-tuner-reference .cress-slider { grid-column: 1 / -1; width: 150px; }
 .cress-tuner-settings span, .cress-tuner-settings button { display: flex; align-items: center; gap: 7px; }
 .cress-tuner-settings strong { color: var(--text-primary); font-weight: 550; }
 .cress-tuner-settings .cress-tuner-settings-divider { width: 1px; height: 18px; background: var(--border-default); }
@@ -54,6 +56,7 @@
 .cress-tuner-carousel.is-empty { justify-content: flex-start; color: var(--text-subtle); font: 12px var(--font-sans); white-space: normal; }
 .cress-tuner-panel .cress-tuner-error { width: min(100%, 420px); padding: 22px 18px; border: 1px solid color-mix(in srgb, var(--danger) 22%, transparent); border-radius: 12px; background: color-mix(in srgb, var(--danger-tint) 55%, transparent); }
 .cress-tuner-panel .cress-tuner-error p { max-width: 34ch; margin: 0; line-height: 1.55; }
+.cress-tuner-silence-hint { width: min(100%, 420px); padding: 10px 14px; border: 1px solid color-mix(in srgb, var(--warning) 25%, transparent); border-radius: 8px; background: var(--warning-tint); color: var(--warning); font-size: 12px; line-height: 1.5; }
 @media (prefers-reduced-motion: reduce) { .cress-tuner-panel *, .cress-tuner-panel *::before, .cress-tuner-panel *::after { transition-duration: 0.01ms !important; } }
 
 .cress-workspace-header {

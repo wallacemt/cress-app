@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Settings2 } from "lucide-react";
+import { CressSlider } from "../../../components/CressSlider";
 import { frequencyToNote, noteLabel } from "../../../domain/tuner";
 import { useAudioInputStore } from "../../../stores/audioInputStore";
 import { useTunerStore } from "../../../stores/tunerStore";
@@ -11,6 +12,8 @@ const SWITCH_DELAY_MS = 160;
 export function TunerPanel() {
   const pitch = useAudioInputStore((s) => s.pitch);
   const inputError = useAudioInputStore((s) => s.error);
+  const level = useAudioInputStore((s) => s.level);
+  const running = useAudioInputStore((s) => s.running);
   const devices = useAudioInputStore((s) => s.devices);
   const deviceId = useAudioInputStore((s) => s.deviceId);
   const acquire = useAudioInputStore((s) => s.acquire);
@@ -22,11 +25,13 @@ export function TunerPanel() {
   const [error, setError] = useState(false);
   const [settings, setSettings] = useState(false);
   const [deviceMenuOpen, setDeviceMenuOpen] = useState(false);
+  const [silentInput, setSilentInput] = useState(false);
   const [lastNote, setLastNote] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number; at: number } | null>(null);
   const [stableReading, setStableReading] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number } | null>(null);
   const stableReadingRef = useRef(stableReading);
   const pendingReading = useRef<{ midi: number; timer: ReturnType<typeof setTimeout> } | null>(null);
   const deviceMenu = useRef<HTMLDivElement>(null);
+  const silenceStarted = useRef<number | null>(null);
   const note = useMemo(() => pitch ? frequencyToNote(pitch.hz, a4) : null, [pitch, a4]);
   const liveNote = stableReading && pitch && pitch.clarity >= 0.7;
   const isHeld = !liveNote && lastNote !== null;
@@ -43,6 +48,17 @@ export function TunerPanel() {
   useEffect(() => {
     setError(Boolean(inputError));
   }, [inputError]);
+  useEffect(() => {
+    if (!running || level.rms >= 0.001) {
+      silenceStarted.current = null;
+      setSilentInput(false);
+      return;
+    }
+    silenceStarted.current ??= Date.now();
+    const remaining = Math.max(0, 5000 - (Date.now() - silenceStarted.current));
+    const timer = setTimeout(() => setSilentInput(true), remaining);
+    return () => clearTimeout(timer);
+  }, [level.rms, running]);
   useEffect(() => {
     if (!note || !pitch || pitch.clarity < 0.7) {
       if (pendingReading.current) clearTimeout(pendingReading.current.timer);
@@ -88,7 +104,8 @@ export function TunerPanel() {
   return (
     <section className="cress-tuner-panel" aria-label="Afinador">
       <header><span className={`cress-tuner-status${note && Math.abs(note.cents) <= 5 ? " is-tuned" : ""}`}><i />{status}</span><button type="button" className="cress-control" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={15} /> Configurações</button></header>
-      {settings && <div className="cress-tuner-settings"><span>Referência <strong>A4 · {a4} Hz</strong></span><span className="cress-tuner-settings-divider" /><button type="button" aria-label="Alternar nomenclatura de notas" onClick={() => useTunerStore.getState().setNoteNaming(naming === "letter" ? "solfege" : "letter")}>Nomes <strong>{naming === "letter" ? "C–D–E" : "Dó–Ré–Mi"}</strong></button></div>}
+      {settings && <div className="cress-tuner-settings"><label className="cress-tuner-reference">A4 <strong>{a4} Hz</strong><CressSlider aria-label="Frequência de referência A4" min={415} max={466} value={a4} onChange={(value) => useTunerStore.getState().setA4(value)} /></label><span className="cress-tuner-settings-divider" /><button type="button" aria-label="Alternar nomenclatura de notas" onClick={() => useTunerStore.getState().setNoteNaming(naming === "letter" ? "solfege" : "letter")}>Nomes <strong>{naming === "letter" ? "C–D–E" : "Dó–Ré–Mi"}</strong></button></div>}
+      {!error && silentInput && <div className="cress-tuner-silence-hint" role="status">Verifique: Configurações do Windows → Privacidade e segurança → Microfone → Permitir que apps da área de trabalho acessem o microfone.</div>}
       {error ? <div className="cress-tuner-error"><p>Verifique a permissão de microfone do Windows e a entrada de áudio.</p><button type="button" className="cress-control" onClick={() => { setError(false); void acquire().catch(() => setError(true)); }}>Tentar novamente</button></div> : <>
         <TunerGauge cents={displayNote?.cents ?? 0} inTune={!!displayNote && Math.abs(displayNote.cents) <= 5} />
         <div className={`cress-tuner-main${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}><strong>{displayNote ? noteLabel(displayNote.midi, naming) : "—"}</strong><span>{displayHz !== null ? `${displayHz.toFixed(1)} Hz` : "Aguardando som"}</span></div>

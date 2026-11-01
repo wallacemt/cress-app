@@ -17,5 +17,5 @@ export function startInput(deviceId: string | null, onEvent: (event: AudioEvent)
 }
 
 export function stopInput(): Promise<void> {
-  return invoke("audio_stop_input");
+  return invoke<void>("audio_stop_input");
 }

@@ -1,4 +1,5 @@
-import { create } from "zustand";
+import { create, type StateCreator } from "zustand";
+import { persist } from "zustand/middleware";
 import * as audioPort from "../infrastructure/tauri/audioPort";
 import type { AudioEvent, InputDevice } from "../infrastructure/tauri/audioPort";
 
@@ -15,10 +16,10 @@ interface AudioInputState {
   loadDevices(): Promise<void>;
 }
 
-export function createAudioInputStore(port: typeof audioPort = audioPort) {
+export function createAudioInputStore(port: typeof audioPort = audioPort, persistDevice = false) {
   let references = 0;
   let generation = 0;
-  const store = create<AudioInputState>((set, get) => ({
+  const initializer: StateCreator<AudioInputState> = (set, get) => ({
     level: { rms: 0, peak: 0 }, pitch: null, deviceId: null, devices: [], running: false, error: null,
     acquire: async () => {
       if (references > 0 && get().error) {
@@ -48,8 +49,11 @@ export function createAudioInputStore(port: typeof audioPort = audioPort) {
         await start(deviceId);
       }
     },
-    loadDevices: async () => set({ devices: await port.listInputDevices() }),
-  }));
+    loadDevices: async () => { set({ devices: await port.listInputDevices() }); },
+  });
+  const store = persistDevice
+    ? create<AudioInputState>()(persist(initializer, { name: "cress-audio-input-preferences", partialize: ({ deviceId }) => ({ deviceId }) }))
+    : create<AudioInputState>(initializer);
   let autoRetryUsed = false;
   const start = async (deviceId: string | null) => {
     const current = ++generation;
@@ -90,4 +94,4 @@ export function createAudioInputStore(port: typeof audioPort = audioPort) {
   return store;
 }
 
-export const useAudioInputStore = createAudioInputStore();
+export const useAudioInputStore = createAudioInputStore(audioPort, true);
