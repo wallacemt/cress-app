@@ -13,8 +13,7 @@ pub struct PitchResult {
 }
 
 /// Refina um tau inteiro via interpolação parabólica nos 3 valores inteiros de
-/// diferença ao redor dele. Usado para frequências baixas/médias, onde o período
-/// tem muitas amostras e o array `difference` já tem resolução suficiente.
+/// diferença ao redor dele (método clássico do YIN, usado para todo tau).
 fn refine_tau_parabolic(difference: &[f32], tau_int: usize, max_tau: usize) -> f32 {
     if tau_int <= 1 || tau_int >= max_tau {
         return tau_int as f32;
@@ -31,75 +30,6 @@ fn refine_tau_parabolic(difference: &[f32], tau_int: usize, max_tau: usize) -> f
         }
     }
     tau_int as f32
-}
-
-/// Refina um tau inteiro (muito curto = frequência alta) com busca fracionária
-/// sub-amostra ao redor do inteiro, usando interpolação linear do sinal. Só
-/// necessário quando o período tem poucas amostras (ex.: 2000 Hz @ 48 kHz ≈ 24).
-fn refine_tau_fractional(window: &[f32], half_window: usize, tau_int: usize) -> f32 {
-    let step = 0.05_f32;
-    let range = 0.3_f32;
-
-    // Busca grossa de -0.3 a +0.3 amostra em torno de tau_int.
-    let mut best_frac = 0.0_f32;
-    let mut best_diff = f32::MAX;
-    let mut frac = -range;
-    while frac <= range {
-        let d = difference_at_tau(window, half_window, tau_int as f32 + frac);
-        if d < best_diff {
-            best_diff = d;
-            best_frac = frac;
-        }
-        frac += step;
-    }
-
-    // Interpolação parabólica fina nos 3 pontos fracionários ao redor do melhor.
-    let f0 = best_frac - step;
-    let f1 = best_frac;
-    let f2 = best_frac + step;
-    let d0 = difference_at_tau(window, half_window, tau_int as f32 + f0);
-    let d1 = difference_at_tau(window, half_window, tau_int as f32 + f1);
-    let d2 = difference_at_tau(window, half_window, tau_int as f32 + f2);
-
-    let denom = d0 - 2.0 * d1 + d2;
-    if denom.abs() > f32::EPSILON {
-        let offset = 0.5 * (d0 - d2) / denom;
-        let refined_frac = best_frac + offset;
-        if refined_frac.abs() <= range {
-            return tau_int as f32 + refined_frac;
-        }
-    }
-    tau_int as f32 + best_frac
-}
-
-/// Retorna o valor do sinal em um índice fracionário via interpolação linear.
-/// Índices fora dos bounds são clampados ao valor mais próximo. Usado apenas
-/// pelo refinamento fracionário de frequências altas.
-fn interpolated_sample(window: &[f32], idx: f32) -> f32 {
-    let len = window.len();
-    if idx <= 0.0 {
-        return window[0];
-    }
-    if idx >= len as f32 - 1.0 {
-        return window[len - 1];
-    }
-    let i = idx as usize;
-    let frac = idx - i as f32;
-    window[i] * (1.0 - frac) + window[i + 1] * frac
-}
-
-/// Calcula a função de diferença do YIN para um tau (possivelmente fracionário),
-/// somando (w[i] - w[i + tau])² sobre a metade da janela. Usado apenas pelo
-/// refinamento fracionário de frequências altas.
-fn difference_at_tau(window: &[f32], half_window: usize, tau: f32) -> f32 {
-    let mut sum = 0.0_f32;
-    for index in 0..half_window {
-        let a = interpolated_sample(window, index as f32);
-        let b = interpolated_sample(window, index as f32 + tau);
-        let delta = a - b;
-        sum += delta * delta;
-    }
-    sum
 }
 
 /// Detects the strongest periodic component in a window using the YIN algorithm.
@@ -151,17 +81,7 @@ pub fn detect_pitch(window: &[f32], sample_rate: u32) -> Option<PitchResult> {
         return None;
     }
 
-    let refined_tau = if tau <= 200 {
-        // Alta frequência (período curto): refinamento fracionário sub-amostra,
-        // necessário porque a interpolação parabólica sobre `difference` não
-        // tem resolução suficiente quando o período tem poucas amostras
-        // (ex.: 2000 Hz @ 48 kHz ≈ 24 amostras).
-        refine_tau_fractional(window, half_window, tau)
-    } else {
-        // Baixa/média frequência: refinamento parabólico sobre o array
-        // `difference` já computado (comportamento original do YIN).
-        refine_tau_parabolic(&difference, tau, max_tau)
-    };
+    let refined_tau = refine_tau_parabolic(&difference, tau, max_tau);
 
     if refined_tau <= 0.0 {
         return None;
