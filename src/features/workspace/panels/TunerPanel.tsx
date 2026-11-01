@@ -6,7 +6,6 @@ import { useTunerStore } from "../../../stores/tunerStore";
 import { TunerGauge } from "./TunerGauge";
 import { TunerCarousel } from "./TunerCarousel";
 
-const HOLD_MS = 900;
 const SWITCH_DELAY_MS = 160;
 
 export function TunerPanel() {
@@ -27,12 +26,10 @@ export function TunerPanel() {
   const [stableReading, setStableReading] = useState<{ note: ReturnType<typeof frequencyToNote>; hz: number } | null>(null);
   const stableReadingRef = useRef(stableReading);
   const pendingReading = useRef<{ midi: number; timer: ReturnType<typeof setTimeout> } | null>(null);
-  const [, setHoldExpired] = useState(0);
-  const holdTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const deviceMenu = useRef<HTMLDivElement>(null);
   const note = useMemo(() => pitch ? frequencyToNote(pitch.hz, a4) : null, [pitch, a4]);
   const liveNote = stableReading && pitch && pitch.clarity >= 0.7;
-  const isHeld = !liveNote && lastNote !== null && Date.now() - lastNote.at < HOLD_MS;
+  const isHeld = !liveNote && lastNote !== null;
   const displayNote = liveNote ? stableReading.note : isHeld ? lastNote.note : null;
   const displayHz = liveNote ? stableReading.hz : isHeld ? lastNote.hz : null;
   stableReadingRef.current = stableReading;
@@ -60,8 +57,6 @@ export function TunerPanel() {
       const smoothedNote = frequencyToNote(hz, a4);
       setStableReading({ note: smoothedNote, hz });
       setLastNote({ note: smoothedNote, hz, at: now });
-      if (holdTimeout.current) clearTimeout(holdTimeout.current);
-      holdTimeout.current = setTimeout(() => setHoldExpired((count) => count + 1), HOLD_MS);
       return;
     }
     if (pendingReading.current?.midi === note.midi) return;
@@ -72,13 +67,10 @@ export function TunerPanel() {
       pendingReading.current = null;
       setStableReading(candidate);
       setLastNote({ ...candidate, at: Date.now() });
-      if (holdTimeout.current) clearTimeout(holdTimeout.current);
-      holdTimeout.current = setTimeout(() => setHoldExpired((count) => count + 1), HOLD_MS);
     }, SWITCH_DELAY_MS);
     pendingReading.current = { midi: note.midi, timer };
   }, [a4, note, pitch]);
   useEffect(() => () => {
-    if (holdTimeout.current) clearTimeout(holdTimeout.current);
     if (pendingReading.current) clearTimeout(pendingReading.current.timer);
   }, []);
   useEffect(() => {
