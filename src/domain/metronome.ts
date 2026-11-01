@@ -19,7 +19,7 @@ export interface MetronomeConfig {
 // ponytail: faixas de andamento convencionais (Dossier S4), ajustáveis por ouvido.
 export const TEMPO_MARKINGS = [
   [20, "Grave"], [40, "Largo"], [60, "Larghetto"], [66, "Adagio"],
-  [76, "Andante"], [108, "Moderato"], [120, "Allegro"], [135, "Vivace"],
+  [76, "Andante"], [108, "Moderato"], [120, "Allegro"], [156, "Vivace"],
   [176, "Presto"], [200, "Prestissimo"],
 ] as const;
 export type TempoMarking = (typeof TEMPO_MARKINGS)[number][1];
@@ -34,7 +34,7 @@ export function getTempoMarking(bpm: number): TempoMarking {
 }
 export const TEMPO_MARKING_MIDPOINTS: Record<TempoMarking, number> = {
   Grave: 30, Largo: 40, Larghetto: 63, Adagio: 70, Andante: 92,
-  Moderato: 114, Allegro: 137, Vivace: 135, Presto: 188, Prestissimo: 200,
+  Moderato: 114, Allegro: 137, Vivace: 165, Presto: 188, Prestissimo: 200,
 };
 export function tapTempo(times: number[], now = Date.now()): number {
   const recent = times.filter((t) => now - t <= 2000).slice(-5);
