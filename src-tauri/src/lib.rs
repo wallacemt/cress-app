@@ -27,7 +27,12 @@ pub fn run() {
                 )
                 .build(),
         )
-        .plugin(tauri_plugin_log::Builder::default().build())
+        .plugin(
+            tauri_plugin_log::Builder::default()
+                .level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Warn })
+                .level_for("sqlx", log::LevelFilter::Warn)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .manage(audio::commands::AudioInputState::default())
         .invoke_handler(tauri::generate_handler![
