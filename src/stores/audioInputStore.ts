@@ -49,7 +49,12 @@ export function createAudioInputStore(port: typeof audioPort = audioPort, persis
         await start(deviceId);
       }
     },
-    loadDevices: async () => { set({ devices: await port.listInputDevices() }); },
+    loadDevices: async () => {
+      const devices = await port.listInputDevices();
+      set({ devices });
+      const { deviceId } = get();
+      if (deviceId !== null && !devices.some((device) => device.id === deviceId)) set({ deviceId: null });
+    },
   });
   const store = persistDevice
     ? create<AudioInputState>()(persist(initializer, { name: "cress-audio-input-preferences", partialize: ({ deviceId }) => ({ deviceId }) }))

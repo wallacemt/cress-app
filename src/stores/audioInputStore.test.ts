@@ -3,6 +3,21 @@ import type { AudioEvent } from "../infrastructure/tauri/audioPort";
 import { createAudioInputStore } from "./audioInputStore";
 
 describe("audioInputStore", () => {
+  it("resets a persisted device id that is no longer available", async () => {
+    const port = {
+      listInputDevices: vi.fn(async () => [{ id: "default", name: "Default input", isDefault: true }]),
+      startInput: vi.fn(async () => ({ sampleRate: 48_000, channels: 1 })),
+      stopInput: vi.fn(async () => undefined),
+    };
+    const store = createAudioInputStore(port);
+    store.setState({ deviceId: "disconnected-usb" });
+
+    await store.getState().loadDevices();
+
+    expect(store.getState().devices).toEqual([{ id: "default", name: "Default input", isDefault: true }]);
+    expect(store.getState().deviceId).toBeNull();
+  });
+
   it("starts and stops once across multiple acquisitions and forwards frames", async () => {
     let send: ((event: AudioEvent) => void) | undefined;
     const port = {
