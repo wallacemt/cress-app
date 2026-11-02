@@ -87,7 +87,7 @@ export function Workspace({
       for (const spec of buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize)) {
         event.api.addPanel({
           ...spec,
-          params: spec.component === "session" && session && activeDeps
+          params: (spec.component === "session" || spec.component === "recorder") && session && activeDeps
             ? { session, pieceId, deps: activeDeps }
             : undefined,
         });
@@ -115,7 +115,7 @@ export function Workspace({
             >[0],
           );
           for (const panel of event.api.panels) {
-            if (panel.api.component === "session" && session && activeDeps) {
+            if ((panel.api.component === "session" || panel.api.component === "recorder") && session && activeDeps) {
               panel.api.updateParameters({ session, pieceId, deps: activeDeps });
             }
           }

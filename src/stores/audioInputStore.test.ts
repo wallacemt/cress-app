@@ -8,6 +8,12 @@ describe("audioInputStore", () => {
       listInputDevices: vi.fn(async () => [{ id: "default", name: "Default input", isDefault: true }]),
       startInput: vi.fn(async () => ({ sampleRate: 48_000, channels: 1 })),
       stopInput: vi.fn(async () => undefined),
+      startRecording: vi.fn(async () => ({ sampleRate: 48_000 })),
+      pauseRecording: vi.fn(async () => undefined),
+      resumeRecording: vi.fn(async () => undefined),
+      stopRecording: vi.fn(async () => ({ relativePath: "", durationMs: 0 })),
+      probeRecording: vi.fn(async () => null),
+      deleteRecordingFile: vi.fn(async () => undefined),
     };
     const store = createAudioInputStore(port);
     store.setState({ deviceId: "disconnected-usb" });
@@ -27,6 +33,12 @@ describe("audioInputStore", () => {
         return { sampleRate: 48_000, channels: 1 };
       }),
       stopInput: vi.fn(async () => undefined),
+      startRecording: vi.fn(async () => ({ sampleRate: 48_000 })),
+      pauseRecording: vi.fn(async () => undefined),
+      resumeRecording: vi.fn(async () => undefined),
+      stopRecording: vi.fn(async () => ({ relativePath: "", durationMs: 0 })),
+      probeRecording: vi.fn(async () => null),
+      deleteRecordingFile: vi.fn(async () => undefined),
     };
     const store = createAudioInputStore(port);
 

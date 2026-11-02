@@ -22,8 +22,8 @@ export async function startTake(d: Deps, x: StartTakeInput) {
     )
   )
     throw new DomainError("TAKE_IN_PROGRESS", "Take in progress");
-  const id = d.newId(),
-    path = `recordings/${id}.wav`;
+  const id = d.newId(), now = d.now(),
+    path = `${now.getUTCFullYear()}/${String(now.getUTCMonth() + 1).padStart(2, "0")}/${id}.wav`;
   await makeRecordingRepo(d.db).save({
     id,
     session_id: x.sessionId,
@@ -35,7 +35,7 @@ export async function startTake(d: Deps, x: StartTakeInput) {
     bpm: x.bpm ?? null,
     title: x.title ?? "Take",
     notes: null,
-    created_at: d.now().getTime(),
+    created_at: now.getTime(),
   });
   try {
     const a = await d.audio.startRecording(path);
@@ -49,6 +49,9 @@ export async function startTake(d: Deps, x: StartTakeInput) {
     await makeRecordingRepo(d.db).remove(id);
     throw new DomainError("INPUT_NOT_RUNNING", "Input is not running");
   }
+}
+export async function listTakes(d: Deps, { sessionId }: { sessionId: string }) {
+  return makeRecordingRepo(d.db).forSession(sessionId);
 }
 async function current(d: Deps) {
   const r = (await makeRecordingRepo(d.db).active())[0];

@@ -13,7 +13,7 @@ import { makeSessionRepo } from "../infrastructure/repositories/sessionRepo";
 import { makeRecordingRepo } from "../infrastructure/repositories/recordingRepo";
 import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
 import type { StudySessionRow } from "../infrastructure/db/rows";
-import { stopTake } from "./recordings";
+import { pauseTake, stopTake } from "./recordings";
 import { completeGoal } from "./goals";
 import type { StudySession } from "../domain/session";
 export interface StartSessionInput {
@@ -107,8 +107,10 @@ async function change(
   await repo.save(row(s, r));
   return s;
 }
-export const pauseSession = (d: Deps, { id }: { id: string }) =>
-  change(d, id, (s) => pause(s, d.now()));
+export async function pauseSession(d: Deps, { id }: { id: string }) {
+  if ((await makeRecordingRepo(d.db).forSession(id)).some((t) => t.status === "RECORDING")) await pauseTake(d);
+  return change(d, id, (s) => pause(s, d.now()));
+}
 export const resumeSession = (d: Deps, { id }: { id: string }) =>
   change(d, id, (s) => resume(s, d.now()));
 export async function heartbeat(d: Deps, { id }: { id: string }) {
@@ -170,5 +172,19 @@ export async function recoverOnBoot(d: Deps) {
     const s = recover(ent(r));
     await repo.save(row(s, r));
   }
-  return { recoveredSession, recoveredTakes: 0 };
+  const recordingRepo = makeRecordingRepo(d.db);
+  let recoveredTakes = 0;
+  for (const take of await recordingRepo.active()) {
+    const probe = await d.audio.probeRecording(take.relative_path);
+    if (!probe) {
+      await recordingRepo.remove(take.id);
+      continue;
+    }
+    take.status = "COMPLETE";
+    take.duration_ms = probe.durationMs;
+    take.sample_rate = probe.sampleRate;
+    await recordingRepo.update(take);
+    recoveredTakes++;
+  }
+  return { recoveredSession, recoveredTakes };
 }
