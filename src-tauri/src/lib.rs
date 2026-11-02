@@ -30,7 +30,11 @@ pub fn run() {
         )
         .plugin(
             tauri_plugin_log::Builder::default()
-                .level(if cfg!(debug_assertions) { log::LevelFilter::Debug } else { log::LevelFilter::Warn })
+                .level(if cfg!(debug_assertions) {
+                    log::LevelFilter::Debug
+                } else {
+                    log::LevelFilter::Warn
+                })
                 .level_for("sqlx", log::LevelFilter::Warn)
                 .build(),
         )
@@ -38,11 +42,18 @@ pub fn run() {
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(audio::commands::AudioInputState::default())
+        .manage(audio::commands::RecordingState::default())
         .invoke_handler(tauri::generate_handler![
             blocking_pick_folder,
             audio::commands::audio_list_input_devices,
             audio::commands::audio_start_input,
             audio::commands::audio_stop_input,
+            audio::commands::recording_start,
+            audio::commands::recording_pause,
+            audio::commands::recording_resume,
+            audio::commands::recording_finish,
+            audio::commands::recording_delete,
+            audio::commands::recording_probe,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

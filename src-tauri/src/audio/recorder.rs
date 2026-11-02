@@ -71,9 +71,7 @@ impl Recorder {
         let writer = self.writer.as_mut().expect("recorder already finished");
         for &sample in samples {
             let sample = (sample.clamp(-1.0, 1.0) * i16::MAX as f32).round() as i16;
-            writer
-                .write_sample(sample)
-                .map_err(RecorderError::Write)?;
+            writer.write_sample(sample).map_err(RecorderError::Write)?;
             self.samples_written += 1;
             self.samples_since_flush += 1;
             if self.samples_since_flush >= self.sample_rate {
@@ -119,9 +117,9 @@ pub fn recording_probe(path: &Path) -> Option<RecordingProbe> {
     {
         return None;
     }
-    let sample_count = reader.samples::<i16>().try_fold(0_u64, |count, sample| {
-        sample.ok().map(|_| count + 1)
-    })?;
+    let sample_count = reader
+        .samples::<i16>()
+        .try_fold(0_u64, |count, sample| sample.ok().map(|_| count + 1))?;
     if sample_count == 0 {
         return None;
     }
@@ -135,7 +133,11 @@ pub fn recording_probe(path: &Path) -> Option<RecordingProbe> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{f32::consts::TAU, fs, time::{SystemTime, UNIX_EPOCH}};
+    use std::{
+        f32::consts::TAU,
+        fs,
+        time::{SystemTime, UNIX_EPOCH},
+    };
 
     fn temporary_wav(name: &str) -> std::path::PathBuf {
         let nonce = SystemTime::now()

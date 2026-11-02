@@ -33,10 +33,7 @@ impl PathsError {
 }
 
 pub fn validate_recording_rel(rel: &str) -> Result<(), PathsError> {
-    if rel
-        .split(['/', '\\'])
-        .any(|segment| segment.contains(".."))
-    {
+    if rel.split(['/', '\\']).any(|segment| segment.contains("..")) {
         return Err(PathsError::PathTraversal);
     }
     if rel.starts_with(['/', '\\']) || rel.as_bytes().get(1) == Some(&b':') {
@@ -53,7 +50,9 @@ pub fn validate_recording_rel(rel: &str) -> Result<(), PathsError> {
         return Err(PathsError::InvalidFormat);
     }
 
-    let month = segments[1].parse::<u8>().map_err(|_| PathsError::InvalidFormat)?;
+    let month = segments[1]
+        .parse::<u8>()
+        .map_err(|_| PathsError::InvalidFormat)?;
     if !(1..=12).contains(&month) {
         return Err(PathsError::InvalidFormat);
     }
@@ -65,9 +64,10 @@ pub fn validate_recording_rel(rel: &str) -> Result<(), PathsError> {
     if uuid_text.len() != 36 {
         return Err(PathsError::InvalidUuid);
     }
-    if !uuid_text.bytes().all(|byte| {
-        byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte) || byte == b'-'
-    }) {
+    if !uuid_text
+        .bytes()
+        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte) || byte == b'-')
+    {
         return Err(PathsError::InvalidUuid);
     }
     let uuid = uuid::Uuid::parse_str(uuid_text).map_err(|_| PathsError::InvalidUuid)?;
@@ -87,10 +87,7 @@ pub fn recordings_root(app: &tauri::AppHandle) -> Result<PathBuf, PathsError> {
         .map_err(PathsError::AppDataDir)
 }
 
-pub fn resolve_recording_path(
-    app: &tauri::AppHandle,
-    rel: &str,
-) -> Result<PathBuf, PathsError> {
+pub fn resolve_recording_path(app: &tauri::AppHandle, rel: &str) -> Result<PathBuf, PathsError> {
     validate_recording_rel(rel)?;
     Ok(recordings_root(app)?.join(rel))
 }
@@ -112,7 +109,10 @@ mod tests {
             "2026/13/550e8400-e29b-41d4-a716-446655440000.wav",
             "2026/00/550e8400-e29b-41d4-a716-446655440000.wav",
         ] {
-            assert!(matches!(validate_recording_rel(rel), Err(PathsError::InvalidFormat)));
+            assert!(matches!(
+                validate_recording_rel(rel),
+                Err(PathsError::InvalidFormat)
+            ));
         }
     }
 
@@ -124,14 +124,20 @@ mod tests {
             "2026/11/name..wav",
             "2026/11/x..550e8400-e29b-41d4-a716-446655440000.wav",
         ] {
-            assert!(matches!(validate_recording_rel(rel), Err(PathsError::PathTraversal)));
+            assert!(matches!(
+                validate_recording_rel(rel),
+                Err(PathsError::PathTraversal)
+            ));
         }
     }
 
     #[test]
     fn rejects_absolute_paths() {
         for rel in ["/etc/passwd", "\\etc\\passwd", "C:\\Windows\\file.wav"] {
-            assert!(matches!(validate_recording_rel(rel), Err(PathsError::AbsolutePath)));
+            assert!(matches!(
+                validate_recording_rel(rel),
+                Err(PathsError::AbsolutePath)
+            ));
         }
     }
 
@@ -142,7 +148,10 @@ mod tests {
             "2026/11/550e8400-e29b-41d4-a716-446655440000.WAV",
             "2026/11/550e8400-e29b-41d4-a716-446655440000",
         ] {
-            assert!(matches!(validate_recording_rel(rel), Err(PathsError::InvalidExtension)));
+            assert!(matches!(
+                validate_recording_rel(rel),
+                Err(PathsError::InvalidExtension)
+            ));
         }
     }
 
@@ -152,7 +161,10 @@ mod tests {
             "2026/11/not-a-uuid.wav",
             "2026/11/550e8400-e29b-11d4-a716-446655440000.wav",
         ] {
-            assert!(matches!(validate_recording_rel(rel), Err(PathsError::InvalidUuid)));
+            assert!(matches!(
+                validate_recording_rel(rel),
+                Err(PathsError::InvalidUuid)
+            ));
         }
     }
 
