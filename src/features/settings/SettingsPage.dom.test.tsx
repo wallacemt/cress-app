@@ -8,6 +8,7 @@ const { saveProfile, getDeps } = vi.hoisted(() => ({ saveProfile: vi.fn(), getDe
 vi.mock("../../application/profile", () => ({ saveProfile }));
 vi.mock("../../app/container", () => ({ container: { getDeps } }));
 import { SettingsPage } from "./SettingsPage";
+import { UpdateCheckProvider } from "../updates/UpdateCheckProvider";
 import { useProfileStore } from "../../stores/profileStore";
 
 const profile: UserProfile = {
@@ -23,6 +24,8 @@ const profile: UserProfile = {
 };
 const deps = {} as Deps;
 
+const renderSettings = () => render(<UpdateCheckProvider><SettingsPage /></UpdateCheckProvider>);
+
 describe("SettingsPage", () => {
   afterEach(cleanup);
   beforeEach(() => {
@@ -32,7 +35,7 @@ describe("SettingsPage", () => {
   });
 
   it("pre-fills the profile and validates required fields", () => {
-    render(<SettingsPage />);
+    renderSettings();
     expect((screen.getByRole("textbox", { name: "Seu nome" }) as HTMLInputElement).value).toBe("Ana");
     expect(screen.getByText("Orquestra Jovem")).toBeTruthy();
     expect((screen.getByRole("textbox", { name: "Qual instrumento?" }) as HTMLInputElement).value).toBe("Bandolim");
@@ -45,7 +48,7 @@ describe("SettingsPage", () => {
   it("saves editable fields and updates the profile store immediately", async () => {
     const updated = { ...profile, displayName: "Ana Maria", ensembleName: "Camerata" };
     saveProfile.mockResolvedValue(updated);
-    render(<SettingsPage />);
+    renderSettings();
     fireEvent.change(screen.getByRole("textbox", { name: "Seu nome" }), { target: { value: "Ana Maria" } });
     fireEvent.change(screen.getByRole("textbox", { name: "Conjunto, orquestra ou escola" }), { target: { value: "Camerata" } });
     fireEvent.click(screen.getByRole("button", { name: "Salvar perfil" }));

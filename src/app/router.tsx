@@ -9,6 +9,7 @@ import { PieceDetailPage } from "../features/repertoire/PieceDetailPage";
 import { PracticeSetupPage } from "../features/workspace/PracticeSetupPage";
 import { PracticePage } from "../features/workspace/PracticePage";
 import { ToolsPage } from "../features/workspace/ToolsPage";
+import { ChangelogPage } from "../features/changelog/ChangelogPage";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -37,6 +38,7 @@ export const router = createHashRouter([
     children: [
       { index: true, element: <Placeholder name="Dashboard" /> },
       { path: "settings", element: <SettingsPage /> },
+      { path: "changelog", element: <ChangelogPage /> },
       { path: "repertoire", element: <RepertoirePage /> },
       { path: "repertoire/:pieceId", element: <PieceDetailPage /> },
       { path: "practice/new", element: <PracticeSetupPage /> },

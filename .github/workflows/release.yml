@@ -1,0 +1,96 @@
+name: Windows Release and Updater
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to build (for example v1.0.0-beta.1)
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.event.inputs.tag || github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: windows-latest
+    timeout-minutes: 90
+    env:
+      CI: true
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+      - uses: dtolnay/rust-toolchain@1.96.0
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri -> target
+      - name: Validate signing key
+        shell: pwsh
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) { throw "TAURI_SIGNING_PRIVATE_KEY is required" }
+      - name: Set app version from release tag
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+        run: |
+          $tag = $env:RELEASE_TAG
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$') { throw "Invalid release tag: $tag" }
+          $config = Get-Content src-tauri/tauri.conf.json -Raw | ConvertFrom-Json
+          $config.version = $tag.Substring(1)
+          $config | ConvertTo-Json -Depth 100 | Set-Content src-tauri/tauri.conf.json -Encoding utf8
+      - name: Install dependencies
+        run: bun install --frozen-lockfile
+      - name: Build signed NSIS updater artifact
+        run: bun run tauri build --bundles nsis
+      - name: Create updater manifest
+        shell: pwsh
+        env:
+          RELEASE_TAG: ${{ inputs.tag || github.ref_name }}
+          REPOSITORY: ${{ github.repository }}
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $tag = $env:RELEASE_TAG
+          if ($tag -notmatch '^v[0-9]+\.[0-9]+\.[0-9]+([-.][0-9A-Za-z.-]+)?$') { throw "Invalid release tag: $tag" }
+          $version = $tag.Substring(1)
+          $bundleDir = "src-tauri/target/release/bundle/nsis"
+          $bundle = Get-ChildItem $bundleDir -Filter *.exe | Select-Object -First 1
+          if (-not $bundle) { throw "No NSIS installer found in $bundleDir" }
+          $signaturePath = "$($bundle.FullName).sig"
+          if (-not (Test-Path $signaturePath)) { throw "Updater signature missing: $signaturePath" }
+          $signature = (Get-Content $signaturePath -Raw).Trim()
+          $assetName = $bundle.Name.Replace(' ', '.')
+          $manifest = @{
+            version = $version
+            pub_date = [DateTime]::UtcNow.ToString('yyyy-MM-ddTHH:mm:ssZ')
+            platforms = @{
+              'windows-x86_64' = @{
+                signature = $signature
+                url = "https://github.com/$($env:REPOSITORY)/releases/download/$tag/$assetName"
+              }
+            }
+          } | ConvertTo-Json -Depth 5
+          Set-Content -Path latest.json -Value $manifest -Encoding utf8
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ inputs.tag || github.ref_name }}
+          name: Cress ${{ inputs.tag || github.ref_name }}
+          prerelease: false
+          generate_release_notes: true
+          fail_on_unmatched_files: true
+          files: |
+            latest.json
+            src-tauri/target/release/bundle/nsis/*.exe
+            src-tauri/target/release/bundle/nsis/*.exe.sig

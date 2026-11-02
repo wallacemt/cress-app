@@ -1,15 +1,17 @@
-import { AudioLines, CalendarDays, Home, Library, Search, type LucideIcon } from "lucide-react";
+import { AudioLines, CalendarDays, FileClock, Home, Library, Search, type LucideIcon } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 import { NavLink, Outlet, useLocation } from "react-router";
 import { Toaster } from "sonner";
 import cressSymbol from "../assets/brand/cress-symbol-gold.svg";
 import { useProfileStore } from "../stores/profileStore";
+import { UpdateCheckProvider } from "../features/updates/UpdateCheckProvider";
 
 const destinations: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/", label: "Início", icon: Home, end: true },
   { to: "/repertoire", label: "Repertório", icon: Library },
   { to: "/sessions", label: "Sessões", icon: CalendarDays },
   { to: "/tools", label: "Prática livre", icon: AudioLines },
+  { to: "/changelog", label: "Novidades", icon: FileClock },
 ];
 
 function initials(name: string) {
@@ -39,33 +41,35 @@ export function AppShell() {
   }, []);
 
   return (
-    <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
-      <main><Outlet /></main>
-      {!isWorkspace && (
-        <nav
-          ref={navigationRef}
-          aria-label="Navegação principal"
-          className={`atril${hidden ? " atril-hidden" : ""}`}
-          onFocus={() => setHidden(false)}
-        >
-          <NavLink to="/" end aria-label="Cress · Início" className="atril-brand" title="Cress · Início"><img src={cressSymbol} alt="" width={24} height={24} /></NavLink>
-          <span className="atril-separator" aria-hidden="true" />
-          <div className="atril-destinations">
-            {destinations.map(({ to, label, icon: Icon, end }) => (
-              <NavLink key={to} to={to} end={end} aria-label={label} title={label} className="atril-link">
-                <Icon size={16} strokeWidth={1.5} /><span>{label}</span><i aria-hidden="true" />
-              </NavLink>
-            ))}
-          </div>
-          <span className="atril-separator" aria-hidden="true" />
-          <button type="button" className="atril-search" aria-label="Buscar (Ctrl K)" title="Buscar · Ctrl K">
-            <Search size={16} strokeWidth={1.5} /><span>Ctrl K</span>
-          </button>
-          <span className="atril-separator atril-avatar-separator" aria-hidden="true" />
-          <NavLink to="/settings" className="atril-avatar" aria-label="Configurações" title="Configurações">{initials(profile?.displayName ?? "")}</NavLink>
-        </nav>
-      )}
-      <Toaster theme="dark" />
-    </div>
+    <UpdateCheckProvider>
+      <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
+        <main><Outlet /></main>
+        {!isWorkspace && (
+          <nav
+            ref={navigationRef}
+            aria-label="Navegação principal"
+            className={`atril${hidden ? " atril-hidden" : ""}`}
+            onFocus={() => setHidden(false)}
+          >
+            <NavLink to="/" end aria-label="Cress · Início" className="atril-brand" title="Cress · Início"><img src={cressSymbol} alt="" width={24} height={24} /></NavLink>
+            <span className="atril-separator" aria-hidden="true" />
+            <div className="atril-destinations">
+              {destinations.map(({ to, label, icon: Icon, end }) => (
+                <NavLink key={to} to={to} end={end} aria-label={label} title={label} className="atril-link">
+                  <Icon size={16} strokeWidth={1.5} /><span>{label}</span><i aria-hidden="true" />
+                </NavLink>
+              ))}
+            </div>
+            <span className="atril-separator" aria-hidden="true" />
+            <button type="button" className="atril-search" aria-label="Buscar (Ctrl K)" title="Buscar · Ctrl K">
+              <Search size={16} strokeWidth={1.5} /><span>Ctrl K</span>
+            </button>
+            <span className="atril-separator atril-avatar-separator" aria-hidden="true" />
+            <NavLink to="/settings" className="atril-avatar" aria-label="Configurações" title="Configurações">{initials(profile?.displayName ?? "")}</NavLink>
+          </nav>
+        )}
+        <Toaster theme="dark" />
+      </div>
+    </UpdateCheckProvider>
   );
 }
