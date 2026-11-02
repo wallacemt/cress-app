@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from "react";
-import { Check, Star } from "lucide-react";
+import { Check, RefreshCw, Star } from "lucide-react";
 import { saveProfile } from "../../application/profile";
 import { container } from "../../app/container";
 import {
@@ -9,6 +9,7 @@ import {
   type MusicalRole,
 } from "../../domain/profile";
 import { useProfileStore } from "../../stores/profileStore";
+import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 
 const levels = [
   ["beginner", "Iniciante"],
@@ -33,6 +34,7 @@ const chip = (selected: boolean) =>
 
 export function SettingsPage() {
   const profile = useProfileStore((state) => state.profile);
+  const update = useUpdateCheck();
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
   const [instruments, setInstruments] = useState<InstrumentCode[]>(profile?.instruments ?? []);
   const [primaryInstrument, setPrimaryInstrument] = useState<InstrumentCode | null>(profile?.primaryInstrument ?? null);
@@ -94,6 +96,12 @@ export function SettingsPage() {
           <h1 id="settings-profile-title" className="font-display text-4xl">Perfil</h1>
           {ensembleName.trim() && <p className="mt-2 text-[var(--text-secondary)]">{ensembleName.trim()}</p>}
         </header>
+        <section aria-labelledby="settings-updates-title" className="mb-8 border-b border-[var(--border-subtle)] pb-6">
+          <h2 id="settings-updates-title" className="mb-2 text-lg font-semibold">Atualizações</h2>
+          <p className="mb-4 text-sm text-[var(--text-secondary)]">{update.status === "checking" ? "Verificando…" : update.status === "none" ? "O Cress está atualizado." : update.status === "available" ? "Há uma atualização disponível." : update.status === "error" ? "Não foi possível verificar agora." : "Verifique se há uma nova versão do Cress."}</p>
+          <button type="button" disabled={update.status === "checking" || update.installing} onClick={() => void update.check()} className={`${button} gap-2 border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--ink-700)]`}><RefreshCw size={16} />Verificar atualizações</button>
+          {update.status === "available" && <button type="button" disabled={update.installing} onClick={() => void update.install()} className={`${button} ml-2 bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{update.installing ? update.progress === null ? "Baixando…" : `Baixando… ${update.progress}%` : "Atualizar agora"}</button>}
+        </section>
         <form onSubmit={save}>
           <label className="mb-7 block text-sm text-[var(--text-secondary)]">Seu nome
             <input aria-label="Seu nome" className={`${control} mt-2 h-12 w-full`} maxLength={60} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />

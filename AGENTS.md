@@ -111,6 +111,8 @@ O Blueprint-001 assumia que a Store receberia um instalador Win32; na prática, 
 - `recoverOnBoot` (gravações) retorna `recoveredTakes: 0` fixo — regra real de recuperação de um take `RECORDING` após crash ainda não definida; decidir na Fase 7/8 com hardware real.
 - Relatório de auditoria da Milestone 5 (gaps vs. Dossier, achados por severidade): `AUDIT-milestone5.md` na raiz do repo.
 
+- Auto-update do Tauri usa artefatos NSIS assinados pelo updater e exige `latest.json` na raiz dos assets da GitHub Release; o `tauri build` sozinho só gera `.exe.sig`, não agrega o manifesto. O endpoint `releases/latest/download` exige que a release atual não seja marcada como pre-release; o workflow injeta a versão da tag no `tauri.conf.json` antes do build. Workflow Windows em `.github/workflows/release.yml`; atualizar secrets de signing só fora deste repo. Fontes: workflow e docs oficiais `tauri-apps/plugins-workspace` (Updater v2), GitHub “Linking to releases”, 2026-11-02.
+
 ## 10. CI (GitHub Actions)
 
 - `.github/workflows/ci.yml`: job `quality` (`bun install --frozen-lockfile` → lint → typecheck → `vitest run src/domain --coverage`, thresholds em `vitest.config.ts`) e job `rust` (`cargo check`/`test`/`clippy -D warnings`, instala `libasound2-dev` e libs do Tauri via `apt-get` — funciona aqui mesmo não funcionando no WSL local). `timeout-minutes: 40` no job `rust` (cache cold passa de 20 min).
