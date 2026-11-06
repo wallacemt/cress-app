@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import {
   DockviewReact,
   type DockviewReadyEvent,
@@ -12,6 +12,7 @@ import {
 } from "../../domain/workspace";
 import { container } from "../../app/container";
 import { loadLayout } from "../../application/workspace";
+import { ensureFreeSessionRow } from "../../application/sessions";
 import { listScores } from "../../application/scores";
 import {
   panelRegistry,
@@ -21,6 +22,7 @@ import {
 } from "./panelRegistry";
 import { useLayoutPersistence } from "./useLayoutPersistence";
 import { WorkspaceHeader } from "./WorkspaceHeader";
+import { useWorkspaceLayoutStore } from "../../stores/workspaceLayoutStore";
 import type { StudySessionRow } from "../../infrastructure/db/rows";
 
 export interface WorkspaceProps {
@@ -46,11 +48,25 @@ export function Workspace({
   const [deps, setDeps] = useState<Awaited<
     ReturnType<typeof container.getDeps>
   > | null>(null);
+  const [freeSession, setFreeSession] = useState<StudySessionRow | null>(null);
+  const effectiveSession = session ?? freeSession;
+  const apiRef = useRef<DockviewReadyEvent["api"] | null>(null);
+  const layoutReadyRef = useRef(false);
+  const setPanelCount = useWorkspaceLayoutStore((s) => s.setPanelCount);
+  const setGroupCount = useWorkspaceLayoutStore((s) => s.setGroupCount);
   useLayoutPersistence(
     ready?.api ?? null,
     deps,
     mode === "session" ? pieceId : undefined,
   );
+
+  // Função síncrona para ler contagem final - chamada UMA vez após layout estabilizar
+  const commitLayoutCounts = useCallback(() => {
+    const api = apiRef.current;
+    if (!api) return;
+    setPanelCount(api.totalPanels);
+    setGroupCount(api.groups.length);
+  }, [setPanelCount, setGroupCount]);
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== "undefined" &&
@@ -71,12 +87,20 @@ export function Workspace({
   };
 
   const handleReady = async (event: DockviewReadyEvent) => {
+    apiRef.current = event.api;
     const setRenderer = (panel: (typeof event.api.panels)[number]) => {
       panel.api.setRenderer(panelRenderer(panel.api.component));
     };
     event.api.panels.forEach(setRenderer);
-    event.api.onDidAddPanel(setRenderer);
+    event.api.onDidAddPanel((panel) => {
+      setRenderer(panel);
+      // Não atualizar contagem aqui - esperar layout estabilizar
+    });
+    event.api.onDidRemovePanel(() => {});
+    event.api.onDidAddGroup(() => {});
+    event.api.onDidRemoveGroup(() => {});
     let activeDeps: Awaited<ReturnType<typeof container.getDeps>> | null = null;
+    let activeSession = session ?? freeSession;
     let hasScores = false;
     let firstScoreId: string | undefined;
     let scoreIds = new Set<string>();
@@ -87,14 +111,19 @@ export function Workspace({
       for (const spec of buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize)) {
         event.api.addPanel({
           ...spec,
-          params: (spec.component === "session" || spec.component === "recorder") && session && activeDeps
-            ? { session, pieceId, deps: activeDeps }
+          params: (spec.component === "session" || spec.component === "recorder") && activeSession && activeDeps
+            ? { session: activeSession, pieceId, deps: activeDeps }
             : undefined,
         });
       }
     };
     try {
       activeDeps = await container.getDeps();
+      if (mode === "free") {
+        const freeRow = await ensureFreeSessionRow(activeDeps);
+        activeSession = freeRow;
+        setFreeSession(freeRow);
+      }
       if (scopedPieceId) {
         const scores = await listScores(activeDeps, { pieceId: scopedPieceId });
         scoreIds = new Set(scores.map((score) => score.id));
@@ -115,8 +144,8 @@ export function Workspace({
             >[0],
           );
           for (const panel of event.api.panels) {
-            if ((panel.api.component === "session" || panel.api.component === "recorder") && session && activeDeps) {
-              panel.api.updateParameters({ session, pieceId, deps: activeDeps });
+            if ((panel.api.component === "session" || panel.api.component === "recorder") && activeSession && activeDeps) {
+              panel.api.updateParameters({ session: activeSession, pieceId, deps: activeDeps });
             }
           }
         } catch (error) {
@@ -130,6 +159,12 @@ export function Workspace({
         console.warn("Layout salvo ausente ou inválido; usando o padrão.");
         applyDefault();
       }
+      if (mode === "free" && activeSession && activeDeps) {
+        for (const panel of event.api.panels) {
+          if (panel.api.component === "recorder")
+            panel.api.updateParameters({ session: activeSession, pieceId, deps: activeDeps });
+        }
+      }
     } catch (error) {
       console.warn(
         "Não foi possível carregar o layout; usando o padrão.",
@@ -138,6 +173,12 @@ export function Workspace({
       applyDefault();
     }
     if (activeDeps) setDeps(activeDeps);
+    // Commit final counts after layout is fully initialized (fromJSON or applyDefault done)
+    // Use queueMicrotask to run after all synchronous addPanel calls complete
+    if (!layoutReadyRef.current) {
+      layoutReadyRef.current = true;
+      queueMicrotask(() => commitLayoutCounts());
+    }
     setReady(event);
     onReady?.(event);
   };
@@ -153,7 +194,7 @@ export function Workspace({
         mode={mode}
         api={ready?.api ?? null}
         deps={deps}
-        session={session}
+        session={effectiveSession}
         pieceId={pieceId}
         pieceTitle={pieceTitle}
         goalSummary={goalSummary}
