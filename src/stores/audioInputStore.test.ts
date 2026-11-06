@@ -8,6 +8,12 @@ describe("audioInputStore", () => {
       listInputDevices: vi.fn(async () => [{ id: "default", name: "Default input", isDefault: true }]),
       startInput: vi.fn(async () => ({ sampleRate: 48_000, channels: 1 })),
       stopInput: vi.fn(async () => undefined),
+      startRecording: vi.fn(async () => ({ sampleRate: 48_000 })),
+      pauseRecording: vi.fn(async () => undefined),
+      resumeRecording: vi.fn(async () => undefined),
+      stopRecording: vi.fn(async () => ({ relativePath: "", durationMs: 0 })),
+      probeRecording: vi.fn(async () => null),
+      deleteRecordingFile: vi.fn(async () => undefined),
     };
     const store = createAudioInputStore(port);
     store.setState({ deviceId: "disconnected-usb" });
@@ -27,6 +33,12 @@ describe("audioInputStore", () => {
         return { sampleRate: 48_000, channels: 1 };
       }),
       stopInput: vi.fn(async () => undefined),
+      startRecording: vi.fn(async () => ({ sampleRate: 48_000 })),
+      pauseRecording: vi.fn(async () => undefined),
+      resumeRecording: vi.fn(async () => undefined),
+      stopRecording: vi.fn(async () => ({ relativePath: "", durationMs: 0 })),
+      probeRecording: vi.fn(async () => null),
+      deleteRecordingFile: vi.fn(async () => undefined),
     };
     const store = createAudioInputStore(port);
 
@@ -42,5 +54,58 @@ describe("audioInputStore", () => {
     await store.getState().release();
     expect(port.stopInput).toHaveBeenCalledTimes(1);
     expect(store.getState().running).toBe(false);
+  });
+
+  it("keeps a failed microphone start stable until an explicit retry", async () => {
+    const port = {
+      listInputDevices: vi.fn(async () => []),
+      startInput: vi.fn(async () => { throw new Error("Device is busy"); }),
+      stopInput: vi.fn(async () => undefined),
+      startRecording: vi.fn(async () => ({ sampleRate: 48_000 })),
+      pauseRecording: vi.fn(async () => undefined),
+      resumeRecording: vi.fn(async () => undefined),
+      stopRecording: vi.fn(async () => ({ relativePath: "", durationMs: 0 })),
+      probeRecording: vi.fn(async () => null),
+      deleteRecordingFile: vi.fn(async () => undefined),
+    };
+    const store = createAudioInputStore(port);
+
+    await expect(store.getState().acquire()).rejects.toThrow("Device is busy");
+    expect(store.getState().error?.message).toBe("Device is busy");
+    expect(port.startInput).toHaveBeenCalledTimes(1);
+
+    await expect(store.getState().acquire()).rejects.toThrow("Device is busy");
+    expect(port.startInput).toHaveBeenCalledTimes(2);
+    expect(store.getState().error?.message).toBe("Device is busy");
+  });
+
+  it("does not automatically reopen after the input stream reports an error", async () => {
+    let send: ((event: AudioEvent) => void) | undefined;
+    const port = {
+      listInputDevices: vi.fn(async () => []),
+      startInput: vi.fn(async (_id: string | null, onEvent: (event: AudioEvent) => void) => {
+        send = onEvent;
+        return { sampleRate: 48_000, channels: 1 };
+      }),
+      stopInput: vi.fn(async () => undefined),
+      startRecording: vi.fn(async () => ({ sampleRate: 48_000 })),
+      pauseRecording: vi.fn(async () => undefined),
+      resumeRecording: vi.fn(async () => undefined),
+      stopRecording: vi.fn(async () => ({ relativePath: "", durationMs: 0 })),
+      probeRecording: vi.fn(async () => null),
+      deleteRecordingFile: vi.fn(async () => undefined),
+    };
+    const store = createAudioInputStore(port);
+    vi.useFakeTimers();
+    try {
+      await store.getState().acquire();
+      send?.({ event: "error", data: { code: "AUDIO_INPUT", message: "Device is busy" } });
+      expect(store.getState().error?.message).toBe("Device is busy");
+      await vi.advanceTimersByTimeAsync(5000);
+      expect(port.startInput).toHaveBeenCalledTimes(1);
+      expect(store.getState().error?.message).toBe("Device is busy");
+    } finally {
+      vi.useRealTimers();
+    }
   });
 });

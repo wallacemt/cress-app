@@ -103,7 +103,7 @@
 .cress-panel-tab { display: inline-flex; align-items: center; gap: 7px; min-width: 0; }
 .cress-panel-tab > span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cress-menu { position: relative; }
-.cress-menu-popover { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
+.cress-menu-popover { position: fixed; z-index: 20; width: 280px; padding: 6px; border: 1px solid var(--border-default); border-radius: 10px; background: var(--ink-700); box-shadow: 0 16px 40px rgb(0 0 0 / .4); }
 .cress-menu-popover button { display: flex; width: 100%; min-height: 36px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 0; border-radius: 6px; background: transparent; color: var(--text-primary); font: 400 13px var(--font-sans); text-align: left; cursor: pointer; }
 .cress-menu-popover button:hover:not(:disabled), .cress-menu-popover button:focus-visible { background: rgb(255 255 255 / .07); }
 .cress-menu-popover button:disabled { color: var(--text-muted); cursor: not-allowed; }
@@ -453,6 +453,98 @@
 .cress-session-note-footer [role="alert"] { color: var(--danger); }
 .cress-session-save-status { margin-left: auto; }
 
+.cress-recorder-panel { container: recorder / size; position: relative; display: grid; height: 100%; min-height: 0; overflow: hidden; color: var(--text-primary); }
+.cress-recorder-list-mode { display: grid; min-height: 0; grid-template-rows: 72px 2px auto 1fr; opacity: 1; transition: opacity 120ms ease-in; }
+.cress-recorder-panel[data-mode="stage"] .cress-recorder-list-mode { display: none; }
+.cress-recorder-transport { display: grid; grid-template-columns: 56px minmax(0,1fr) auto; align-items: center; gap: 16px; padding: 8px 16px; }
+.cress-record-button, .cress-stage-stop, .cress-stage-pause, .cress-take-play, .cress-take-menu-button { display: grid; flex: none; place-items: center; border: 1px solid var(--border-strong); background: var(--ink-750); color: var(--text-primary); cursor: pointer; }
+.cress-record-button { position: relative; width: 56px; height: 56px; border-radius: 50%; }
+.cress-record-button::after { width: 20px; height: 20px; border-radius: 50%; background: var(--danger); content: ""; transition: transform 120ms var(--ease-crescendo); }
+.cress-record-button:hover::after { transform: scale(1.1); }
+.cress-record-button:disabled { opacity: .4; }
+.cress-recorder-transport > div:nth-child(2) { display: grid; min-width: 0; gap: 4px; }
+.cress-recorder-transport strong { overflow: hidden; font-size: 14px; font-weight: 500; text-overflow: ellipsis; white-space: nowrap; }
+.cress-recorder-transport small { color: var(--text-muted); font-size: 12px; }
+.cress-recorder-transport .cress-tuner-device { display: none; }
+.cress-level-meter-wrap { display: grid; justify-items: end; gap: 4px; }
+.cress-level-meter { position: relative; width: 142px; height: 8px; overflow: hidden; background: var(--gradient-meter); mask-image: repeating-linear-gradient(90deg,#000 0 4px,transparent 4px 6px); }
+.cress-level-meter i { position: absolute; inset: 0 0 0 auto; width: calc((1 - var(--meter-pos-q,0))*100%); background: var(--ink-600); }
+.cress-level-meter b { position: absolute; top: 0; bottom: 0; left: calc(var(--meter-hold-q,0)*100%); width: 4px; background: rgb(255 255 255 / .8); }
+.cress-recorder-hairpin { background: var(--gradient-hairpin); opacity: .6; }
+.cress-takes { min-height: 0; overflow: auto; }
+.cress-takes-heading { padding: 12px 16px 4px; color: var(--text-muted); font-size: 12px; letter-spacing: .08em; }
+.cress-take { padding: 0 0 8px; border-bottom: 1px solid var(--border-subtle); }
+.cress-take-row { display: grid; height: 44px; grid-template-columns: 32px minmax(0,1fr) auto auto 32px; align-items: center; gap: 12px; padding: 0 16px; }
+.cress-take-play { width: 32px; height: 32px; border-radius: 50%; }
+.cress-take[data-playing="true"] .cress-take-play { border-color: transparent; background: var(--text-primary); color: var(--ink-800); }
+.cress-take-title { display: flex; min-width: 0; align-items: center; gap: 8px; }
+.cress-take-title button { overflow: hidden; padding: 0; border: 0; background: transparent; color: var(--text-primary); font-size: 14px; text-align: left; text-overflow: ellipsis; white-space: nowrap; }
+.cress-take-title input { min-width: 0; height: 28px; border: 1px solid var(--border-control); border-radius: 6px; background: var(--ink-750); color: var(--text-primary); }
+.cress-take-bpm, .cress-take-time { color: var(--text-muted); font: 500 12px/16px var(--font-metric); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cress-take-menu-button { width: 32px; height: 32px; border: 0; border-radius: 50%; background: transparent; }
+.cress-menu-popover .is-danger { color: var(--danger); }
+.cress-take-wave { position: relative; height: 32px; margin: 0 16px 0 60px; cursor: crosshair; touch-action: none; }
+.cress-take-wave svg { width: 100%; height: 100%; overflow: visible; }
+.cress-take-wave path { fill: none; stroke: rgb(255 255 255 / .14); stroke-width: .7; }
+.cress-take-wave .cress-take-wave-progress { stroke: url(#wave-gradient); }
+.cress-take-wave .cress-take-cursor { stroke: var(--text-primary); stroke-width: 1; }
+.cress-take-wave:focus-visible { outline: 2px solid var(--violet-400); outline-offset: 2px; }
+.cress-take-file-error { display: grid; width: 32px; height: 32px; place-items: center; color: var(--warning); }
+.cress-take-wave > span { color: var(--warning); font-size: 12px; }
+.cress-take-notes { width: calc(100% - 60px); min-height: 72px; margin-left: 60px; border: 0; border-radius: 4px; background: transparent; color: var(--text-primary); font: inherit; }
+.cress-take-confirm { display: flex; align-items: center; gap: 8px; margin: 0 16px 8px 60px; font-size: 14px; }
+.cress-take-confirm span { flex: 1; }
+.cress-ghost-sm, .cress-destructive-sm { min-height: 32px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; }
+.cress-destructive-sm { background: var(--danger-tint); color: var(--danger); }
+.cress-recorder-empty { display: grid; min-height: 120px; place-content: center; justify-items: center; gap: 8px; color: var(--text-muted); font-size: 14px; text-align: center; }
+.cress-empty-staff { color: var(--text-subtle); font-size: 64px; line-height: 64px; }
+.cress-headphones { display: flex; align-items: center; gap: 8px; padding: 8px 16px; color: var(--text-muted); font-size: 12px; }
+.cress-recorder-error { padding: 8px 16px; background: var(--danger-tint); color: var(--danger); }
+.cress-recorder-stage { display: grid; grid-template-rows: auto minmax(0, 1fr) auto auto auto; justify-items: center; align-items: center; gap: 20px; padding: 28px 16px; animation: cress-stage-in var(--duration-slow) var(--ease-crescendo) both; }
+.cress-stage-status { display: flex; width: 100%; align-items: center; gap: 8px; color: var(--text-secondary); font-size: 14px; }
+.cress-stage-status i { width: 8px; height: 8px; border-radius: 50%; background: var(--danger); animation: cress-rec-pulse 1s ease infinite; }
+.cress-stage-status b { color: var(--danger); font-size: 12px; letter-spacing: .08em; }
+.cress-stage-meter { display: grid; place-items: center; overflow: visible; padding: 8px 0; }
+/* O microfone cresce de verdade (width/height via --mic-scale), não só visualmente via
+   transform: um transform:scale não altera a caixa de layout, então o elemento ampliado
+   vazava por cima dos vizinhos (ex. o tempo gravado) em vez de empurrá-los/centralizar
+   dentro do espaço reservado pela grid. */
+.cress-mic-level { position: relative; display: flex; align-items: flex-start; justify-content: center; gap: calc(var(--mic-scale, 1) * 12px); height: calc(var(--mic-scale, 1) * 132px); transition: height var(--duration-slow) var(--ease-crescendo), gap var(--duration-slow) var(--ease-crescendo); }
+.cress-mic { width: calc(var(--mic-scale, 1) * 96px); height: calc(var(--mic-scale, 1) * 132px); overflow: visible; transition: width var(--duration-slow) var(--ease-crescendo), height var(--duration-slow) var(--ease-crescendo); }
+.cress-mic rect.cress-mic-capsule { fill: var(--ink-750); stroke: var(--danger); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cress-mic g line { stroke: rgb(255 255 255 / .10); stroke-width: 1; }
+.cress-mic-peak { stroke: rgb(255 255 255 / .8); stroke-width: 2; stroke-linecap: round; }
+.cress-mic-frame { fill: none; stroke: var(--text-muted); stroke-width: 2; vector-effect: non-scaling-stroke; }
+.cress-mic-scale { position: relative; width: calc(var(--mic-scale, 1) * 32px); height: calc(var(--mic-scale, 1) * 84px); margin-top: calc(var(--mic-scale, 1) * 4px); transition: width var(--duration-slow) var(--ease-crescendo), height var(--duration-slow) var(--ease-crescendo); }
+.cress-mic-scale span { position: absolute; right: 0; width: calc(var(--mic-scale, 1) * 8px); border-top: 1px solid var(--border-default); color: var(--text-muted); font-family: var(--font-metric); font-weight: 500; font-size: calc(var(--mic-scale, 1) * 12px); line-height: calc(var(--mic-scale, 1) * 16px); transform: translateY(50%); }
+.cress-mic-scale span[data-label="true"] { width: calc(var(--mic-scale, 1) * 24px); }
+.cress-mic-scale small { position: absolute; top: calc(100% + 4px); color: var(--text-muted); font-size: calc(var(--mic-scale, 1) * 12px); }
+.cress-mic-readout { position: absolute; left: calc(var(--mic-scale, 1) * 148px); color: var(--text-primary); font-family: var(--font-metric); font-weight: 600; font-size: calc(var(--mic-scale, 1) * 14px); line-height: calc(var(--mic-scale, 1) * 20px); }
+.cress-mic-clip { position: absolute; top: calc(var(--mic-scale, 1) * -4px); left: calc(var(--mic-scale, 1) * 140px); height: calc(var(--mic-scale, 1) * 16px); padding: 0 6px; border: 0; border-radius: 4px; background: var(--danger-tint); color: var(--danger); font-size: 12px; }
+.cress-stage-time { margin-top: 4px; color: var(--text-primary); font: 500 36px/40px var(--font-metric); font-variant-numeric: tabular-nums; }
+.cress-stage-hint { display: flex; align-items: center; gap: 8px; margin: 0; color: var(--info); font-size: 12px; }
+.cress-stage-controls { display: flex; align-items: center; gap: 24px; margin-top: 4px; }
+.cress-stage-pause { width: 44px; height: 44px; border-color: var(--border-default); border-radius: 50%; background: rgb(255 255 255 / .05); }
+.cress-stage-stop { width: 56px; height: 56px; border-radius: 50%; box-shadow: 0 0 0 2px var(--ink-800), 0 0 0 4px var(--danger); }
+.cress-stage-stop i { width: 18px; height: 18px; border-radius: 3px; background: var(--danger); }
+.cress-stage-controls button:focus-visible { outline: 2px solid var(--violet-400); outline-offset: 6px; }
+.cress-recorder-stage[data-phase="paused"] .cress-stage-status i { background: var(--text-muted); animation: none; }
+.cress-recorder-stage[data-phase="paused"] .cress-mic-capsule { stroke: var(--text-muted); }
+.cress-recorder-stage[data-phase="paused"] .cress-stage-time { color: var(--text-secondary); }
+@keyframes cress-rec-pulse { 50% { opacity: .4; } }
+@keyframes cress-stage-in { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+@container recorder (min-height: 380px) and (min-width: 300px) { .cress-recorder-stage { grid-template-rows: 20px 1fr 40px auto auto; } }
+@container recorder (max-height: 379px), (max-width: 299px) { .cress-recorder-stage { grid-template-columns: 100px 1fr; grid-template-rows: auto 1fr; align-content: center; gap: 16px; padding: 16px; } .cress-stage-status { grid-column: 1 / -1; } .cress-stage-meter { grid-row: 2; } .cress-mic-level.is-compact { height: 88px; gap: 8px; } .cress-mic-level.is-compact .cress-mic { width: 64px; height: 88px; } .cress-mic-level.is-compact .cress-mic-scale { height: 56px; width: 28px; margin-top: 3px; } .cress-mic-level.is-compact .cress-mic-readout,.cress-mic-level.is-compact .cress-mic-clip { display:none; } .cress-stage-time { grid-column: 2; align-self: end; } .cress-stage-controls { grid-column: 2; gap: 12px; } .cress-stage-hint { grid-column: 1 / -1; } }
+@container recorder (max-height: 419px) { .cress-take:not([data-playing="true"]):not(:focus-within) .cress-take-wave { display: none; } }
+/* Tamanho do microfone segue o espaço real do painel (container query), não só a contagem
+   de painéis — uma janela só com o gravador fica grande/centralizada; várias janelas lado
+   a lado encolhem proporcionalmente ao espaço de cada uma. */
+@container recorder (min-width: 340px) and (min-height: 420px) { .cress-mic-level { --mic-scale: 1.35; } }
+@container recorder (min-width: 480px) and (min-height: 560px) { .cress-mic-level { --mic-scale: 1.75; } }
+@container recorder (min-width: 640px) and (min-height: 680px) { .cress-mic-level { --mic-scale: 2.2; } }
+@media (prefers-reduced-motion: reduce) { .cress-recorder-stage,.cress-stage-status i { animation: none; } .cress-record-button::after { transition: none; } }
+[data-motion="reduce"] .cress-recorder-stage,[data-motion="reduce"] .cress-stage-status i { animation: none; }
+
 .cress-workspace .dv-watermark-container {
   display: grid;
   place-items: center;
@@ -537,4 +629,63 @@
     --dv-active-sash-transition-duration: 0ms;
     --dv-active-sash-transition-delay: 0ms;
   }
+}
+
+/* Layout adaptativo por quantidade de painéis abertos.
+   A classe é aplicada em cada painel a partir do store workspaceLayoutStore. */
+
+.cress-layout-duo {
+  /* 2 painéis lado a lado: elementos grandes e em destaque */
+}
+
+.cress-layout-duo .cress-tuner-main strong {
+  font-size: clamp(96px, 18vw, 140px) / .9 var(--font-display);
+}
+.cress-layout-duo .cress-tuner-main span {
+  font: 500 clamp(22px, 4vw, 32px) var(--font-metric);
+}
+.cress-layout-duo .cress-tuner-carousel {
+  gap: clamp(14px, 4vw, 28px);
+  font: 500 clamp(16px, 3vw, 22px) var(--font-metric);
+}
+
+.cress-layout-duo .cress-metronome-number {
+  font: 300 clamp(110px, 18cqi, 160px) / .9 var(--font-metric);
+}
+.cress-layout-duo .cress-metronome-play {
+  width: 80px;
+  height: 80px;
+}
+
+.cress-layout-duo .cress-stage-time {
+  font: 500 48px / 56px var(--font-metric);
+}
+
+.cress-layout-quad {
+  /* 4 painéis: elementos compactos para caber no espaço reduzido */
+}
+
+.cress-layout-quad .cress-tuner-main strong {
+  font-size: clamp(32px, 6vw, 48px) / .9 var(--font-display);
+}
+.cress-layout-quad .cress-tuner-main span {
+  font: 500 clamp(14px, 2vw, 18px) var(--font-metric);
+}
+.cress-layout-quad .cress-tuner-carousel {
+  gap: clamp(6px, 1vw, 12px);
+  font: 500 clamp(10px, 1.5vw, 14px) var(--font-metric);
+  min-height: 48px;
+  padding: 8px 0 4px;
+}
+
+.cress-layout-quad .cress-metronome-number {
+  font: 300 clamp(48px, 8cqi, 72px) / .9 var(--font-metric);
+}
+.cress-layout-quad .cress-metronome-play {
+  width: 44px;
+  height: 44px;
+}
+
+.cress-layout-quad .cress-stage-time {
+  font: 500 24px / 28px var(--font-metric);
 }

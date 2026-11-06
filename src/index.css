@@ -49,6 +49,7 @@
   --info-tint: rgb(96 165 250 / 0.12);
   --gradient-brand: linear-gradient(135deg, #7c3aed 0%, #2563eb 100%);
   --gradient-hairpin: linear-gradient(90deg, #a78bfa 0%, #60a5fa 100%);
+  --gradient-meter: linear-gradient(90deg, var(--violet-400) 0%, var(--blue-400) 75%, var(--warning) 75%, var(--warning) 95.8%, var(--danger) 95.8%, var(--danger) 100%);
   --background: var(--ink-900);
   --foreground: var(--text-primary);
   --card: var(--ink-800);
@@ -92,6 +93,27 @@
   box-sizing: border-box;
 }
 html, body, #root { height: 100%; }
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-control) transparent;
+}
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background: var(--border-control);
+  border-radius: 999px;
+  border: 2px solid transparent;
+  background-clip: padding-box;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background: var(--violet-400);
+  background-clip: padding-box;
+}
 body {
   margin: 0;
   min-width: 1100px;
@@ -190,21 +212,51 @@ main {
   font-size: 12px;
   letter-spacing: 0.2em;
 }
-.loading-hairpin {
-  transform-origin: left;
-  background-image: var(--gradient-hairpin);
-  animation: loading-hairpin 1.6s var(--ease-crescendo) infinite;
+/* Loading premium — fade-in elegante e escalonado (entrada do palco, não um "pisco") */
+.cress-loading-fade {
+  animation: cress-loading-fade-in 1100ms cubic-bezier(.16, 1, .3, 1) forwards;
 }
-@keyframes loading-hairpin {
-  0%,
-  100% {
-    transform: scaleX(0.05);
-    opacity: 0.5;
-  }
-  50% {
-    transform: scaleX(1);
-    opacity: 1;
-  }
+@keyframes cress-loading-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+/* Logo e texto combinam a entrada (opacity/blur, não-repetitiva) com a animação
+   contínua pré-existente (transform/opacity) num único `animation` — evitam que a
+   entrada e o loop infinito, ao colidirem na mesma propriedade, se cancelem um ao outro. */
+.cress-loading-logo {
+  animation:
+    cress-loading-logo-in 1100ms 150ms cubic-bezier(.16, 1, .3, 1) both,
+    cress-loading-logo-float 3s ease-in-out 1250ms infinite;
+}
+@keyframes cress-loading-logo-in {
+  from { opacity: 0; filter: blur(5px); }
+  to { opacity: 1; filter: blur(0); }
+}
+@keyframes cress-loading-logo-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+/* Progresso do carregamento: notas aparecem uma a uma ao longo do pentagrama em vez
+   de uma barra — dura o mesmo tanto que o MIN_LOAD_MS de boot.ts (~5s); se um dos dois
+   mudar, ajustar o outro para a sequência continuar terminando perto do fim do loading. */
+.cress-loading-note {
+  opacity: 0;
+  transform-origin: center;
+  animation: cress-loading-note-in 480ms cubic-bezier(.16, 1, .3, 1) forwards;
+}
+@keyframes cress-loading-note-in {
+  from { opacity: 0; transform: scale(.4) translateY(6px); }
+  to { opacity: 1; transform: scale(1) translateY(0); }
+}
+.cress-loading-text {
+  opacity: 0;
+  animation:
+    cress-loading-fade-in 700ms 950ms cubic-bezier(.16, 1, .3, 1) both,
+    cress-loading-text-pulse 3s ease-in-out 1650ms infinite;
+}
+@keyframes cress-loading-text-pulse {
+  0%, 100% { opacity: 0.7; }
+  50% { opacity: 1; }
 }
 
 @media (prefers-reduced-motion: reduce) {

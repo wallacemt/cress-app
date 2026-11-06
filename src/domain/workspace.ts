@@ -7,7 +7,7 @@ export const PANEL_CATALOG = {
   },
   tuner: { component: "tuner", singleton: true, modes: ["session", "free"] },
   score: { component: "score", singleton: false, modes: ["session", "free"] },
-  recorder: { component: "recorder", singleton: true, modes: ["session"] },
+  recorder: { component: "recorder", singleton: true, modes: ["session", "free"] },
   session: { component: "session", singleton: true, modes: ["session"] },
 } as const;
 // ponytail: single source for panel display labels (PT-BR), reused by the tab

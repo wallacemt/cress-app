@@ -1,6 +1,7 @@
 import type { SqlDb } from "../infrastructure/db/sqlDb";
 import { TauriSqlDb } from "../infrastructure/db/tauriSqlDb";
 import type { Deps } from "../application/deps";
+import { deleteRecordingFile, pauseRecording, probeRecording, resumeRecording, startRecording, stopRecording } from "../infrastructure/tauri/audioPort";
 
 let depsPromise: Promise<Deps> | undefined;
 
@@ -35,12 +36,12 @@ export const container: AppContainer = {
         now: () => new Date(container.clock()),
         newId: container.newId,
         audio: {
-          startRecording: notImplemented,
-          pauseRecording: notImplemented,
-          resumeRecording: notImplemented,
-          stopRecording: notImplemented,
-          probeRecording: notImplemented,
-          deleteRecordingFile: notImplemented,
+          startRecording: (path, deviceId) => startRecording(path, deviceId),
+          pauseRecording,
+          resumeRecording,
+          stopRecording,
+          probeRecording,
+          deleteRecordingFile,
         },
         scores: {
           pickAndImportFile: notImplemented,

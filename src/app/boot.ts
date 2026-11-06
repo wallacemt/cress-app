@@ -11,10 +11,14 @@ export interface ProfileReader {
 const profileReader: ProfileReader = {
   getProfile: async () => getProfile(await container.getDeps()),
 };
+const MIN_LOAD_MS = 5000;
+const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 let bootPromise: Promise<void> | undefined;
 export async function boot() {
+  const startedAt = Date.now();
   bootPromise ??= container.getDeps().then(async (deps) => { await recoverOnBoot(deps); }).catch((error) => { bootPromise = undefined; throw error; });
   await bootPromise;
+  await sleep(Math.max(0, MIN_LOAD_MS - (Date.now() - startedAt)));
   return { profile: await profileReader.getProfile() };
 }
 export async function rootLoader({

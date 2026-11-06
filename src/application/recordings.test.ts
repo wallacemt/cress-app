@@ -1,4 +1,4 @@
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { createPiece } from "./repertoire";
 import { startSession } from "./sessions";
 import {
@@ -36,7 +36,19 @@ describe("recordings", () => {
     Object.assign(d.audio, { failStart: true });
     await expect(startTake(d, { sessionId: s.id })).rejects.toMatchObject({
       code: "INPUT_NOT_RUNNING",
+      message: "input failed",
     });
     expect(await d.db.select("SELECT * FROM recordings")).toHaveLength(0);
+  });
+  it("opens the selected device and preserves serialized audio errors", async () => {
+    const d = makeTestDeps();
+    const p = await createPiece(d, { title: "P" });
+    const s = await startSession(d, { repertoireItemId: p.id });
+    const start = vi.spyOn(d.audio, "startRecording").mockRejectedValue({ code: "DEVICE_BUSY", message: "Microphone is busy" });
+    await expect(startTake(d, { sessionId: s.id, deviceId: "mic-1" })).rejects.toMatchObject({
+      code: "DEVICE_BUSY",
+      message: "Microphone is busy",
+    });
+    expect(start).toHaveBeenCalledWith(expect.any(String), "mic-1");
   });
 });

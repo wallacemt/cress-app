@@ -9,22 +9,25 @@ const shortcuts = ["1", "2", "3", "4", "5"] as const;
 export function openWorkspacePanel(
   api: DockviewReadyEvent["api"],
   component: keyof typeof PANEL_CATALOG,
+  params?: Record<string, unknown>,
 ) {
   const definition = PANEL_CATALOG[component];
   const existing =
     definition.singleton &&
     api.panels.find((panel) => panel.api.component === component);
   if (existing) {
+    if (params) existing.api.updateParameters(params);
     existing.api.setActive();
     return existing;
   }
   const id = component === "score" ? `score:${Date.now()}` : component;
-  return api.addPanel({ id, component, title: labels[component] });
+  return api.addPanel({ id, component, title: labels[component], params });
 }
 
 export function useWorkspacePanelShortcuts(
   api: DockviewReadyEvent["api"] | null,
   mode: WorkspaceMode,
+  panelParams?: Record<string, unknown>,
 ) {
   useEffect(() => {
     if (!api) return;
@@ -54,27 +57,29 @@ export function useWorkspacePanelShortcuts(
       )
         return;
       event.preventDefault();
-      openWorkspacePanel(api, component);
+      openWorkspacePanel(api, component, panelParams);
     };
     window.addEventListener("keydown", onKeyDown);
     return () => window.removeEventListener("keydown", onKeyDown);
-  }, [api, mode]);
+  }, [api, mode, panelParams]);
 }
 
 export function AddPanelMenu({
   api,
   mode,
   onOpen,
+  panelParams,
 }: {
   api: DockviewReadyEvent["api"] | null;
   mode: WorkspaceMode;
   onOpen?: () => void;
+  panelParams?: Record<string, unknown>;
 }) {
   const [open, setOpen] = useState(false);
   const [scoreSubmenu, setScoreSubmenu] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
-  useWorkspacePanelShortcuts(api, mode);
+  useWorkspacePanelShortcuts(api, mode, panelParams);
   const available = (
     Object.keys(PANEL_CATALOG) as (keyof typeof PANEL_CATALOG)[]
   ).filter((key) =>
@@ -109,7 +114,7 @@ export function AddPanelMenu({
   }, [open]);
   const activate = (key: keyof typeof PANEL_CATALOG) => {
     if (!api) return;
-    openWorkspacePanel(api, key);
+    openWorkspacePanel(api, key, panelParams);
     setOpen(false);
     onOpen?.();
   };
