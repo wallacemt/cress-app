@@ -1,17 +1,34 @@
 import cressStacked from "../assets/brand/cress-stacked-gold.svg";
 
+// Posição (x) e linha do pentagrama (y) de cada nota do progresso — ritmo levemente
+// irregular (não um metrônomo robótico) para parecer uma frase musical de verdade.
+const LOADING_NOTES = [
+  { x: 36, y: 32 },
+  { x: 92, y: 16 },
+  { x: 148, y: 24 },
+  { x: 204, y: 40 },
+  { x: 260, y: 24 },
+  { x: 316, y: 16 },
+  { x: 372, y: 32 },
+  { x: 428, y: 24 },
+];
+
 export function LoadingScreen() {
   return (
     <main
       role="status"
       aria-live="polite"
-      className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-[var(--ink-900)]"
+      style={{ backgroundColor: "var(--ink-900, #090b14)" }}
+      className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden cress-loading-fade"
     >
+      <img src={cressStacked} alt="Cress" className="h-48 cress-loading-logo" />
+      <p className="mt-10 text-sm font-medium text-[var(--text-muted)] cress-loading-text">
+        Preparando sua mesa de estudo…
+      </p>
       <svg
         aria-hidden="true"
         viewBox="0 0 480 48"
-        preserveAspectRatio="none"
-        className="absolute bottom-[18%] w-[480px] opacity-5"
+        className="absolute bottom-[10%] w-[480px] cress-loading-staff"
       >
         {[8, 16, 24, 32, 40].map((y) => (
           <line
@@ -22,16 +39,34 @@ export function LoadingScreen() {
             y2={y}
             stroke="var(--text-primary)"
             strokeWidth="1"
+            opacity={0.3}
           />
         ))}
+        {LOADING_NOTES.map((note, i) => (
+          <g
+            key={note.x}
+            className="cress-loading-note"
+            style={{ animationDelay: `${i * 560 + 450}ms` }}
+          >
+            <line
+              x1={note.x + 5}
+              y1={note.y}
+              x2={note.x + 5}
+              y2={note.y - 16}
+              stroke="var(--violet-400)"
+              strokeWidth="1.5"
+            />
+            <ellipse
+              cx={note.x}
+              cy={note.y}
+              rx="5"
+              ry="4"
+              fill="var(--violet-400)"
+              transform={`rotate(-18 ${note.x} ${note.y})`}
+            />
+          </g>
+        ))}
       </svg>
-      <img src={cressStacked} alt="Cress" className="h-40" />
-      <div className="mt-10 h-[3px] w-36 overflow-hidden rounded-full bg-[var(--ink-600)]">
-        <div className="loading-hairpin h-full w-full" />
-      </div>
-      <p className="mt-6 text-sm text-[var(--text-muted)]">
-        Preparando sua mesa de estudo…
-      </p>
     </main>
   );
 }
