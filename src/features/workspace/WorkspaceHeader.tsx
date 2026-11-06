@@ -32,7 +32,6 @@ export function WorkspaceHeader({
   session?: StudySessionRow | null;
   onBack?: () => void;
 }) {
-  useWorkspacePanelShortcuts(api, mode);
   const navigate = useNavigate();
   const [dialog, setDialog] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -41,6 +40,8 @@ export function WorkspaceHeader({
   const stopMetronome = useMetronomeStore((state) => state.stop);
   const [current, setCurrent] = useState(session ?? null);
   useEffect(() => setCurrent(session ?? null), [session]);
+  const panelParams = (mode === "session" || mode === "free") && current && deps ? { session: current, pieceId, deps } : undefined;
+  useWorkspacePanelShortcuts(api, mode, panelParams);
   const elapsed = useSessionClock(current);
   useHeartbeat(deps, current?.id, current?.status === "ACTIVE");
   const clock = `${String(Math.floor(elapsed / 60000)).padStart(2, "0")}:${String(Math.floor(elapsed / 1000) % 60).padStart(2, "0")}`;
@@ -80,7 +81,7 @@ export function WorkspaceHeader({
           </div>
           <span className="cress-clock-placeholder" aria-label="Tempo ativo">{clock}</span>
           <div className="cress-header-spacer" />
-          <AddPanelMenu api={api} mode={mode} />
+          <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />
           <button type="button" className="cress-control" disabled={!current || busy} onClick={() => void changeSession(current?.status === "ACTIVE" ? "pause" : "resume")}>
             {current?.status === "ACTIVE" ? <><Pause size={15} /> Pausar</> : <><Play size={15} /> Retomar</>}
@@ -99,7 +100,7 @@ export function WorkspaceHeader({
             <i aria-hidden="true" /> ♩ <span>{metronome.bpm}</span>
             <button type="button" aria-label="Parar metrônomo" disabled={!metronomeRunning} onClick={stopMetronome}><Square size={13} /></button>
           </span>
-          <AddPanelMenu api={api} mode={mode} />
+          <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />
         </>
       )}

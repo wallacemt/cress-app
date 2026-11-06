@@ -4,6 +4,7 @@ import { makeRecordingRepo } from "../infrastructure/repositories/recordingRepo"
 import { makeSessionRepo } from "../infrastructure/repositories/sessionRepo";
 export interface StartTakeInput {
   sessionId: string;
+  deviceId?: string | null;
   bpm?: number | null;
   title?: string;
 }
@@ -38,16 +39,19 @@ export async function startTake(d: Deps, x: StartTakeInput) {
     created_at: now.getTime(),
   });
   try {
-    const a = await d.audio.startRecording(path);
+    const a = await d.audio.startRecording(path, x.deviceId ?? null);
     const r = await makeRecordingRepo(d.db).get(id);
     if (r) {
       r.sample_rate = a.sampleRate;
       await makeRecordingRepo(d.db).update(r);
     }
     return r;
-  } catch {
+  } catch (cause) {
     await makeRecordingRepo(d.db).remove(id);
-    throw new DomainError("INPUT_NOT_RUNNING", "Input is not running");
+    const details = cause && typeof cause === "object" ? cause as { code?: unknown; message?: unknown } : undefined;
+    const code = typeof details?.code === "string" ? details.code : "INPUT_NOT_RUNNING";
+    const message = typeof details?.message === "string" ? details.message : cause instanceof Error ? cause.message : "Não foi possível iniciar a gravação.";
+    throw new DomainError(code, message);
   }
 }
 export async function listTakes(d: Deps, { sessionId }: { sessionId: string }) {

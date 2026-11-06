@@ -1,5 +1,6 @@
 import { DomainError } from "./errors";
 import { INSTRUMENTS, InstrumentCode } from "./profile";
+export const FREE_PRACTICE_PIECE_ID = "free-practice";
 export interface RepertoireItem {
   id: string;
   title: string;

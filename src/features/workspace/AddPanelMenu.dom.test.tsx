@@ -68,10 +68,10 @@ describe("AddPanelMenu", () => {
     );
   });
 
-  it("keeps session-only panels out of free practice", () => {
+  it("keeps session-only panels out of free practice but allows the recorder", () => {
     const { container } = render(<AddPanelMenu api={fakeApi()} mode="free" />);
     fireEvent.click(container.querySelector("button")!);
-    expect(screen.queryByText("Gravações")).toBeNull();
+    expect(screen.queryByText("Gravações")).not.toBeNull();
     expect(screen.queryByText("Sessão")).toBeNull();
   });
 });

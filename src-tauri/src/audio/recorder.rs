@@ -1,4 +1,5 @@
 use std::path::Path;
+use std::fs;
 
 use hound::{WavReader, WavSpec, WavWriter};
 use thiserror::Error;
@@ -7,6 +8,8 @@ use thiserror::Error;
 pub enum RecorderError {
     #[error("failed to create WAV recording: {0}")]
     Create(#[source] hound::Error),
+    #[error("failed to create WAV recording directory: {0}")]
+    CreateDirectory(#[source] std::io::Error),
     #[error("failed to write WAV recording: {0}")]
     Write(#[source] hound::Error),
     #[error("failed to finalize WAV recording: {0}")]
@@ -19,6 +22,7 @@ impl RecorderError {
     pub fn code(&self) -> &'static str {
         match self {
             Self::Create(_) => "recording_create_failed",
+            Self::CreateDirectory(_) => "recording_create_failed",
             Self::Write(_) => "recording_write_failed",
             Self::Finish(_) => "recording_finish_failed",
             Self::InvalidSampleRate => "invalid_sample_rate",
@@ -44,6 +48,9 @@ impl Recorder {
     pub fn start(path: &Path, sample_rate: u32) -> Result<Self, RecorderError> {
         if sample_rate == 0 {
             return Err(RecorderError::InvalidSampleRate);
+        }
+        if let Some(parent) = path.parent() {
+            fs::create_dir_all(parent).map_err(RecorderError::CreateDirectory)?;
         }
         let writer = WavWriter::create(
             path,
@@ -168,6 +175,20 @@ mod tests {
         assert_eq!(decoded.len(), samples.len());
         assert!((decoded[2_000] as f32 / i16::MAX as f32 - samples[2_000]).abs() < 0.001);
         fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn creates_missing_parent_directories() {
+        let directory = temporary_wav("nested").with_extension("");
+        let path = directory.join("2026").join("11").join("take.wav");
+        assert!(!path.parent().unwrap().exists());
+
+        let mut recorder = Recorder::start(&path, 8_000).unwrap();
+        recorder.write_samples(&[0.1; 8]).unwrap();
+        recorder.finish().unwrap();
+
+        assert!(path.is_file());
+        fs::remove_dir_all(directory).unwrap();
     }
 
     #[test]

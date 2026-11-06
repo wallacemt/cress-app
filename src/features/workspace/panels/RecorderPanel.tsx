@@ -1,63 +1,58 @@
-import { useCallback, useEffect, useState, type FunctionComponent } from "react";
+import { useCallback, useEffect, useId, useRef, useState, type FunctionComponent } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
+import { Check, Headphones, MicOff, Pause, Play } from "lucide-react";
 import { listTakes, pauseTake, resumeTake, startTake, stopTake } from "../../../application/recordings";
 import type { Deps } from "../../../application/deps";
 import type { RecordingRow, StudySessionRow } from "../../../infrastructure/db/rows";
+import { useAudioInputStore } from "../../../stores/audioInputStore";
+import { useMetronomeStore } from "../../../stores/metronomeStore";
+import { useWorkspaceLayoutStore } from "../../../stores/workspaceLayoutStore";
 import { RecordingItem } from "./RecordingItem";
+import { AudioDeviceSelector } from "./AudioDeviceSelector";
+import { initialMeterState, meterPos, step, toDb, type MeterState } from "./meter";
 
 interface RecorderPanelParams { session: StudySessionRow; pieceId: string; deps: Deps }
+function timeLabel(ms: number) { const s = Math.floor(ms / 1000); return s >= 3600 ? `${Math.floor(s / 3600)}:${String(Math.floor(s % 3600 / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}` : `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+function useMeter() {
+  const fill = useRef<SVGRectElement>(null); const peak = useRef<SVGLineElement>(null); const meterRef = useRef<HTMLDivElement>(null);
+  const state = useRef<MeterState>(initialMeterState()); const latest = useRef(0); const [label, setLabel] = useState(-Infinity); const [clip, setClip] = useState(false); const [silent, setSilent] = useState(false); const [available, setAvailable] = useState(true);
+  useEffect(() => { const unsub = useAudioInputStore.subscribe((s) => { latest.current = s.level.peak; setAvailable(!s.error && s.running); }); let raf = 0; let prev = performance.now(); let textAt = 0; const frame = (now: number) => { const dt = now - prev; prev = now; const next = step(state.current, toDb(latest.current), now, dt); state.current = next; const p = meterPos(next.display), h = meterPos(next.hold); if (fill.current) { fill.current.setAttribute("y", String(88 - 84 * p)); fill.current.setAttribute("height", String(84 * p)); } if (peak.current) { peak.current.setAttribute("y1", String(88 - 84 * h)); peak.current.setAttribute("y2", String(88 - 84 * h)); peak.current.style.opacity = next.hold > -48 ? "1" : "0"; } if (meterRef.current) { meterRef.current.style.setProperty("--meter-pos-q", String(Math.ceil(p * 24) / 24)); meterRef.current.style.setProperty("--meter-hold-q", String(Math.ceil(h * 24) / 24)); } if (now - textAt >= 250) { setLabel(next.hold); setClip(next.clipped); setSilent(next.silentSince !== null && now - next.silentSince >= 5000); textAt = now; } raf = requestAnimationFrame(frame); }; raf = requestAnimationFrame(frame); return () => { cancelAnimationFrame(raf); unsub(); }; }, []);
+  const clearClip = () => { state.current = { ...state.current, clipped: false }; setClip(false); };
+  return { fill, peak, meterRef, label, clip, silent, available, clearClip };
+}
+function MicLevel({ meter, compact = false, paused = false }: { meter: ReturnType<typeof useMeter>; compact?: boolean; paused?: boolean }) {
+  const id = useId(); const pos = meterPos(meter.label); const label = Number.isFinite(meter.label) ? `${meter.label <= -6 ? "−" : ""}${Math.abs(Math.round(meter.label))}` : "−∞";
+  return <div className={`cress-mic-level${compact ? " is-compact" : ""}`}>
+    <svg className="cress-mic" viewBox="0 0 96 132" role="meter" aria-label="Nível de entrada" aria-valuemin={-48} aria-valuemax={0} aria-valuenow={Number.isFinite(meter.label) ? Math.round(meter.label) : -48} aria-valuetext={`${label} dBFS`} data-available={meter.available}>
+      <defs><clipPath id={`${id}-capsule`}><rect x="26" y="4" width="44" height="84" rx="22" /></clipPath><clipPath id={`${id}-level`}><rect ref={meter.fill} x="26" y="88" width="44" height="0" /></clipPath><linearGradient id={`${id}-gradient`} gradientUnits="userSpaceOnUse" x1="0" y1="88" x2="0" y2="4"><stop stopColor="var(--violet-400)" /><stop offset=".75" stopColor="var(--blue-400)" /><stop offset=".75" stopColor="var(--warning)" /><stop offset=".958" stopColor="var(--warning)" /><stop offset=".958" stopColor="var(--danger)" /><stop offset="1" stopColor="var(--danger)" /></linearGradient></defs>
+      <rect className="cress-mic-capsule" x="26" y="4" width="44" height="84" rx="22" /><g clipPath={`url(#${id}-capsule)`}><rect x="26" y="4" width="44" height="84" fill={`url(#${id}-gradient)`} clipPath={`url(#${id}-level)`} opacity={paused ? ".35" : "1"} />{[30,38,46,54,62].map((y) => <line key={y} x1="34" x2="62" y1={y} y2={y} />)}</g><line ref={meter.peak} className="cress-mic-peak" x1="26" x2="70" y1="88" y2="88" /><path className="cress-mic-frame" d="M12 60 v6 a36 36 0 0 0 72 0 v-6 M48 102 V126 M32 126 H64" />
+    </svg>
+    <div className="cress-mic-scale">{(compact ? [-18,-12,0] : [-48,-30,-18,-12,-6,-3,0]).map((db) => <span key={db} style={{ bottom: `${meterPos(db) * 100}%` }} data-label={compact || [0,-6,-18,-30,-48].includes(db)}>{db === 0 ? "0" : `−${Math.abs(db)}`}</span>)}<small>dBFS</small></div>
+    {!compact && <span className="cress-mic-readout" style={{ bottom: `${pos * 100}%` }}>{label}</span>}
+    {meter.clip && <button className="cress-mic-clip" aria-label="Pico acima de −1 dBFS. Limpar aviso" onClick={meter.clearClip}>CLIP</button>}
+  </div>;
+}
 
-export const RecorderPanel: FunctionComponent<IDockviewPanelProps> = ({ params }) => {
-  const { session, deps } = params as RecorderPanelParams;
-  const [takes, setTakes] = useState<RecordingRow[]>([]);
-  const [title, setTitle] = useState("");
-  const [error, setError] = useState("");
-  const [busy, setBusy] = useState(false);
-  const [elapsed, setElapsed] = useState(0);
-  const activeTake = takes.find((take) => take.status === "RECORDING");
-  const refresh = useCallback(async () => setTakes(await listTakes(deps, { sessionId: session.id })), [deps, session.id]);
-  const reportError = useCallback((message: string) => setError(message), []);
-
-  useEffect(() => {
-    let alive = true;
-    void listTakes(deps, { sessionId: session.id }).then((items) => { if (alive) setTakes(items); }).catch((cause: unknown) => {
-      if (alive) setError(cause instanceof Error ? cause.message : "Não foi possível carregar as gravações.");
-    });
-    return () => { alive = false; };
-  }, [deps, session.id]);
-
-  useEffect(() => {
-    if (!activeTake) { setElapsed(0); return; }
-    const startedAt = activeTake.created_at;
-    const update = () => setElapsed(Math.max(0, Date.now() - startedAt));
-    update();
-    const timer = window.setInterval(update, 1000);
-    return () => window.clearInterval(timer);
-  }, [activeTake]);
-
-  async function run(action: () => Promise<unknown>) {
-    setBusy(true);
-    try { await action(); setError(""); await refresh(); }
-    catch (cause) { setError(cause instanceof Error ? cause.message : "Não foi possível atualizar a gravação."); }
-    finally { setBusy(false); }
-  }
-
-  const elapsedLabel = `${String(Math.floor(elapsed / 60000)).padStart(2, "0")}:${String(Math.floor((elapsed % 60000) / 1000)).padStart(2, "0")}`;
-  return (
-    <section className="cress-session-panel cress-recorder-panel" aria-label="Painel de gravações">
-      <header className="cress-recorder-header"><div><p className="cress-session-eyebrow">GRAVAÇÕES DA SESSÃO</p><h2>Recorder</h2></div>
-        {activeTake && <span className="cress-recorder-live"><i aria-hidden="true" /> Gravando · {elapsedLabel}</span>}
-      </header>
-      <div className="cress-recorder-controls">
-        <input aria-label="Título da gravação" placeholder="Título do take" value={title} onChange={(event) => setTitle(event.target.value)} />
-        {!activeTake ? <button type="button" className="cress-session-secondary" disabled={busy || session.status !== "ACTIVE"} onClick={() => void run(() => startTake(deps, { sessionId: session.id, title: title.trim() || `Take — ${new Date().toLocaleString("pt-BR", { hour12: false })}` }))}>Iniciar gravação</button> : <>
-          <button type="button" className="cress-session-secondary" disabled={busy} onClick={() => void run(pauseTake.bind(null, deps))}>Pausar</button>
-          <button type="button" className="cress-session-ghost" disabled={busy} onClick={() => void run(resumeTake.bind(null, deps))}>Retomar</button>
-          <button type="button" className="cress-session-ghost" disabled={busy} onClick={() => void run(stopTake.bind(null, deps))}>Finalizar</button>
-        </>}
-      </div>
-      {error && <p role="alert">{error}</p>}
-      <div className="cress-recorder-list">{takes.length ? takes.map((take) => <RecordingItem key={take.id} take={take} deps={deps} onChange={() => void refresh()} onError={reportError} />) : <p className="cress-recorder-empty">Nenhum take nesta sessão ainda.</p>}</div>
-    </section>
-  );
+export const RecorderPanel: FunctionComponent<IDockviewPanelProps> = ({ api, params }) => {
+  const [panelParams, setPanelParams] = useState(() => params as RecorderPanelParams); useEffect(() => api.onDidParametersChange((next) => setPanelParams(next as RecorderPanelParams)).dispose, [api]);
+  const { session, deps } = panelParams; const panelCount = useWorkspaceLayoutStore((s) => s.panelCount);
+  const [takes, setTakes] = useState<RecordingRow[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState(false); const [elapsed, setElapsed] = useState(0); const [phase, setPhase] = useState<"recording"|"paused">("recording"); const [pausedAt, setPausedAt] = useState<number|null>(null); const [pausedTotal, setPausedTotal] = useState(0); const [saved, setSaved] = useState(false); const [newTakeId, setNewTakeId] = useState<string|null>(null);
+  const audio = useRef(new Audio()).current; const stopRef = useRef<HTMLButtonElement>(null); const mic = useMeter(); const active = takes.find((take) => take.status === "RECORDING"); const refresh = useCallback(async () => setTakes(await listTakes(deps, { sessionId: session.id })), [deps, session.id]);
+  useEffect(() => { let alive = true; void refresh().catch((cause: unknown) => alive && setError(cause instanceof Error ? cause.message : "Não foi possível carregar os takes.")); return () => { alive = false; audio.pause(); }; }, [refresh, audio]);
+  useEffect(() => { if (!active) { setElapsed(0); return; } const tick = () => setElapsed(Math.max(0, Date.now() - active.created_at - pausedTotal - (pausedAt == null ? 0 : Date.now() - pausedAt))); tick(); const timer = window.setInterval(tick, 1000); return () => clearInterval(timer); }, [active, pausedAt, pausedTotal]);
+  useEffect(() => { if (active) stopRef.current?.focus(); }, [active?.id]);
+  async function run(action: () => Promise<unknown>) { if (busy) return; setBusy(true); try { await action(); setError(""); await refresh(); } catch (e) { setError(e instanceof Error ? e.message : "A operação de gravação falhou."); } finally { setBusy(false); } }
+  const start = () => { const met = useMetronomeStore.getState(); setPhase("recording"); setPausedAt(null); setPausedTotal(0); void run(() => startTake(deps, { sessionId: session.id, deviceId: useAudioInputStore.getState().deviceId, bpm: met.running ? met.config.bpm : null, title: `Take ${takes.length + 1}` })); };
+  useEffect(() => { const key = (e: KeyboardEvent) => { if (e.target instanceof HTMLElement && (e.target.isContentEditable || /INPUT|TEXTAREA|SELECT/.test(e.target.tagName))) return; if (e.key.toLowerCase() === "r" && !e.shiftKey && !active) { e.preventDefault(); start(); } if (e.key.toLowerCase() === "r" && e.shiftKey && active) { e.preventDefault(); void run(async () => { if (phase === "recording") { await pauseTake(deps); setPausedAt(Date.now()); setPhase("paused"); } else { await resumeTake(deps); setPausedTotal((n) => n + (pausedAt == null ? 0 : Date.now() - pausedAt)); setPausedAt(null); setPhase("recording"); } }); } }; window.addEventListener("keydown", key); return () => window.removeEventListener("keydown", key); });
+  const togglePause = () => void run(async () => { if (phase === "recording") { await pauseTake(deps); setPausedAt(Date.now()); setPhase("paused"); } else { await resumeTake(deps); setPausedTotal((n) => n + (pausedAt == null ? 0 : Date.now() - pausedAt)); setPausedAt(null); setPhase("recording"); } });
+  const finish = () => void run(async () => { await stopTake(deps); setSaved(true); const latest = await listTakes(deps, { sessionId: session.id }); const justSaved = latest.find((t) => t.id === active?.id); if (justSaved) setNewTakeId(justSaved.id); window.setTimeout(() => setSaved(false), 600); });
+  const deviceName = useAudioInputStore((s) => s.devices.find((d) => d.id === s.deviceId)?.name ?? "Padrão do sistema");
+  return <section className={`cress-session-panel cress-recorder-panel${panelCount <= 2 ? " cress-layout-duo" : ""}${panelCount >= 4 ? " cress-layout-quad" : ""}`} data-mode={active ? "stage" : "list"} aria-label="Painel de gravações">
+    <div className="cress-recorder-list-mode" aria-hidden={!!active}>
+      <div className="cress-recorder-transport"><button className="cress-record-button" aria-label="Gravar take" aria-keyshortcuts="R" aria-disabled={busy || session.status !== "ACTIVE"} disabled={busy || session.status !== "ACTIVE"} onClick={start} /><div><strong>{session.status === "ACTIVE" ? "Gravar take" : "Retome a sessão para gravar."}</strong><small>R · {deviceName}</small><AudioDeviceSelector /></div><div ref={mic.meterRef} className="cress-level-meter-wrap"><div className="cress-level-meter"><i /><b /></div><small>Nível</small></div></div>
+      <div className="cress-recorder-hairpin" />{error && <div className="cress-recorder-error" role="alert">{error}<button onClick={() => void refresh()}>Tentar novamente</button></div>}
+      <div className="cress-takes"><div className="cress-takes-heading">TAKES · {takes.length}</div>{takes.length ? takes.filter((t) => t.status !== "RECORDING").map((take) => <RecordingItem key={take.id} take={take} deps={deps} onChange={() => void refresh()} onError={setError} audio={audio} onPlay={(id) => { if (newTakeId === id) setNewTakeId(null); }} />) : <div className="cress-recorder-empty"><div className="cress-empty-staff">╱</div>Os takes desta sessão aparecem aqui.</div>} {!takes.length && <p className="cress-headphones"><Headphones size={14} /> Use fones para o clique do metrônomo não vazar para o take.</p>}</div>
+    </div>
+    {active && <div className="cress-recorder-stage" data-phase={phase}><div className="cress-stage-status"><i /> <b>{phase === "paused" ? "PAUSADO" : "REC"}</b><span>·</span><span>{active.title}</span></div><div className="cress-stage-meter"><MicLevel meter={mic} compact={false} paused={phase === "paused"} /></div><div className="cress-stage-time">{timeLabel(elapsed)}</div>{mic.silent && phase === "recording" && <p className="cress-stage-hint"><MicOff size={14} /> Nenhum som chegando ao microfone.</p>}{!mic.available && <p className="cress-stage-hint">Medidor indisponível — a gravação continua. <button onClick={() => void useAudioInputStore.getState().acquire()}>Reconectar</button></p>}<div className="cress-stage-controls"><button className="cress-stage-pause" aria-label={phase === "paused" ? "Retomar" : "Pausar"} aria-pressed={phase === "paused"} aria-keyshortcuts="Shift+R" disabled={busy} onClick={togglePause}>{phase === "paused" ? <Play size={18} /> : <Pause size={20} />}</button><button ref={stopRef} className="cress-stage-stop" aria-label="Encerrar take" aria-keyshortcuts="R" aria-busy={busy} disabled={busy} onClick={finish}>{saved ? <Check size={18} /> : <i />}</button></div><span aria-live="polite" className="sr-only">{saved ? `${active.title} salvo, ${timeLabel(elapsed)}.` : `Gravando ${active.title}.`}</span><span aria-live="assertive" className="sr-only">{mic.clip ? "Clipping: reduza o ganho ou afaste o microfone." : ""}</span></div>}
+  </section>;
 };

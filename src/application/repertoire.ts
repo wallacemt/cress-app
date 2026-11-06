@@ -1,6 +1,7 @@
 import { DomainError } from "../domain/errors";
 import {
   createRepertoireItem,
+  FREE_PRACTICE_PIECE_ID,
   type RepertoireItem,
 } from "../domain/repertoire";
 import { makeRepertoireRepo } from "../infrastructure/repositories/repertoireRepo";
@@ -49,7 +50,9 @@ export async function createPiece(d: Deps, x: PieceInput) {
   return entity(r);
 }
 export async function listPieces(d: Deps) {
-  return (await makeRepertoireRepo(d.db).list()).map(entity);
+  return (await makeRepertoireRepo(d.db).list())
+    .filter((piece) => piece.id !== FREE_PRACTICE_PIECE_ID)
+    .map(entity);
 }
 export async function updatePiece(d: Deps, x: PieceInput & { id: string }) {
   const repo = makeRepertoireRepo(d.db),

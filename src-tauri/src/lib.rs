@@ -24,6 +24,12 @@ pub fn run() {
                         description: "initial schema",
                         sql: include_str!("../migrations/0001_init.sql"),
                         kind: tauri_plugin_sql::MigrationKind::Up,
+                    },
+                    tauri_plugin_sql::Migration {
+                        version: 2,
+                        description: "seed da obra sentinela de prática livre",
+                        sql: include_str!("../migrations/0002_free_practice_piece.sql"),
+                        kind: tauri_plugin_sql::MigrationKind::Up,
                     }],
                 )
                 .build(),

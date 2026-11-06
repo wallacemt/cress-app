@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createPiece } from "./repertoire";
+import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
 import { createGoal } from "./goals";
 import {
   startSession,
@@ -9,10 +10,26 @@ import {
   updateSessionNotes,
   finishSession,
   discardSession,
+  ensureFreeSession,
 } from "./sessions";
 import { startTake } from "./recordings";
 import { makeTestDeps } from "./test-support";
 describe("sessions application", () => {
+  it("resumes an existing paused free-practice session", async () => {
+    const d = makeTestDeps();
+    await d.db.execute(
+      "INSERT INTO repertoire_items VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [FREE_PRACTICE_PIECE_ID, "Free practice", null, null, null, null, null, 0, 0],
+    );
+    const session = await ensureFreeSession(d);
+    await pauseSession(d, { id: session.id });
+
+    const resumed = await ensureFreeSession(d);
+
+    expect(resumed.id).toBe(session.id);
+    expect(resumed.status).toBe("ACTIVE");
+  });
+
   it("enforces ownership/open session and finishes take/goal", async () => {
     const d = makeTestDeps();
     const p = await createPiece(d, { title: "P" }),

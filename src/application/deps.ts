@@ -24,7 +24,7 @@ export type ImportResult =
       code: "NOT_A_PDF" | "TOO_LARGE" | "IO" | "NOT_FOUND";
     };
 export interface AudioPort {
-  startRecording(path: string): Promise<{ sampleRate: number }>;
+  startRecording(path: string, deviceId: string | null): Promise<{ sampleRate: number }>;
   pauseRecording(): Promise<void>;
   resumeRecording(): Promise<void>;
   stopRecording(): Promise<{ relativePath: string; durationMs: number }>;

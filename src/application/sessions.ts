@@ -16,6 +16,7 @@ import type { StudySessionRow } from "../infrastructure/db/rows";
 import { pauseTake, stopTake } from "./recordings";
 import { completeGoal } from "./goals";
 import type { StudySession } from "../domain/session";
+import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
 export interface StartSessionInput {
   repertoireItemId: string;
   goalId?: string;
@@ -74,6 +75,10 @@ export async function startSession(d: Deps, x: StartSessionInput) {
   const repo = makeSessionRepo(d.db);
   if ((await repo.open()).length)
     throw new DomainError("SESSION_ALREADY_OPEN", "Session already open");
+  return createAndSaveSession(d, x);
+}
+async function createAndSaveSession(d: Deps, x: StartSessionInput) {
+  const repo = makeSessionRepo(d.db);
   const goal = x.goalId
     ? (
         await d.db.select<{ repertoire_item_id: string }>(
@@ -94,6 +99,27 @@ export async function startSession(d: Deps, x: StartSessionInput) {
     }),
   );
   return s;
+}
+export async function ensureFreeSession(d: Deps): Promise<StudySession> {
+  const repo = makeSessionRepo(d.db);
+  const open = await repo.open();
+  const existing = open.find((session) => session.repertoire_item_id === FREE_PRACTICE_PIECE_ID);
+  if (existing) {
+    if (existing.status === "PAUSED") return resumeSession(d, { id: existing.id });
+    return ent(existing);
+  }
+  if (open.length)
+    throw new DomainError("SESSION_ALREADY_OPEN", "Finalize a sessão atual antes de gravar na prática livre");
+  return createAndSaveSession(d, { repertoireItemId: FREE_PRACTICE_PIECE_ID });
+}
+export async function ensureFreeSessionRow(d: Deps): Promise<StudySessionRow> {
+  const session = await ensureFreeSession(d);
+  return row(session, {
+    repertoire_item_id: FREE_PRACTICE_PIECE_ID,
+    goal_id: null,
+    initial_bpm: null,
+    final_bpm: null,
+  });
 }
 async function change(
   d: Deps,

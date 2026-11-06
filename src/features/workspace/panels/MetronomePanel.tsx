@@ -23,6 +23,7 @@ import {
   saveMetronomeConfig,
 } from "../../../application/metronome";
 import { useMetronomeStore } from "../../../stores/metronomeStore";
+import { useWorkspaceLayoutStore } from "../../../stores/workspaceLayoutStore";
 import { Pendulum } from "../../metronome/Pendulum";
 import { CressSlider } from "../../../components/CressSlider";
 import { SubdivisionIcon } from "../../../components/icons/SubdivisionIcon";
@@ -49,6 +50,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   const [timerEnabled, setTimerEnabled] = useState(false);
   const [timerMinutes, setTimerMinutes] = useState("0");
   const [timerSecs, setTimerSecs] = useState("0");
+  const panelCount = useWorkspaceLayoutStore((s) => s.panelCount);
   const root = useRef<HTMLElement>(null);
   const tempoMenu = useRef<HTMLDivElement>(null);
   const taps = useRef<number[]>([]);
@@ -443,7 +445,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
     <section
       ref={root}
       tabIndex={0}
-      className="cress-metronome-panel"
+      className={`cress-metronome-panel${panelCount <= 2 ? " cress-layout-duo" : ""}${panelCount >= 4 ? " cress-layout-quad" : ""}`}
       aria-label="Painel Metrônomo"
       onClick={() => root.current?.focus({ preventScroll: true })}
     >

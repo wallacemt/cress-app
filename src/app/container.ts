@@ -36,7 +36,7 @@ export const container: AppContainer = {
         now: () => new Date(container.clock()),
         newId: container.newId,
         audio: {
-          startRecording: (path) => startRecording(path),
+          startRecording: (path, deviceId) => startRecording(path, deviceId),
           pauseRecording,
           resumeRecording,
           stopRecording,
