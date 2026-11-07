@@ -3,16 +3,6 @@ pub mod audio;
 pub mod paths;
 pub mod scores;
 
-#[tauri::command]
-async fn blocking_pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
-    use tauri_plugin_dialog::DialogExt;
-    Ok(app
-        .dialog()
-        .file()
-        .blocking_pick_folder()
-        .map(|path| path.to_string()))
-}
-
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
@@ -50,8 +40,8 @@ pub fn run() {
         .plugin(tauri_plugin_updater::Builder::new().build())
         .manage(audio::commands::AudioInputState::default())
         .manage(audio::commands::RecordingState::default())
+        .manage(scores::commands::ScoreScanState::default())
         .invoke_handler(tauri::generate_handler![
-            blocking_pick_folder,
             audio::commands::audio_list_input_devices,
             audio::commands::audio_start_input,
             audio::commands::audio_stop_input,
@@ -61,8 +51,9 @@ pub fn run() {
             audio::commands::recording_finish,
             audio::commands::recording_delete,
             audio::commands::recording_probe,
-            scores::commands::scores_scan_folder,
-            scores::commands::scores_import_files,
+            scores::commands::scores_pick_folder_and_scan,
+            scores::commands::scores_pick_files_and_prepare,
+            scores::commands::scores_import_selected,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
