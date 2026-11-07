@@ -68,7 +68,19 @@ export function AppShell() {
             <NavLink to="/settings" className="atril-avatar" aria-label="Configurações" title="Configurações">{initials(profile?.displayName ?? "")}</NavLink>
           </nav>
         )}
-        <Toaster theme="dark" />
+        <Toaster
+          theme="dark"
+          position="bottom-right"
+          closeButton
+          toastOptions={{
+            classNames: {
+              toast: "cress-toast",
+              title: "cress-toast-title",
+              actionButton: "cress-toast-action",
+              closeButton: "cress-toast-close",
+            },
+          }}
+        />
       </div>
     </UpdateCheckProvider>
   );

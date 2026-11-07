@@ -267,3 +267,42 @@ main {
     transition-duration: 0.01ms !important;
   }
 }
+
+[data-sonner-toaster] { --width: 340px; }
+.cress-toast {
+  border: 1px solid var(--border-default) !important;
+  border-radius: var(--radius) !important;
+  background: var(--ink-800) !important;
+  color: var(--text-primary) !important;
+  box-shadow: 0 16px 40px rgb(0 0 0 / 0.45) !important;
+}
+.cress-toast-title { font: 500 14px/20px var(--font-sans); color: var(--text-primary); }
+.cress-toast-action {
+  border: 0 !important;
+  border-radius: 999px !important;
+  background: var(--violet-500) !important;
+  color: var(--text-primary) !important;
+  font-weight: 600 !important;
+}
+.cress-toast-action:hover { background: var(--violet-600) !important; }
+.cress-toast-close {
+  border-color: var(--border-default) !important;
+  background: var(--ink-750) !important;
+  color: var(--text-secondary) !important;
+}
+
+.cress-changelog-markdown { color: var(--text-secondary); line-height: 1.6; }
+.cress-changelog-markdown h1, .cress-changelog-markdown h2, .cress-changelog-markdown h3 { margin: 1.25em 0 .5em; color: var(--text-primary); font-weight: 600; }
+.cress-changelog-markdown h1 { font-size: 1.25em; }
+.cress-changelog-markdown h2 { font-size: 1.125em; }
+.cress-changelog-markdown h3 { font-size: 1em; }
+.cress-changelog-markdown p { margin: .75em 0; }
+.cress-changelog-markdown ul, .cress-changelog-markdown ol { margin: .5em 0 .75em; padding-left: 1.4em; }
+.cress-changelog-markdown li { margin: .25em 0; }
+.cress-changelog-markdown li::marker { color: var(--violet-400); }
+.cress-changelog-markdown a { color: var(--violet-300); text-decoration: underline; }
+.cress-changelog-markdown code { border-radius: 4px; background: var(--ink-750); padding: .1em .35em; font-size: .9em; }
+.cress-changelog-markdown pre { overflow-x: auto; border-radius: var(--radius); background: var(--ink-750); padding: .75em 1em; }
+.cress-changelog-markdown pre code { background: transparent; padding: 0; }
+.cress-changelog-markdown blockquote { border-left: 2px solid var(--border-strong); margin: .75em 0; padding-left: 1em; color: var(--text-muted); }
+.cress-changelog-markdown hr { border-color: var(--border-subtle); margin: 1.5em 0; }
