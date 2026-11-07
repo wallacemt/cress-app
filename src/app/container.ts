@@ -2,6 +2,7 @@ import type { SqlDb } from "../infrastructure/db/sqlDb";
 import { TauriSqlDb } from "../infrastructure/db/tauriSqlDb";
 import type { Deps } from "../application/deps";
 import { deleteRecordingFile, pauseRecording, probeRecording, resumeRecording, startRecording, stopRecording } from "../infrastructure/tauri/audioPort";
+import { deleteScoreFile, pickAndImportFile } from "../infrastructure/tauri/scoresPort";
 
 let depsPromise: Promise<Deps> | undefined;
 
@@ -44,10 +45,10 @@ export const container: AppContainer = {
           deleteRecordingFile,
         },
         scores: {
-          pickAndImportFile: notImplemented,
+          pickAndImportFile,
           pickAndScanFolder: notImplemented,
           importFromScan: notImplemented,
-          deleteScoreFile: notImplemented,
+          deleteScoreFile,
           scoresRoot: notImplemented,
         },
       };

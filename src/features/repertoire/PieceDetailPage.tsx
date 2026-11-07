@@ -14,6 +14,7 @@ import type { RepertoireItem } from "../../domain/repertoire";
 import { INSTRUMENTS } from "../../domain/profile";
 import { GoalList } from "./GoalList";
 import { PieceFormDialog } from "./PieceFormDialog";
+import { ScoreList } from "./ScoreList";
 
 export function PieceDetailPage() {
   const { pieceId = "" } = useParams();
@@ -154,6 +155,7 @@ export function PieceDetailPage() {
         </p>
       )}
       <GoalList goals={goals} repertoireItemId={pieceId} onChanged={reloadGoals} />
+      <ScoreList pieceId={pieceId} />
       {editing && (
         <PieceFormDialog
           piece={piece}

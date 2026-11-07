@@ -83,6 +83,15 @@ pub fn scores_pick_files_and_prepare(app: tauri::AppHandle, state: State<'_, Sco
 }
 
 #[tauri::command]
+pub fn scores_pick_file_and_prepare(app: tauri::AppHandle, state: State<'_, ScoreScanState>) -> Result<Option<ScanSessionResult>, String> {
+    let Some(selected) = app.dialog().file().add_filter("PDF", &["pdf"]).blocking_pick_file() else { return Ok(None) };
+    let path = selected.into_path().map_err(|error| format!("invalid_file: {error}"))?;
+    let result = file_scan(vec![path.clone()]);
+    let entries = result.entries.iter().map(|entry| (entry.entry_id.clone(), path.clone())).collect();
+    remember_scan(&state, result, entries).map(Some)
+}
+
+#[tauri::command]
 pub fn scores_import_selected(
     app: tauri::AppHandle,
     state: State<'_, ScoreScanState>,
@@ -110,9 +119,32 @@ pub fn scores_import_selected(
     Ok(outcomes)
 }
 
+#[tauri::command]
+pub fn scores_delete_file(path: String, app: tauri::AppHandle) -> Result<(), String> {
+    let resolved_path = paths::resolve_score_path(&app, &path)
+        .map_err(|error| format!("{}: {}", error.code(), error))?;
+    remove_score_file(resolved_path)
+}
+
+fn remove_score_file(path: PathBuf) -> Result<(), String> {
+    match std::fs::remove_file(path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(format!("score_delete_failed: {error}")),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn deleting_a_missing_score_file_is_idempotent() {
+        let path = std::env::temp_dir().join(format!("cress-score-delete-{}.pdf", uuid::Uuid::new_v4()));
+        std::fs::write(&path, b"pdf").unwrap();
+        remove_score_file(path.clone()).unwrap();
+        remove_score_file(path).unwrap();
+    }
 
     #[test]
     fn file_scan_entries_resolve_to_selected_absolute_paths() {
