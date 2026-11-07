@@ -24,9 +24,9 @@
 .cress-tuner-main strong { color: var(--text-primary); font: 500 clamp(64px, 12vw, 100px)/.9 var(--font-display); transition: color var(--duration-normal) ease, text-shadow var(--duration-normal) ease; }
 .cress-tuner-main.is-tuned strong { color: var(--gold-200); text-shadow: 0 0 34px color-mix(in srgb, var(--color-gold) 22%, transparent); }
 .cress-tuner-main.is-held, .cress-tuner-cents.is-held { opacity: .55; }
-.cress-tuner-main span { color: var(--text-muted); font: 500 clamp(18px, 3.3vw, 24px) var(--font-metric); font-variant-numeric: tabular-nums; }
+.cress-tuner-main span { color: var(--text-muted); font: 500 clamp(13px, 1.8vw, 15px) var(--font-metric); font-variant-numeric: tabular-nums; }
 .cress-tuner-cents { display: flex; align-items: baseline; gap: 5px; margin-top: -20px; color: var(--text-muted); font: 12px var(--font-sans); }
-.cress-tuner-cents strong { color: var(--text-secondary); font: 550 16px var(--font-metric); font-variant-numeric: tabular-nums; transition: color var(--duration-fast) ease; }
+.cress-tuner-cents strong { color: var(--text-secondary); font: 550 clamp(22px, 3vw, 28px) var(--font-metric); font-variant-numeric: tabular-nums; transition: color var(--duration-fast) ease; }
 .cress-tuner-cents.is-tuned strong { color: var(--color-gold); }
 .cress-tuner-gauge { width: min(100%, 440px); padding: 0 0 4px; }
 .cress-tuner-gauge-arc { display: block; width: 100%; height: auto; overflow: visible; }
@@ -639,10 +639,13 @@
 }
 
 .cress-layout-duo .cress-tuner-main strong {
-  font-size: clamp(96px, 18vw, 140px) / .9 var(--font-display);
+  font: 500 clamp(96px, 18vw, 140px) / .9 var(--font-display);
 }
 .cress-layout-duo .cress-tuner-main span {
-  font: 500 clamp(22px, 4vw, 32px) var(--font-metric);
+  font: 500 clamp(18px, 2.5vw, 22px) var(--font-metric);
+}
+.cress-layout-duo .cress-tuner-cents strong {
+  font-size: clamp(30px, 4vw, 36px);
 }
 .cress-layout-duo .cress-tuner-carousel {
   gap: clamp(14px, 4vw, 28px);
@@ -666,10 +669,13 @@
 }
 
 .cress-layout-quad .cress-tuner-main strong {
-  font-size: clamp(32px, 6vw, 48px) / .9 var(--font-display);
+  font: 500 clamp(32px, 6vw, 48px) / .9 var(--font-display);
 }
 .cress-layout-quad .cress-tuner-main span {
-  font: 500 clamp(14px, 2vw, 18px) var(--font-metric);
+  font: 500 clamp(10px, 1.5vw, 12px) var(--font-metric);
+}
+.cress-layout-quad .cress-tuner-cents strong {
+  font-size: clamp(16px, 2.5vw, 20px);
 }
 .cress-layout-quad .cress-tuner-carousel {
   gap: clamp(6px, 1vw, 12px);
