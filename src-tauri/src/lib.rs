@@ -1,6 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 pub mod audio;
 pub mod paths;
+pub mod scores;
 
 #[tauri::command]
 async fn blocking_pick_folder(app: tauri::AppHandle) -> Result<Option<String>, String> {
@@ -60,6 +61,7 @@ pub fn run() {
             audio::commands::recording_finish,
             audio::commands::recording_delete,
             audio::commands::recording_probe,
+            scores::commands::scores_scan_folder,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
