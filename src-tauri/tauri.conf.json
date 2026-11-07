@@ -21,7 +21,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' asset:; img-src 'self' asset: data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' asset: 'wasm-unsafe-eval'; worker-src 'self' asset: blob:; connect-src ipc: http://ipc.localhost asset: https://api.github.com https://github.com; media-src 'self' asset: blob:",
+      "csp": "default-src 'self' asset:; img-src 'self' asset: http://asset.localhost data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self' asset: 'wasm-unsafe-eval'; worker-src 'self' asset: blob:; connect-src ipc: http://ipc.localhost asset: http://asset.localhost https://api.github.com https://github.com; media-src 'self' asset: http://asset.localhost blob:",
       "assetProtocol": {
         "enable": true,
         "scope": ["$APPDATA/recordings/**"]
