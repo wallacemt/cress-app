@@ -62,6 +62,7 @@ pub fn run() {
             audio::commands::recording_delete,
             audio::commands::recording_probe,
             scores::commands::scores_scan_folder,
+            scores::commands::scores_import_files,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
