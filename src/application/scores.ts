@@ -80,7 +80,7 @@ export async function scanFolder(d: Deps) {
     ),
   };
 }
-export async function importPlan(d: Deps, x: ImportPlanInput) {
+export async function importPlan(d: Deps, x: ImportPlanInput, onProgress: (p: { done: number; total: number }) => void = () => {}) {
   for (const c of x.plan.candidates)
     if (!c.title.trim()) throw new DomainError("VALIDATION", "Title required");
   const files = x.plan.candidates.flatMap((c: ImportCandidate) =>
@@ -89,7 +89,7 @@ export async function importPlan(d: Deps, x: ImportPlanInput) {
   const results = await d.scores.importFromScan(
     x.scanId,
     files.map((f: ImportFile) => f.entryId),
-    () => {},
+    onProgress,
   );
   let piecesCreated = 0,
     scoresImported = 0,

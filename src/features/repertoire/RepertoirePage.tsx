@@ -7,6 +7,10 @@ import { normalizeName } from "../../domain/score";
 import type { RepertoireItem } from "../../domain/repertoire";
 import { Navigate } from "react-router";
 import { PieceFormDialog } from "./PieceFormDialog";
+import { ImportFolderDialog } from "./ImportFolderDialog";
+import { scanFolder } from "../../application/scores";
+import type { FolderScan } from "../../application/deps";
+import type { ImportPlan } from "../../domain/score";
 
 const columns =
   "grid min-w-[760px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)_120px_88px_88px_120px] items-center gap-4";
@@ -55,6 +59,9 @@ export function RepertoirePage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [creating, setCreating] = useState(false);
+  const [folderImport, setFolderImport] = useState<{ scan: FolderScan; plan: ImportPlan } | null>(null);
+  const [importError, setImportError] = useState("");
+  const [scanning, setScanning] = useState(false);
   const [destination, setDestination] = useState("");
 
   useEffect(() => {
@@ -85,6 +92,21 @@ export function RepertoirePage() {
         normalizeName(piece.composer ?? "").includes(normalized),
     );
   }, [pieces, query]);
+
+  async function startFolderImport() {
+    setScanning(true); setImportError("");
+    try {
+      const result = await scanFolder(await container.getDeps());
+      if (result) setFolderImport(result);
+    } catch (cause) {
+      setImportError(cause instanceof Error ? cause.message : "Não foi possível analisar a pasta.");
+    } finally { setScanning(false); }
+  }
+
+  async function reloadPieces() {
+    const items = await listPieces(await container.getDeps());
+    setPieces(items);
+  }
 
   if (destination) return <Navigate to={destination} />;
 
@@ -149,14 +171,7 @@ export function RepertoirePage() {
           >
             <span aria-hidden="true">+</span> Adicionar obra
           </button>
-          <button
-            type="button"
-            disabled
-            title="Disponível na Fase 9"
-            className="inline-flex h-11 cursor-not-allowed items-center gap-2 rounded-lg border border-[var(--border-default)] px-5 text-sm text-[var(--text-subtle)] opacity-70"
-          >
-            Importar pasta de partituras
-          </button>
+          <button type="button" disabled={scanning} onClick={() => void startFolderImport()} className="inline-flex h-11 items-center gap-2 rounded-lg border border-[var(--border-default)] px-5 text-sm text-[var(--text-secondary)]">{scanning ? "Analisando pasta…" : "Importar pasta"}</button>
         </div>
         {creating && (
           <PieceFormDialog
@@ -164,6 +179,8 @@ export function RepertoirePage() {
             onSaved={(piece) => setDestination(`/repertoire/${piece.id}`)}
           />
         )}
+        {importError && <p role="alert" className="mt-4 text-sm text-[var(--danger)]">{importError}</p>}
+        {folderImport && <ImportFolderDialog scan={folderImport.scan} plan={folderImport.plan} onClose={() => setFolderImport(null)} onImported={reloadPieces} />}
       </main>
     );
 
@@ -196,6 +213,11 @@ export function RepertoirePage() {
             className="h-11 w-full rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] pl-10 pr-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]"
           />
         </label>
+      </div>
+
+      <div className="mb-5 flex justify-end gap-3">
+        {importError && <p role="alert" className="mr-auto self-center text-sm text-[var(--danger)]">{importError}</p>}
+        <button type="button" disabled={scanning} onClick={() => void startFolderImport()} className="rounded-lg border border-[var(--border-default)] px-4 py-2.5 text-sm text-[var(--text-secondary)]">{scanning ? "Analisando pasta…" : "Importar pasta"}</button>
       </div>
 
       <div className="overflow-x-auto">
@@ -285,6 +307,7 @@ export function RepertoirePage() {
           </p>
         )}
       </div>
+      {folderImport && <ImportFolderDialog scan={folderImport.scan} plan={folderImport.plan} onClose={() => setFolderImport(null)} onImported={reloadPieces} />}
     </main>
   );
 }

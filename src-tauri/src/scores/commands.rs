@@ -22,6 +22,7 @@ struct ScanSession {
 #[serde(rename_all = "camelCase")]
 pub struct ScanSessionResult {
     pub scan_id: String,
+    pub root_name: String,
     pub result: ScanResult,
 }
 
@@ -40,12 +41,12 @@ pub enum ImportFileOutcome {
     Failure { error: String },
 }
 
-fn remember_scan(state: &ScoreScanState, result: ScanResult, paths: HashMap<String, PathBuf>) -> Result<ScanSessionResult, String> {
+fn remember_scan(state: &ScoreScanState, root_name: String, result: ScanResult, paths: HashMap<String, PathBuf>) -> Result<ScanSessionResult, String> {
     let scan_id = uuid::Uuid::new_v4().to_string();
     let mut sessions = state.0.lock().map_err(|_| "scan_state_poisoned".to_owned())?;
     sessions.clear();
     sessions.insert(scan_id.clone(), ScanSession { entries: paths });
-    Ok(ScanSessionResult { scan_id, result })
+    Ok(ScanSessionResult { scan_id, root_name, result })
 }
 
 fn resolve_entry<'a>(session: &'a ScanSession, entry_id: &str) -> Option<&'a PathBuf> {
@@ -68,9 +69,10 @@ fn file_scan(paths: Vec<PathBuf>) -> ScanResult {
 pub fn scores_pick_folder_and_scan(app: tauri::AppHandle, state: State<'_, ScoreScanState>) -> Result<Option<ScanSessionResult>, String> {
     let Some(selected) = app.dialog().file().blocking_pick_folder() else { return Ok(None) };
     let root = selected.into_path().map_err(|error| format!("invalid_folder: {error}"))?;
+    let root_name = root.file_name().map(|name| name.to_string_lossy().into_owned()).unwrap_or_default();
     let result = scan(root.to_string_lossy().as_ref()).map_err(|error| format!("{}: {}", error.code(), error))?;
     let paths = result.entries.iter().map(|entry| (entry.entry_id.clone(), root.join(&entry.rel_dir).join(&entry.file_name))).collect();
-    remember_scan(&state, result, paths).map(Some)
+    remember_scan(&state, root_name, result, paths).map(Some)
 }
 
 #[tauri::command]
@@ -79,7 +81,7 @@ pub fn scores_pick_files_and_prepare(app: tauri::AppHandle, state: State<'_, Sco
     let paths = selected.into_iter().map(|file| file.into_path().map_err(|error| format!("invalid_file: {error}"))).collect::<Result<Vec<_>, _>>()?;
     let result = file_scan(paths.clone());
     let entries = result.entries.iter().zip(paths).map(|(entry, path)| (entry.entry_id.clone(), path)).collect();
-    remember_scan(&state, result, entries).map(Some)
+    remember_scan(&state, String::new(), result, entries).map(Some)
 }
 
 #[tauri::command]
@@ -88,7 +90,7 @@ pub fn scores_pick_file_and_prepare(app: tauri::AppHandle, state: State<'_, Scor
     let path = selected.into_path().map_err(|error| format!("invalid_file: {error}"))?;
     let result = file_scan(vec![path.clone()]);
     let entries = result.entries.iter().map(|entry| (entry.entry_id.clone(), path.clone())).collect();
-    remember_scan(&state, result, entries).map(Some)
+    remember_scan(&state, String::new(), result, entries).map(Some)
 }
 
 #[tauri::command]

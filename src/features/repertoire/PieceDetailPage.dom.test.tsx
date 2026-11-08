@@ -35,7 +35,7 @@ vi.mock("../../application/goals", () => ({ listGoals }));
 vi.mock("../../app/container", () => ({ container: { getDeps } }));
 import { PieceDetailPage } from "./PieceDetailPage";
 
-const deps = {} as Deps;
+const deps = { db: { select: vi.fn().mockResolvedValue([]) } } as unknown as Deps;
 function renderPage() {
   return render(
     <MemoryRouter initialEntries={["/repertoire/piece-1"]}>
