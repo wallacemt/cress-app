@@ -2,7 +2,7 @@ import type { SqlDb } from "../infrastructure/db/sqlDb";
 import { TauriSqlDb } from "../infrastructure/db/tauriSqlDb";
 import type { Deps } from "../application/deps";
 import { deleteRecordingFile, pauseRecording, probeRecording, resumeRecording, startRecording, stopRecording } from "../infrastructure/tauri/audioPort";
-import { deleteScoreFile, importFromScan, pickAndImportFile, pickAndScanFolder } from "../infrastructure/tauri/scoresPort";
+import { deleteScoreFile, importFromScan, pickAndImportFile, pickAndScanFolder, scoresRoot } from "../infrastructure/tauri/scoresPort";
 
 let depsPromise: Promise<Deps> | undefined;
 
@@ -29,9 +29,6 @@ export const container: AppContainer = {
       wait(BOOT_MIN_VISIBLE_MS),
     ]).then(([db]) => {
       container.db = db;
-      const notImplemented = async (): Promise<never> => {
-        throw new Error("not implemented");
-      };
       return {
         db,
         now: () => new Date(container.clock()),
@@ -49,7 +46,7 @@ export const container: AppContainer = {
           pickAndScanFolder,
           importFromScan,
           deleteScoreFile,
-          scoresRoot: notImplemented,
+          scoresRoot,
         },
       };
     });

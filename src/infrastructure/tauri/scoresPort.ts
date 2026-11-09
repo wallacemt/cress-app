@@ -1,4 +1,5 @@
 import { Channel, invoke } from "@tauri-apps/api/core";
+import { appDataDir, join } from "@tauri-apps/api/path";
 import type { FolderScan, ImportedFile, ImportResult } from "../../application/deps";
 
 interface RustScanEntry {
@@ -19,6 +20,10 @@ type ImportOutcome =
   | { error: string };
 
 let scanEntries = new Map<string, RustScanEntry>();
+
+export async function scoresRoot(): Promise<string> {
+  return join(await appDataDir(), "scores");
+}
 
 export async function pickAndImportFile(): Promise<ImportedFile | null> {
   const prepared = await invoke<PreparedFiles | null>("scores_pick_file_and_prepare");

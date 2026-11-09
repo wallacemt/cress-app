@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Check, ChevronRight, Plus } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
 import { PANEL_CATALOG, PANEL_TITLES, type WorkspaceMode } from "../../domain/workspace";
+import { ScorePicker } from "./ScorePicker";
 
 const labels = PANEL_TITLES;
 const shortcuts = ["1", "2", "3", "4", "5"] as const;
@@ -10,6 +11,7 @@ export function openWorkspacePanel(
   api: DockviewReadyEvent["api"],
   component: keyof typeof PANEL_CATALOG,
   params?: Record<string, unknown>,
+  explicitId?: string,
 ) {
   const definition = PANEL_CATALOG[component];
   const existing =
@@ -20,8 +22,13 @@ export function openWorkspacePanel(
     existing.api.setActive();
     return existing;
   }
-  const id = component === "score" ? `score:${Date.now()}` : component;
-  return api.addPanel({ id, component, title: labels[component], params });
+  if (component === "score" && !explicitId) return undefined;
+  const id = component === "score" ? explicitId : component;
+  if (component === "score" && explicitId) {
+    const existingScore = api.panels.find((panel) => panel.api.id === explicitId);
+    if (existingScore) { existingScore.api.setActive(); return existingScore; }
+  }
+  return api.addPanel({ id: id!, component, title: labels[component], params });
 }
 
 export function useWorkspacePanelShortcuts(
@@ -56,6 +63,7 @@ export function useWorkspacePanelShortcuts(
         )
       )
         return;
+      if (component === "score") return;
       event.preventDefault();
       openWorkspacePanel(api, component, panelParams);
     };
@@ -159,9 +167,12 @@ export function AddPanelMenu({
                   </button>
                   {scoreSubmenu && (
                     <div className="cress-submenu" role="menu">
-                      <button type="button" role="menuitem" disabled>
-                        Seleção de partitura chega na Fase 9
-                      </button>
+                      <ScorePicker onSelect={(id, title) => {
+                        if (!api) return;
+                        const opened = openWorkspacePanel(api, "score", panelParams, `score:${id}`);
+                        opened?.api.setTitle(title);
+                        setOpen(false); setScoreSubmenu(false); onOpen?.();
+                      }} />
                     </div>
                   )}
                 </div>

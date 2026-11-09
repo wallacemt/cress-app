@@ -160,6 +160,8 @@ export const deleteScore = async (d: Deps, { id }: { id: string }) => {
 };
 export const listScores = (d: Deps, x: { pieceId?: string }) =>
   makeScoreRepo(d.db).list(x.pieceId);
+export const getScore = (d: Deps, { id }: { id: string }) =>
+  makeScoreRepo(d.db).get(id);
 export const setScoreLastPage = async (d: Deps, x: PageEdit) => {
   if (x.page < 1) throw new DomainError("VALIDATION", "Invalid page");
   if (!(await makeScoreRepo(d.db).get(x.id)))

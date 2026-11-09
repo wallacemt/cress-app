@@ -5,6 +5,29 @@
   min-height: 0;
 }
 
+.cress-score-panel { display: flex; height: 100%; min-height: 0; flex-direction: column; color: var(--text-primary); }
+.cress-score-toolbar { display: flex; min-height: 48px; align-items: center; justify-content: space-between; gap: 12px; padding: 7px 12px; border-bottom: 1px solid var(--border-subtle); background: rgb(255 255 255 / .02); }
+.cress-score-toolbar > strong { min-width: 0; overflow: hidden; color: var(--text-secondary); font-size: 12px; font-weight: 550; text-overflow: ellipsis; white-space: nowrap; }
+.cress-score-controls { display: flex; flex-wrap: wrap; align-items: center; justify-content: flex-end; gap: 6px; }
+.cress-score-controls label { display: flex; align-items: center; gap: 6px; color: var(--text-muted); font-size: 11px; }
+.cress-score-controls input { width: 42px; height: 28px; border: 1px solid var(--border-default); border-radius: 6px; background: var(--ink-900); color: var(--text-primary); text-align: center; font-variant-numeric: tabular-nums; }
+.cress-score-controls .cress-control { display: inline-flex; min-height: 28px; align-items: center; gap: 5px; padding: 4px 8px; font-size: 11px; }
+.cress-score-controls .cress-control.is-active { border-color: color-mix(in srgb, var(--violet-400) 40%, var(--border-default)); background: var(--violet-tint); color: var(--violet-300); }
+.cress-score-controls .cress-icon-control { display: grid; width: 28px; height: 28px; place-items: center; }
+.cress-score-divider { width: 1px; height: 20px; margin: 0 3px; background: var(--border-default); }
+.cress-score-zoom { min-width: 38px; color: var(--text-muted); font: 11px var(--font-metric); text-align: center; }
+.cress-score-stage { display: flex; min-height: 0; flex: 1; justify-content: center; overflow: auto; padding: 16px; outline: none; background: color-mix(in srgb, var(--ink-950) 70%, transparent); }
+.cress-score-canvas-wrap { display: flex; min-width: max-content; min-height: max-content; justify-content: center; align-items: flex-start; }
+.cress-score-canvas-wrap canvas { display: block; height: auto; background: white; box-shadow: 0 8px 28px rgb(0 0 0 / .35); }
+.cress-score-error { margin: auto; padding: 20px; color: var(--danger); }
+.cress-score-picker { display: flex; width: 270px; max-height: 350px; flex-direction: column; gap: 8px; padding: 8px; }
+.cress-score-picker-search { display: flex; min-height: 34px; align-items: center; gap: 7px; padding: 0 9px; border: 1px solid var(--border-default); border-radius: 7px; background: var(--ink-900); color: var(--text-muted); }
+.cress-score-picker-search input { width: 100%; min-width: 0; border: 0; outline: 0; background: transparent; color: var(--text-primary); font: 11px var(--font-sans); }
+.cress-score-picker-list { display: flex; min-height: 0; flex-direction: column; overflow: auto; }
+.cress-score-picker-list button { display: flex; min-height: 42px; flex-direction: column; justify-content: center; gap: 2px; padding: 6px 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-primary); text-align: left; cursor: pointer; }
+.cress-score-picker-list button:hover, .cress-score-picker-list button:focus-visible { outline: none; background: var(--violet-tint); }
+.cress-score-picker-list small, .cress-score-picker > p { margin: 0; color: var(--text-muted); font-size: 10px; }
+
 .cress-tuner-panel { display: flex; height: 100%; min-height: 0; flex-direction: column; align-items: center; gap: clamp(14px, 3vh, 24px); overflow: auto; padding: 18px clamp(16px, 4vw, 28px); color: var(--text-primary); }
 .cress-tuner-panel > header { display: flex; width: min(100%, 560px); min-height: 34px; align-items: center; justify-content: space-between; gap: 12px; }
 .cress-tuner-status { display: inline-flex; align-items: center; gap: 9px; color: var(--text-secondary); font-size: 13px; transition: color var(--duration-fast) ease; }
