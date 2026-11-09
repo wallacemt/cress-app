@@ -14,7 +14,7 @@ import { makeRecordingRepo } from "../infrastructure/repositories/recordingRepo"
 import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
 import type { StudySessionRow } from "../infrastructure/db/rows";
 import { pauseTake, stopTake } from "./recordings";
-import { completeGoal } from "./goals";
+import { completeGoal, listGoals } from "./goals";
 import type { StudySession } from "../domain/session";
 import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
 export interface StartSessionInput {
@@ -29,8 +29,20 @@ export interface FinishSessionInput {
   completeGoal: boolean;
 }
 export async function getPieceStats(d: Deps, { repertoireItemId }: { repertoireItemId: string }) {
-  const sessions = (await makeSessionRepo(d.db).listByPiece(repertoireItemId)).map(ent);
-  return { totalSessions: sessions.length, totalActiveMs: sessions.reduce((total, session) => total + session.activeMs, 0), lastPracticeAt: sessions[0]?.startedAt ?? null, sessions };
+  const [rows, goals] = await Promise.all([
+    makeSessionRepo(d.db).listByPiece(repertoireItemId),
+    listGoals(d, { repertoireItemId }),
+  ]);
+  const sessions = rows.map(ent);
+  return {
+    totalSessions: sessions.length,
+    totalActiveMs: sessions.reduce((total, session) => total + session.activeMs, 0),
+    lastPracticeAt: sessions[0]?.startedAt ?? null,
+    sessions,
+    completedGoals: goals.filter((goal) => goal.completed).length,
+    totalGoals: goals.length,
+    finalBpmHistory: sessions.filter((session) => session.final_bpm != null).slice(0, 20).map((session) => session.final_bpm!).reverse(),
+  };
 }
 type SessionEntity = StudySession & {
   repertoire_item_id: string;

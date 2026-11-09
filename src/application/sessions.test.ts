@@ -28,6 +28,26 @@ describe("sessions application", () => {
     expect(stats.totalActiveMs).toBe(0);
     expect(stats.lastPracticeAt).toEqual(first.startedAt);
     expect(stats.sessions[0]).toMatchObject({ id: first.id, initial_bpm: 60, final_bpm: 72 });
+    expect(stats.finalBpmHistory).toEqual([72]);
+    expect(stats.completedGoals).toBe(0);
+    expect(stats.totalGoals).toBe(0);
+  });
+  it("returns the latest 20 final BPM values oldest first and counts completed goals", async () => {
+    let now = 0;
+    const d = makeTestDeps({ now: () => new Date(now += 1_000) });
+    const piece = await createPiece(d, { title: "BPM history" });
+    const goal = await createGoal(d, { repertoireItemId: piece.id, description: "Goal" });
+    for (let bpm = 60; bpm < 82; bpm += 1) {
+      const session = await startSession(d, { repertoireItemId: piece.id });
+      await finishSession(d, { id: session.id, finalBpm: bpm, completeGoal: false });
+    }
+    await createGoal(d, { repertoireItemId: piece.id, description: "Done", completed: true });
+
+    const stats = await getPieceStats(d, { repertoireItemId: piece.id });
+
+    expect(stats.finalBpmHistory).toEqual(Array.from({ length: 20 }, (_, index) => index + 62));
+    expect(stats).toMatchObject({ completedGoals: 1, totalGoals: 2 });
+    expect(goal.id).toBeTruthy();
   });
   it("lists sessions globally or by piece and reads an individual session", async () => {
     let now = 1_000;
