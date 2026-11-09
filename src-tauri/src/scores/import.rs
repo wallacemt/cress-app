@@ -1,5 +1,5 @@
 use std::{
-    fs::{self, File},
+    fs::{self, File, OpenOptions},
     io::{self, Read, Seek, Write},
     path::Path,
 };
@@ -55,21 +55,46 @@ fn import_file_with_limit(
     destination_root: &Path,
     max_size_bytes: u64,
 ) -> Result<ImportedScore, ImportError> {
-    let metadata = fs::symlink_metadata(source)?;
-    if !metadata.file_type().is_file() || metadata.file_type().is_symlink() {
-        return Err(ImportError::InvalidFile);
-    }
     if !source
         .extension()
         .is_some_and(|extension| extension.to_string_lossy().eq_ignore_ascii_case("pdf"))
     {
         return Err(ImportError::InvalidFile);
     }
+    let mut options = OpenOptions::new();
+    options.read(true);
+    #[cfg(unix)]
+    {
+        use std::os::unix::fs::OpenOptionsExt;
+        options.custom_flags(0x20000); // O_NOFOLLOW
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::OpenOptionsExt;
+        options.custom_flags(0x00200000); // FILE_FLAG_OPEN_REPARSE_POINT
+    }
+    let mut input = match options.open(source) {
+        Ok(input) => input,
+        #[cfg(unix)]
+        Err(error) if error.raw_os_error() == Some(40) => {
+            return Err(ImportError::InvalidFile);
+        }
+        Err(error) => return Err(error.into()),
+    };
+    let metadata = input.metadata()?;
+    if !metadata.is_file() {
+        return Err(ImportError::InvalidFile);
+    }
+    #[cfg(windows)]
+    {
+        use std::os::windows::fs::MetadataExt;
+        if metadata.file_attributes() & 0x400 != 0 {
+            return Err(ImportError::InvalidFile);
+        }
+    }
     if metadata.len() > max_size_bytes {
         return Err(ImportError::TooLarge);
     }
-
-    let mut input = File::open(source)?;
     let mut header = [0; 5];
     if input.read_exact(&mut header).is_err() || &header != b"%PDF-" {
         return Err(ImportError::NotPdf);
