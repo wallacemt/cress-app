@@ -12,6 +12,8 @@ import {
   discardSession,
   ensureFreeSession,
   getPieceStats,
+  listSessions,
+  getSession,
 } from "./sessions";
 import { startTake } from "./recordings";
 import { makeTestDeps } from "./test-support";
@@ -26,6 +28,23 @@ describe("sessions application", () => {
     expect(stats.totalActiveMs).toBe(0);
     expect(stats.lastPracticeAt).toEqual(first.startedAt);
     expect(stats.sessions[0]).toMatchObject({ id: first.id, initial_bpm: 60, final_bpm: 72 });
+  });
+  it("lists sessions globally or by piece and reads an individual session", async () => {
+    let now = 1_000;
+    const d = makeTestDeps({ now: () => new Date(now += 1_000) });
+    const p = await createPiece(d, { title: "List" });
+    await d.db.execute(
+      "INSERT INTO repertoire_items VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [FREE_PRACTICE_PIECE_ID, "Free practice", null, null, null, null, null, 0, 0],
+    );
+    const first = await startSession(d, { repertoireItemId: p.id });
+    await finishSession(d, { id: first.id, finalBpm: 72, completeGoal: false });
+    const second = await startSession(d, { repertoireItemId: FREE_PRACTICE_PIECE_ID });
+
+    expect((await listSessions(d)).map((session) => session.id)).toEqual([second.id, first.id]);
+    expect((await listSessions(d, { repertoireItemId: p.id })).map((session) => session.id)).toEqual([first.id]);
+    expect(await getSession(d, { id: first.id })).toMatchObject({ initial_bpm: null, final_bpm: 72 });
+    expect(await getSession(d, { id: "missing" })).toBeNull();
   });
   it("resumes an existing paused free-practice session", async () => {
     const d = makeTestDeps();

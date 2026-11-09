@@ -10,6 +10,8 @@ import { PracticeSetupPage } from "../features/workspace/PracticeSetupPage";
 import { PracticePage } from "../features/workspace/PracticePage";
 import { ToolsPage } from "../features/workspace/ToolsPage";
 import { ChangelogPage } from "../features/changelog/ChangelogPage";
+import { SessionsPage } from "../features/sessions/SessionsPage";
+import { SessionDetailPage } from "../features/sessions/SessionDetailPage";
 
 function Placeholder({ name }: { name: string }) {
   return (
@@ -20,8 +22,6 @@ function Placeholder({ name }: { name: string }) {
     </section>
   );
 }
-
-const placeholderRoutes = ["/sessions", "/sessions/:sessionId"];
 
 export const router = createHashRouter([
   {
@@ -43,11 +43,9 @@ export const router = createHashRouter([
       { path: "repertoire/:pieceId", element: <PieceDetailPage /> },
       { path: "practice/new", element: <PracticeSetupPage /> },
       { path: "practice/:sessionId", element: <PracticePage /> },
+      { path: "sessions", element: <SessionsPage /> },
+      { path: "sessions/:sessionId", element: <SessionDetailPage /> },
       { path: "tools", element: <ToolsPage /> },
-      ...placeholderRoutes.map((path) => ({
-        path: path.slice(1),
-        element: <Placeholder name={path} />,
-      })),
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

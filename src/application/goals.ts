@@ -13,6 +13,10 @@ export interface GoalInput {
   endMeasure?: number | null;
   completed?: boolean;
 }
+export async function getGoal(d: Deps, { id }: { id: string }) {
+  const goal = await makeGoalRepo(d.db).get(id);
+  return goal ? { id: goal.id, description: goal.description } : null;
+}
 export async function listGoals(
   d: Deps,
   { repertoireItemId }: { repertoireItemId: string },

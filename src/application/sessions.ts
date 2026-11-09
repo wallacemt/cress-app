@@ -52,6 +52,15 @@ const ent = (r: StudySessionRow): SessionEntity => ({
   initial_bpm: r.initial_bpm,
   final_bpm: r.final_bpm,
 });
+export async function listSessions(d: Deps, { repertoireItemId }: { repertoireItemId?: string } = {}) {
+  const repo = makeSessionRepo(d.db);
+  const rows = repertoireItemId ? await repo.listByPiece(repertoireItemId) : await repo.list();
+  return rows.map(ent).sort((a, b) => (b.startedAt?.getTime() ?? 0) - (a.startedAt?.getTime() ?? 0));
+}
+export async function getSession(d: Deps, { id }: { id: string }) {
+  const session = await makeSessionRepo(d.db).get(id);
+  return session ? ent(session) : null;
+}
 const row = (
   r: SessionEntity | StudySession,
   x: Partial<StudySessionRow> & {
