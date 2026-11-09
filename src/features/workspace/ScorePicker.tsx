@@ -29,7 +29,7 @@ export function ScorePicker({ onSelect }: { onSelect: (id: string, title: string
     <label className="cress-score-picker-search"><Search size={14} /><input autoFocus aria-label="Buscar partitura" placeholder="Buscar partitura ou obra…" value={query} onChange={(event) => setQuery(event.target.value)} /></label>
     {loading ? <p role="status">Carregando partituras…</p> : error ? <p role="alert">{error}</p> : filtered.length ? <div className="cress-score-picker-list" role="group" aria-label="Partituras">{filtered.map((score) => {
       const title = `${pieceNames.get(score.repertoire_item_id) ?? "Obra"} · ${score.label}`;
-      return <button key={score.id} type="button" role="menuitem" title={score.original_name} onClick={() => onSelect(score.id, title)}><span>{score.label}</span><small>{pieceNames.get(score.repertoire_item_id) ?? "Obra"}</small></button>;
+      return <button key={score.id} type="button" title={score.original_name} onClick={() => onSelect(score.id, title)}><span>{score.label}</span><small>{pieceNames.get(score.repertoire_item_id) ?? "Obra"}</small></button>;
     })}</div> : <p>{scores.length ? "Nenhuma partitura encontrada." : "Nenhuma partitura importada."}</p>}
   </div>;
 }

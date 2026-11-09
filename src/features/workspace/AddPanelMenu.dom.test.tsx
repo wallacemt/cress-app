@@ -74,4 +74,25 @@ describe("AddPanelMenu", () => {
     expect(screen.queryByText("Gravações")).not.toBeNull();
     expect(screen.queryByText("Sessão")).toBeNull();
   });
+
+  it("opens score selection as a modal and Escape closes only the modal", () => {
+    const { container } = render(<AddPanelMenu api={fakeApi()} mode="free" />);
+    fireEvent.click(screen.getByRole("button", { name: "Painel" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Partitura/ }));
+    expect(screen.getByRole("dialog", { name: "Selecionar partitura" })).toBeTruthy();
+    expect(screen.queryByRole("menu", { name: "Abrir painel" })).toBeNull();
+    fireEvent.keyDown(window, { key: "Escape" });
+    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("menu", { name: "Abrir painel" })).toBeNull();
+    expect(document.activeElement).toBe(screen.getByRole("button", { name: "Painel" }));
+    expect(container.querySelector(".cress-submenu")).toBeNull();
+  });
+
+  it("closes score modal by clicking backdrop", () => {
+    const { container } = render(<AddPanelMenu api={fakeApi()} mode="free" />);
+    fireEvent.click(screen.getByRole("button", { name: "Painel" }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /Partitura/ }));
+    fireEvent.mouseDown(container.querySelector("[aria-modal=true]")!.parentElement!);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
 });

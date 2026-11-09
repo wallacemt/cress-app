@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { Check, ChevronRight, Plus } from "lucide-react";
+import { Check, Plus, X } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
 import { PANEL_CATALOG, PANEL_TITLES, type WorkspaceMode } from "../../domain/workspace";
 import { ScorePicker } from "./ScorePicker";
@@ -84,10 +84,21 @@ export function AddPanelMenu({
   panelParams?: Record<string, unknown>;
 }) {
   const [open, setOpen] = useState(false);
-  const [scoreSubmenu, setScoreSubmenu] = useState(false);
+  const [scoreDialog, setScoreDialog] = useState(false);
   const root = useRef<HTMLDivElement>(null);
   const trigger = useRef<HTMLButtonElement>(null);
   useWorkspacePanelShortcuts(api, mode, panelParams);
+  useEffect(() => {
+    if (!scoreDialog) return;
+    const close = (event: KeyboardEvent) => {
+      if (event.key !== "Escape") return;
+      event.stopPropagation();
+      setScoreDialog(false);
+      trigger.current?.focus();
+    };
+    window.addEventListener("keydown", close, true);
+    return () => window.removeEventListener("keydown", close, true);
+  }, [scoreDialog]);
   const available = (
     Object.keys(PANEL_CATALOG) as (keyof typeof PANEL_CATALOG)[]
   ).filter((key) =>
@@ -98,7 +109,6 @@ export function AddPanelMenu({
     const close = (event: KeyboardEvent) => {
       if (event.key === "Escape") {
         setOpen(false);
-        setScoreSubmenu(false);
         trigger.current?.focus();
       }
       if (event.key === "ArrowDown" || event.key === "ArrowUp") {
@@ -151,30 +161,15 @@ export function AddPanelMenu({
               !!api?.panels.some((panel) => panel.api.component === key);
             if (key === "score")
               return (
-                <div key={key} className="cress-submenu-wrap">
+                <div key={key}>
                   <button
                     type="button"
                     role="menuitem"
-                    aria-haspopup="menu"
-                    aria-expanded={scoreSubmenu}
-                    onKeyDown={(e) => {
-                      if (e.key === "ArrowRight") setScoreSubmenu(true);
-                    }}
-                    onClick={() => setScoreSubmenu(!scoreSubmenu)}
+                    onClick={() => { setOpen(false); setScoreDialog(true); }}
                   >
                     <span>{labels[key]}</span>
-                    <ChevronRight size={16} />
+                    <span className="cress-menu-meta">Selecionar…</span>
                   </button>
-                  {scoreSubmenu && (
-                    <div className="cress-submenu" role="menu">
-                      <ScorePicker onSelect={(id, title) => {
-                        if (!api) return;
-                        const opened = openWorkspacePanel(api, "score", panelParams, `score:${id}`);
-                        opened?.api.setTitle(title);
-                        setOpen(false); setScoreSubmenu(false); onOpen?.();
-                      }} />
-                    </div>
-                  )}
                 </div>
               );
             return (
@@ -197,6 +192,25 @@ export function AddPanelMenu({
               </button>
             );
           })}
+        </div>
+      )}
+      {scoreDialog && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3"
+          onMouseDown={(event) => { if (event.target === event.currentTarget) setScoreDialog(false); }}
+        >
+          <section role="dialog" aria-modal="true" aria-labelledby="score-picker-title" className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--border-default)] bg-[var(--ink-900)] text-[var(--text-primary)] shadow-2xl">
+            <header className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4">
+              <h2 id="score-picker-title" className="font-display text-2xl">Selecionar partitura</h2>
+              <button type="button" aria-label="Fechar seleção de partitura" className="rounded p-2 text-[var(--text-secondary)] hover:bg-[var(--violet-tint)]" onClick={() => { setScoreDialog(false); trigger.current?.focus(); }}><X size={18} /></button>
+            </header>
+            <ScorePicker onSelect={(id, title) => {
+              if (!api) return;
+              const opened = openWorkspacePanel(api, "score", panelParams, `score:${id}`);
+              opened?.api.setTitle(title);
+              setScoreDialog(false); onOpen?.();
+            }} />
+          </section>
         </div>
       )}
     </div>
