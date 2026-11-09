@@ -2,6 +2,11 @@ import type { SqlDb } from "../db/sqlDb";
 import type { StudySessionRow } from "../db/rows";
 export const makeSessionRepo = (db: SqlDb) => ({
   list: () => db.select<StudySessionRow>("SELECT * FROM study_sessions"),
+  listByPiece: (pieceId: string) =>
+    db.select<StudySessionRow>(
+      "SELECT * FROM study_sessions WHERE repertoire_item_id=$1 ORDER BY started_at DESC",
+      [pieceId],
+    ),
   get: async (id: string) =>
     (
       await db.select<StudySessionRow>(

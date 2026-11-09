@@ -15,6 +15,7 @@ vi.mock("../../application/scores", () => ({
   reorderScore: vi.fn(),
 }));
 vi.mock("../../app/container", () => ({ container: { getDeps: vi.fn().mockResolvedValue({} as Deps) } }));
+vi.mock("../pdf/ScoreViewer", () => ({ ScoreViewer: ({ scoreId }: { scoreId: string }) => <div>PDF {scoreId}</div> }));
 import { ScoreList } from "./ScoreList";
 
 const score = { id: "score-1", repertoire_item_id: "piece-1", label: "Violino I", relative_path: "a.pdf", sha256: "x", original_name: "a.pdf", original_path: null, size_bytes: 1, sort_order: 0, last_page: 1, created_at: 0 };
@@ -45,5 +46,13 @@ describe("ScoreList", () => {
     fireEvent.keyDown(input, { key: "Escape" });
     expect(screen.queryByRole("textbox", { name: "Renomear Violino I" })).toBeNull();
     expect(renameScore).not.toHaveBeenCalled();
+  });
+
+  it("opens one inline PDF and closes it from the score row", async () => {
+    render(<ScoreList pieceId="piece-1" />);
+    fireEvent.click(await screen.findByRole("button", { name: "Visualizar" }));
+    expect(screen.getByText("PDF score-1")).toBeTruthy();
+    fireEvent.click(screen.getByRole("button", { name: "Fechar" }));
+    expect(screen.queryByText("PDF score-1")).toBeNull();
   });
 });

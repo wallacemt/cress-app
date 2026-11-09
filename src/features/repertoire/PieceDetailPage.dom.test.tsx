@@ -16,6 +16,7 @@ const {
   listPieces,
   unarchivePiece,
   listGoals,
+  getPieceStats,
   getDeps,
 } = vi.hoisted(() => ({
   archivePiece: vi.fn(),
@@ -23,6 +24,7 @@ const {
   listPieces: vi.fn(),
   unarchivePiece: vi.fn(),
   listGoals: vi.fn(),
+  getPieceStats: vi.fn(),
   getDeps: vi.fn(),
 }));
 vi.mock("../../application/repertoire", () => ({
@@ -32,6 +34,9 @@ vi.mock("../../application/repertoire", () => ({
   unarchivePiece,
 }));
 vi.mock("../../application/goals", () => ({ listGoals }));
+vi.mock("../../application/sessions", () => ({ getPieceStats }));
+vi.mock("../pdf/ScoreViewer", () => ({ ScoreViewer: ({ scoreId }: { scoreId: string }) => <div>PDF {scoreId}</div> }));
+vi.mock("./ScoreList", () => ({ ScoreList: () => <section>Partituras</section> }));
 vi.mock("../../app/container", () => ({ container: { getDeps } }));
 import { PieceDetailPage } from "./PieceDetailPage";
 
@@ -54,9 +59,18 @@ describe("PieceDetailPage", () => {
       .mockReset()
       .mockResolvedValue([{ id: "piece-1", title: "Sonata", composer: "Ana" }]);
     listGoals.mockReset().mockResolvedValue([]);
+    getPieceStats.mockReset().mockResolvedValue({ totalSessions: 2, totalActiveMs: 200 * 60_000, lastPracticeAt: new Date("2026-11-08T12:00:00Z"), sessions: [{ id: "session-1", startedAt: new Date("2026-11-08T12:00:00Z"), activeMs: 200 * 60_000, initial_bpm: 60, final_bpm: 72 }] });
     archivePiece.mockReset().mockResolvedValue(undefined);
     unarchivePiece.mockReset().mockResolvedValue(undefined);
     deletePiece.mockReset().mockResolvedValue(undefined);
+  });
+
+  it("shows aggregated practice stats and session details", async () => {
+    renderPage();
+    expect(await screen.findByText("3h 20min")).toBeTruthy();
+    expect(screen.getByText("2", { selector: "dd" })).toBeTruthy();
+    expect(screen.getByText(/60 → 72 BPM/)).toBeTruthy();
+    expect(getPieceStats).toHaveBeenCalledWith(deps, { repertoireItemId: "piece-1" });
   });
 
   it("shows a clear error and keeps the piece when it has sessions", async () => {

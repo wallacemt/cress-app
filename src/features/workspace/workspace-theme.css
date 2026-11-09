@@ -17,6 +17,7 @@
 .cress-score-divider { width: 1px; height: 20px; margin: 0 3px; background: var(--border-default); }
 .cress-score-zoom { min-width: 38px; color: var(--text-muted); font: 11px var(--font-metric); text-align: center; }
 .cress-score-stage { display: flex; min-height: 0; flex: 1; justify-content: center; overflow: auto; padding: 16px; outline: none; background: color-mix(in srgb, var(--ink-950) 70%, transparent); }
+.cress-score-inline { height: 70vh; min-height: 420px; border: 1px solid var(--border-subtle); border-radius: 12px; overflow: hidden; }
 .cress-score-canvas-wrap { display: flex; min-width: max-content; min-height: max-content; justify-content: center; align-items: flex-start; }
 .cress-score-canvas-wrap canvas { display: block; height: auto; background: white; box-shadow: 0 8px 28px rgb(0 0 0 / .35); }
 .cress-score-error { margin: auto; padding: 20px; color: var(--danger); }

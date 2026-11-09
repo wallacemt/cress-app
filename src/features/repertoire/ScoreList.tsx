@@ -3,12 +3,14 @@ import { attachScoreFile, deleteScore, listScores, renameScore, reorderScore } f
 import type { Deps } from "../../application/deps";
 import type { ScoreDocumentRow } from "../../infrastructure/db/rows";
 import { container } from "../../app/container";
+import { ScoreViewer } from "../pdf/ScoreViewer";
 
 export function ScoreList({ pieceId }: { pieceId: string }) {
   const [scores, setScores] = useState<ScoreDocumentRow[]>([]);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [renaming, setRenaming] = useState<{ id: string; label: string } | null>(null);
+  const [viewingId, setViewingId] = useState<string | null>(null);
 
   async function reload() {
     setScores(await listScores(await container.getDeps(), { pieceId }));
@@ -55,7 +57,8 @@ export function ScoreList({ pieceId }: { pieceId: string }) {
       {!scores.length ? <p className="mt-3 text-sm text-[var(--text-muted)]">Nenhuma partitura anexada.</p> : (
         <ul className="mt-4 divide-y divide-[var(--border-subtle)]">
           {scores.map((score, index) => (
-            <li key={score.id} className="flex items-center justify-between gap-4 py-4">
+            <li key={score.id} className="py-4">
+              <div className="flex items-center justify-between gap-4">
               {renaming?.id === score.id ? (
                 <input
                   aria-label={`Renomear ${score.label}`}
@@ -73,6 +76,7 @@ export function ScoreList({ pieceId }: { pieceId: string }) {
                 <p className="min-w-0 truncate text-sm text-[var(--text-primary)]">{score.label}</p>
               )}
               <div className="flex shrink-0 items-center gap-3">
+                <button type="button" className="text-sm text-[var(--text-secondary)]" aria-expanded={viewingId === score.id} onClick={() => setViewingId(viewingId === score.id ? null : score.id)}>{viewingId === score.id ? "Fechar" : "Visualizar"}</button>
                 <button type="button" aria-label={`Mover ${score.label} para cima`} disabled={busy || index === 0} className="text-sm text-[var(--text-secondary)] disabled:opacity-40" onClick={() => void mutate((deps) => reorderScore(deps, { id: score.id, direction: "up" }))}>↑</button>
                 <button type="button" aria-label={`Mover ${score.label} para baixo`} disabled={busy || index === scores.length - 1} className="text-sm text-[var(--text-secondary)] disabled:opacity-40" onClick={() => void mutate((deps) => reorderScore(deps, { id: score.id, direction: "down" }))}>↓</button>
                 <button type="button" disabled={busy} className="text-sm text-[var(--text-secondary)]" onClick={() => setRenaming({ id: score.id, label: score.label })}>Renomear</button>
@@ -80,6 +84,8 @@ export function ScoreList({ pieceId }: { pieceId: string }) {
                   if (window.confirm("Excluir esta partitura e o arquivo PDF?")) void mutate((deps) => deleteScore(deps, { id: score.id }));
                 }}>Excluir</button>
               </div>
+              </div>
+              {viewingId === score.id && <div className="mt-4"><ScoreViewer scoreId={score.id} inline /></div>}
             </li>
           ))}
         </ul>

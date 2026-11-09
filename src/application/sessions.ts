@@ -28,6 +28,10 @@ export interface FinishSessionInput {
   notes?: string;
   completeGoal: boolean;
 }
+export async function getPieceStats(d: Deps, { repertoireItemId }: { repertoireItemId: string }) {
+  const sessions = (await makeSessionRepo(d.db).listByPiece(repertoireItemId)).map(ent);
+  return { totalSessions: sessions.length, totalActiveMs: sessions.reduce((total, session) => total + session.activeMs, 0), lastPracticeAt: sessions[0]?.startedAt ?? null, sessions };
+}
 type SessionEntity = StudySession & {
   repertoire_item_id: string;
   goal_id: string | null;
