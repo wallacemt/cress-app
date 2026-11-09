@@ -12,16 +12,7 @@ import { ToolsPage } from "../features/workspace/ToolsPage";
 import { ChangelogPage } from "../features/changelog/ChangelogPage";
 import { SessionsPage } from "../features/sessions/SessionsPage";
 import { SessionDetailPage } from "../features/sessions/SessionDetailPage";
-
-function Placeholder({ name }: { name: string }) {
-  return (
-    <section className="placeholder">
-      <p className="eyebrow">CRESS</p>
-      <h1>{name}</h1>
-      <p>Esta área será implementada nas próximas fases.</p>
-    </section>
-  );
-}
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 
 export const router = createHashRouter([
   {
@@ -36,7 +27,7 @@ export const router = createHashRouter([
     element: <AppShell />,
     hydrateFallbackElement: <LoadingScreen />,
     children: [
-      { index: true, element: <Placeholder name="Dashboard" /> },
+      { index: true, element: <DashboardPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "changelog", element: <ChangelogPage /> },
       { path: "repertoire", element: <RepertoirePage /> },
