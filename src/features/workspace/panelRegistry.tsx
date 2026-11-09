@@ -7,6 +7,7 @@ import { SessionPanel } from "./panels/SessionPanel";
 import { MetronomePanel } from "./panels/MetronomePanel";
 import { TunerPanel } from "./panels/TunerPanel";
 import { RecorderPanel } from "./panels/RecorderPanel";
+import { ScorePanel } from "./panels/ScorePanel";
 
 const icons = { metronome: MetronomeIcon, gauge: Gauge, "file-music": FileMusic, "audio-lines": AudioLines, "notebook-pen": NotebookPen };
 export function PanelTab({ api }: IDockviewPanelProps) {
@@ -37,6 +38,7 @@ export const panelRegistry: Record<
   metronome: MetronomePanel,
   tuner: TunerPanel,
   recorder: RecorderPanel,
+  score: ScorePanel,
 };
 
 export function panelRenderer(component: string): "onlyWhenVisible" | "always" {

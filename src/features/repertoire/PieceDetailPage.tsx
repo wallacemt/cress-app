@@ -7,6 +7,7 @@ import {
   unarchivePiece,
 } from "../../application/repertoire";
 import { listGoals } from "../../application/goals";
+import { getPieceStats } from "../../application/sessions";
 import type { Deps } from "../../application/deps";
 import { container } from "../../app/container";
 import type { StudyGoal } from "../../domain/goal";
@@ -14,12 +15,25 @@ import type { RepertoireItem } from "../../domain/repertoire";
 import { INSTRUMENTS } from "../../domain/profile";
 import { GoalList } from "./GoalList";
 import { PieceFormDialog } from "./PieceFormDialog";
+import { ScoreList } from "./ScoreList";
+import type { StudySession } from "../../domain/session";
+
+type PieceStats = Awaited<ReturnType<typeof getPieceStats>>;
+function formatDuration(ms: number) {
+  const minutes = Math.floor(ms / 60_000);
+  const hours = Math.floor(minutes / 60);
+  return hours ? `${hours}h ${minutes % 60}min` : `${minutes}min`;
+}
+function formatDate(date: Date | null) {
+  return date ? date.toLocaleString("pt-BR") : "Nunca";
+}
 
 export function PieceDetailPage() {
   const { pieceId = "" } = useParams();
   const navigate = useNavigate();
   const [piece, setPiece] = useState<RepertoireItem>();
   const [goals, setGoals] = useState<StudyGoal[]>([]);
+  const [stats, setStats] = useState<PieceStats>();
   const [editing, setEditing] = useState(false);
   const [error, setError] = useState("");
   const [busy, setBusy] = useState(false);
@@ -34,13 +48,15 @@ export function PieceDetailPage() {
     void container
       .getDeps()
       .then(async (deps) => {
-        const [pieces, items] = await Promise.all([
+        const [pieces, items, pieceStats] = await Promise.all([
           listPieces(deps),
           listGoals(deps, { repertoireItemId: pieceId }),
+          getPieceStats(deps, { repertoireItemId: pieceId }),
         ]);
         if (active) {
           setPiece(pieces.find((item) => item.id === pieceId));
           setGoals(items);
+          setStats(pieceStats);
         }
       })
       .catch(() => {
@@ -154,6 +170,22 @@ export function PieceDetailPage() {
         </p>
       )}
       <GoalList goals={goals} repertoireItemId={pieceId} onChanged={reloadGoals} />
+      <section aria-labelledby="piece-practice-title" className="mt-10">
+        <h2 id="piece-practice-title" className="font-display text-2xl text-[var(--text-primary)]">Prática</h2>
+        <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+          <div><dt className="text-xs text-[var(--text-muted)]">Tempo estudado</dt><dd className="mt-1 text-sm">{formatDuration(stats?.totalActiveMs ?? 0)}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">Sessões</dt><dd className="mt-1 text-sm">{stats?.totalSessions ?? 0}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">Última prática</dt><dd className="mt-1 text-sm">{formatDate(stats?.lastPracticeAt ?? null)}</dd></div>
+        </dl>
+        <h3 className="mt-6 text-sm font-semibold">Histórico de sessões</h3>
+        {!stats?.sessions.length ? <p className="mt-3 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada.</p> : <ul className="mt-2 divide-y divide-[var(--border-subtle)]">
+          {stats.sessions.map((session: StudySession & { initial_bpm: number | null; final_bpm: number | null }) => <li key={session.id} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">
+            <time dateTime={session.startedAt?.toISOString()}>{formatDate(session.startedAt)}</time>
+            <span>{formatDuration(session.activeMs)}{session.initial_bpm != null || session.final_bpm != null ? ` · ${session.initial_bpm ?? "—"} → ${session.final_bpm ?? "—"} BPM` : ""}</span>
+          </li>)}
+        </ul>}
+      </section>
+      <ScoreList pieceId={pieceId} />
       {editing && (
         <PieceFormDialog
           piece={piece}

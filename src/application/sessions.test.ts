@@ -11,10 +11,22 @@ import {
   finishSession,
   discardSession,
   ensureFreeSession,
+  getPieceStats,
 } from "./sessions";
 import { startTake } from "./recordings";
 import { makeTestDeps } from "./test-support";
 describe("sessions application", () => {
+  it("aggregates piece practice stats with newest session first", async () => {
+    const d = makeTestDeps({ now: () => new Date("2026-11-08T12:00:00Z") });
+    const piece = await createPiece(d, { title: "Stats" });
+    const first = await startSession(d, { repertoireItemId: piece.id, initialBpm: 60 });
+    await finishSession(d, { id: first.id, finalBpm: 72, completeGoal: false });
+    const stats = await getPieceStats(d, { repertoireItemId: piece.id });
+    expect(stats.totalSessions).toBe(1);
+    expect(stats.totalActiveMs).toBe(0);
+    expect(stats.lastPracticeAt).toEqual(first.startedAt);
+    expect(stats.sessions[0]).toMatchObject({ id: first.id, initial_bpm: 60, final_bpm: 72 });
+  });
   it("resumes an existing paused free-practice session", async () => {
     const d = makeTestDeps();
     await d.db.execute(

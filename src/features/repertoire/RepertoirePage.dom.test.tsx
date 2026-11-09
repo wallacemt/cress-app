@@ -51,9 +51,9 @@ describe("RepertoirePage", () => {
     expect(screen.getByRole("button", { name: "Adicionar obra" })).toBeTruthy();
     expect(
       screen
-        .getByRole("button", { name: "Importar pasta de partituras" })
+        .getByRole("button", { name: "Importar pasta" })
         .hasAttribute("disabled"),
-    ).toBe(true);
+    ).toBe(false);
   });
 
   it("filters titles without regard to accents or case", async () => {

@@ -5,15 +5,15 @@ use thiserror::Error;
 
 #[derive(Debug, Error)]
 pub enum PathsError {
-    #[error("recording path contains a parent-directory segment")]
+    #[error("path contains a parent-directory segment")]
     PathTraversal,
-    #[error("recording path must be relative")]
+    #[error("path must be relative")]
     AbsolutePath,
-    #[error("recording path has an invalid format")]
+    #[error("path has an invalid format")]
     InvalidFormat,
-    #[error("recording path must use the .wav extension")]
+    #[error("path has an invalid extension")]
     InvalidExtension,
-    #[error("recording path contains an invalid or non-v4 UUID")]
+    #[error("path contains an invalid or non-v4 UUID")]
     InvalidUuid,
     #[error("could not resolve application data directory: {0}")]
     AppDataDir(#[source] tauri::Error),
@@ -61,12 +61,16 @@ pub fn validate_recording_rel(rel: &str) -> Result<(), PathsError> {
     let Some(uuid_text) = filename.strip_suffix(".wav") else {
         return Err(PathsError::InvalidExtension);
     };
-    if uuid_text.len() != 36 {
-        return Err(PathsError::InvalidUuid);
-    }
-    if !uuid_text
-        .bytes()
-        .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte) || byte == b'-')
+    validate_uuid_v4(uuid_text)?;
+
+    Ok(())
+}
+
+fn validate_uuid_v4(uuid_text: &str) -> Result<(), PathsError> {
+    if uuid_text.len() != 36
+        || !uuid_text
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte) || byte == b'-')
     {
         return Err(PathsError::InvalidUuid);
     }
@@ -76,8 +80,23 @@ pub fn validate_recording_rel(rel: &str) -> Result<(), PathsError> {
     {
         return Err(PathsError::InvalidUuid);
     }
-
     Ok(())
+}
+
+pub fn validate_score_rel(rel: &str) -> Result<(), PathsError> {
+    if rel.split(['/', '\\']).any(|segment| segment.contains("..")) {
+        return Err(PathsError::PathTraversal);
+    }
+    if rel.starts_with(['/', '\\']) || rel.as_bytes().get(1) == Some(&b':') {
+        return Err(PathsError::AbsolutePath);
+    }
+    if rel.contains(['/', '\\']) {
+        return Err(PathsError::InvalidFormat);
+    }
+    let uuid_text = rel
+        .strip_suffix(".pdf")
+        .ok_or(PathsError::InvalidExtension)?;
+    validate_uuid_v4(uuid_text)
 }
 
 pub fn recordings_root(app: &tauri::AppHandle) -> Result<PathBuf, PathsError> {
@@ -92,6 +111,18 @@ pub fn resolve_recording_path(app: &tauri::AppHandle, rel: &str) -> Result<PathB
     Ok(recordings_root(app)?.join(rel))
 }
 
+pub fn scores_root(app: &tauri::AppHandle) -> Result<PathBuf, PathsError> {
+    app.path()
+        .app_data_dir()
+        .map(|path| path.join("scores"))
+        .map_err(PathsError::AppDataDir)
+}
+
+pub fn resolve_score_path(app: &tauri::AppHandle, rel: &str) -> Result<PathBuf, PathsError> {
+    validate_score_rel(rel)?;
+    Ok(scores_root(app)?.join(rel))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -101,6 +132,23 @@ mod tests {
     #[test]
     fn accepts_valid_recording_path() {
         assert!(validate_recording_rel(VALID_REL).is_ok());
+    }
+
+    #[test]
+    fn validates_score_relative_paths() {
+        assert!(validate_score_rel("550e8400-e29b-41d4-a716-446655440000.pdf").is_ok());
+        for rel in [
+            "../x.pdf",
+            "/etc/passwd",
+            "C:\\x.pdf",
+            "a/b.pdf",
+            "a\\b.pdf",
+            "x.txt",
+            "550E8400-E29B-41D4-A716-446655440000.pdf",
+            "",
+        ] {
+            assert!(validate_score_rel(rel).is_err(), "accepted {rel:?}");
+        }
     }
 
     #[test]

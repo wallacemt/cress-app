@@ -6,7 +6,7 @@ import type { Deps } from "../../../application/deps";
 import type { RecordingRow, StudySessionRow } from "../../../infrastructure/db/rows";
 import { useAudioInputStore } from "../../../stores/audioInputStore";
 import { useMetronomeStore } from "../../../stores/metronomeStore";
-import { useWorkspaceLayoutStore } from "../../../stores/workspaceLayoutStore";
+import { useObservedPanelLayout } from "./useObservedPanelLayout";
 import { RecordingItem } from "./RecordingItem";
 import { AudioDeviceSelector } from "./AudioDeviceSelector";
 import { initialMeterState, meterPos, step, toDb, type MeterState } from "./meter";
@@ -35,7 +35,8 @@ function MicLevel({ meter, compact = false, paused = false }: { meter: ReturnTyp
 
 export const RecorderPanel: FunctionComponent<IDockviewPanelProps> = ({ api, params }) => {
   const [panelParams, setPanelParams] = useState(() => params as RecorderPanelParams); useEffect(() => api.onDidParametersChange((next) => setPanelParams(next as RecorderPanelParams)).dispose, [api]);
-  const { session, deps } = panelParams; const panelCount = useWorkspaceLayoutStore((s) => s.panelCount);
+  const { session, deps } = panelParams;
+  const root = useRef<HTMLElement>(null); const layoutClass = useObservedPanelLayout(root);
   const [takes, setTakes] = useState<RecordingRow[]>([]); const [error, setError] = useState(""); const [busy, setBusy] = useState(false); const [elapsed, setElapsed] = useState(0); const [phase, setPhase] = useState<"recording"|"paused">("recording"); const [pausedAt, setPausedAt] = useState<number|null>(null); const [pausedTotal, setPausedTotal] = useState(0); const [saved, setSaved] = useState(false); const [newTakeId, setNewTakeId] = useState<string|null>(null);
   const audio = useRef(new Audio()).current; const stopRef = useRef<HTMLButtonElement>(null); const mic = useMeter(); const active = takes.find((take) => take.status === "RECORDING"); const refresh = useCallback(async () => setTakes(await listTakes(deps, { sessionId: session.id })), [deps, session.id]);
   useEffect(() => { let alive = true; void refresh().catch((cause: unknown) => alive && setError(cause instanceof Error ? cause.message : "Não foi possível carregar os takes.")); return () => { alive = false; audio.pause(); }; }, [refresh, audio]);
@@ -47,7 +48,7 @@ export const RecorderPanel: FunctionComponent<IDockviewPanelProps> = ({ api, par
   const togglePause = () => void run(async () => { if (phase === "recording") { await pauseTake(deps); setPausedAt(Date.now()); setPhase("paused"); } else { await resumeTake(deps); setPausedTotal((n) => n + (pausedAt == null ? 0 : Date.now() - pausedAt)); setPausedAt(null); setPhase("recording"); } });
   const finish = () => void run(async () => { await stopTake(deps); setSaved(true); const latest = await listTakes(deps, { sessionId: session.id }); const justSaved = latest.find((t) => t.id === active?.id); if (justSaved) setNewTakeId(justSaved.id); window.setTimeout(() => setSaved(false), 600); });
   const deviceName = useAudioInputStore((s) => s.devices.find((d) => d.id === s.deviceId)?.name ?? "Padrão do sistema");
-  return <section className={`cress-session-panel cress-recorder-panel${panelCount <= 2 ? " cress-layout-duo" : ""}${panelCount >= 4 ? " cress-layout-quad" : ""}`} data-mode={active ? "stage" : "list"} aria-label="Painel de gravações">
+  return <section ref={root} className={`cress-session-panel cress-recorder-panel${layoutClass ? ` ${layoutClass}` : ""}`} data-mode={active ? "stage" : "list"} aria-label="Painel de gravações">
     <div className="cress-recorder-list-mode" aria-hidden={!!active}>
       <div className="cress-recorder-transport"><button className="cress-record-button" aria-label="Gravar take" aria-keyshortcuts="R" aria-disabled={busy || session.status !== "ACTIVE"} disabled={busy || session.status !== "ACTIVE"} onClick={start} /><div><strong>{session.status === "ACTIVE" ? "Gravar take" : "Retome a sessão para gravar."}</strong><small>R · {deviceName}</small><AudioDeviceSelector /></div><div ref={mic.meterRef} className="cress-level-meter-wrap"><div className="cress-level-meter"><i /><b /></div><small>Nível</small></div></div>
       <div className="cress-recorder-hairpin" />{error && <div className="cress-recorder-error" role="alert">{error}<button onClick={() => void refresh()}>Tentar novamente</button></div>}

@@ -3,7 +3,7 @@ import type { RecordingRow } from "../db/rows";
 export const makeRecordingRepo = (db: SqlDb) => ({
   forSession: (id: string) =>
     db.select<RecordingRow>(
-      "SELECT * FROM recordings WHERE session_id=$1 ORDER BY created_at",
+      "SELECT * FROM recordings WHERE session_id=$1 ORDER BY created_at DESC",
       [id],
     ),
   active: () =>

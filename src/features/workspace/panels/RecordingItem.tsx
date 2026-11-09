@@ -34,6 +34,10 @@ const getPeaks = (path: string, src: string) => {
 
 interface RecordingItemProps { take: RecordingRow; deps: Deps; onChange: () => void; onError: (message: string) => void; audio: HTMLAudioElement; onPlay: (takeId: string) => void; }
 function durationLabel(ms: number | null) { const s = Math.floor((ms ?? 0) / 1000); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
+function recordedAtLabel(ms: number) {
+  const date = new Date(ms);
+  return `${date.toLocaleDateString("pt-BR")} ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
+}
 
 export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, deps, onChange, onError, audio, onPlay }) => {
   const [src, setSrc] = useState("");
@@ -101,6 +105,7 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
       {failed ? <span className="cress-take-file-error" aria-label="Arquivo não encontrado"><FileX size={16} /></span> : <button type="button" className="cress-take-play" aria-label={`${playing ? "Pausar" : "Ouvir"} ${title}`} onClick={() => void togglePlay()}>{playing ? <Pause size={16} /> : <Play size={16} />}</button>}
       <div className="cress-take-title">{editing ? <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} onBlur={() => void saveTitle()} onKeyDown={(e) => { if (e.key === "Enter") void saveTitle(); if (e.key === "Escape") { setTitle(take.title); setEditing(false); } }} /> : <button type="button" title={title} onDoubleClick={() => setEditing(true)} onKeyDown={(e) => { if (e.key === "F2") setEditing(true); }}>{title}</button>}{notes && <NotebookPen size={14} aria-label="Tem observações" />}</div>
       <span className="cress-take-bpm">{take.bpm != null ? `♩ ${take.bpm}` : ""}</span>
+      <time className="cress-take-recorded-at" dateTime={new Date(take.created_at).toISOString()}>{recordedAtLabel(take.created_at)}</time>
       <span className="cress-take-time">{playing ? `${durationLabel(current * 1000)} / ` : ""}{durationLabel(take.duration_ms)}</span>
       <div className="cress-menu"><button ref={menuButtonRef} type="button" className="cress-take-menu-button" aria-label={`Ações de ${title}`} onClick={() => { const next = !menuOpen; if (next && menuButtonRef.current) { const rect = menuButtonRef.current.getBoundingClientRect(); setMenuPos({ top: Math.min(rect.bottom + 8, window.innerHeight - 140), left: Math.max(8, Math.min(rect.right - 280, window.innerWidth - 288)) }); } setMenuOpen(next); }}><Ellipsis size={18} /></button>{menuOpen && menuPos && <div className="cress-menu-popover" style={{ top: menuPos.top, left: menuPos.left }}><button onClick={() => { setEditing(true); setMenuOpen(false); }}>Renomear <kbd>F2</kbd></button><button onClick={() => { setNotesOpen(!notesOpen); setMenuOpen(false); }}>Observações</button><div className="cress-menu-separator" /><button className="is-danger" onClick={() => { setConfirmDelete(true); setMenuOpen(false); }}>Excluir…</button></div>}</div>
     </div>

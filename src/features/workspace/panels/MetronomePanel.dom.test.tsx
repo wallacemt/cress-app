@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const engine = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn(), updateConfig: vi.fn(), onBeat: vi.fn(() => () => {}) }));
 vi.mock("../../metronome/engine", () => engine);
@@ -10,6 +10,7 @@ import { MetronomePanel } from "./MetronomePanel";
 import { useMetronomeStore } from "../../../stores/metronomeStore";
 
 describe("MetronomePanel", () => {
+  afterEach(cleanup);
   beforeEach(() => {
     engine.start.mockReset().mockResolvedValue(undefined);
     engine.stop.mockReset();
@@ -29,5 +30,31 @@ describe("MetronomePanel", () => {
     await vi.waitFor(() => expect(screen.getByRole("button", { name: "Parar metrônomo" })).toBeTruthy());
     fireEvent.click(screen.getByRole("button", { name: "Parar metrônomo" }));
     expect(engine.stop).toHaveBeenCalledOnce();
+  });
+
+  it("applies the timer as soon as it is typed, without needing blur", () => {
+    render(<MetronomePanel api={{} as never} containerApi={{} as never} params={{}} />);
+    fireEvent.click(screen.getByRole("checkbox", { name: "Habilitar timer" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "Minutos do timer" }), { target: { value: "5" } });
+    expect(useMetronomeStore.getState().timerSeconds).toBe(300);
+  });
+
+  it("applies compact layout from the observed panel width", () => {
+    let resize: ResizeObserverCallback | undefined;
+    const disconnect = vi.fn();
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(callback: ResizeObserverCallback) { resize = callback; }
+      observe() {}
+      disconnect() { disconnect(); }
+      unobserve() {}
+    });
+
+    const { container } = render(<MetronomePanel api={{} as never} containerApi={{} as never} params={{}} />);
+    const panel = container.querySelector(".cress-metronome-panel")!;
+    act(() => resize?.([{ contentRect: { width: 360, height: 600 } } as ResizeObserverEntry], {} as ResizeObserver));
+    expect(panel.classList.contains("cress-layout-quad")).toBe(true);
+    cleanup();
+    expect(disconnect).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 });
