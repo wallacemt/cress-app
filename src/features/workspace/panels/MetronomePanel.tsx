@@ -199,9 +199,9 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   function update(patch: Partial<typeof config>) {
     setConfig({ ...config, ...patch });
   }
-  function updateTimer() {
-    const total = Math.max(0, Number(timerMinutes) * 60 + Number(timerSecs));
-    setTimerSeconds(timerEnabled && total > 0 ? total : null);
+  function updateTimer(minutes = timerMinutes, secs = timerSecs, enabled = timerEnabled) {
+    const total = Math.max(0, Number(minutes) * 60 + Number(secs));
+    setTimerSeconds(enabled && total > 0 ? total : null);
   }
   const isBeat = (index: number) => running && index === beat - 1;
   const row = (
@@ -428,10 +428,10 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         </div>
       </div>
       <div className="cress-metronome-section cress-metronome-timer">
-        <label className="cress-metronome-timer-toggle"><input type="checkbox" aria-label="Habilitar timer" checked={timerEnabled} onChange={(event) => { const enabled = event.target.checked; setTimerEnabled(enabled); const total = Math.max(0, Number(timerMinutes) * 60 + Number(timerSecs)); setTimerSeconds(enabled && total > 0 ? total : null); }} /> TIMER</label>
+        <label className="cress-metronome-timer-toggle"><input type="checkbox" aria-label="Habilitar timer" checked={timerEnabled} onChange={(event) => { const enabled = event.target.checked; setTimerEnabled(enabled); updateTimer(timerMinutes, timerSecs, enabled); }} /> TIMER</label>
         <div className="cress-metronome-timer-inputs">
-          <label>Min <input aria-label="Minutos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerMinutes} onChange={(event) => setTimerMinutes(event.target.value.replace(/\D/g, ""))} onBlur={updateTimer} /></label>
-          <label>Seg <input aria-label="Segundos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerSecs} onChange={(event) => setTimerSecs(String(Math.min(59, Number(event.target.value.replace(/\D/g, "") || 0))))} onBlur={updateTimer} /></label>
+          <label>Min <input aria-label="Minutos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerMinutes} onChange={(event) => { const minutes = event.target.value.replace(/\D/g, ""); setTimerMinutes(minutes); updateTimer(minutes, timerSecs, timerEnabled); }} /></label>
+          <label>Seg <input aria-label="Segundos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerSecs} onChange={(event) => { const secs = String(Math.min(59, Number(event.target.value.replace(/\D/g, "") || 0))); setTimerSecs(secs); updateTimer(timerMinutes, secs, timerEnabled); }} /></label>
         </div>
       </div>
       <label className="cress-metronome-volume">
