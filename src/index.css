@@ -125,6 +125,10 @@ body {
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
+  user-select: none;
+}
+input, textarea, [contenteditable="true"] {
+  user-select: text;
 }
 .app-shell {
   display: flex;

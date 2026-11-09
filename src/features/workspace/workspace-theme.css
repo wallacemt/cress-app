@@ -213,6 +213,7 @@
 
 .cress-workspace .dv-tab {
   position: relative;
+  overflow: hidden;
   min-width: 0;
   max-width: 224px;
   padding-inline: 12px;
