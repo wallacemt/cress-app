@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const engine = vi.hoisted(() => ({ start: vi.fn(), stop: vi.fn(), updateConfig: vi.fn(), onBeat: vi.fn(() => () => {}) }));
@@ -37,5 +37,24 @@ describe("MetronomePanel", () => {
     fireEvent.click(screen.getByRole("checkbox", { name: "Habilitar timer" }));
     fireEvent.change(screen.getByRole("textbox", { name: "Minutos do timer" }), { target: { value: "5" } });
     expect(useMetronomeStore.getState().timerSeconds).toBe(300);
+  });
+
+  it("applies compact layout from the observed panel width", () => {
+    let resize: ResizeObserverCallback | undefined;
+    const disconnect = vi.fn();
+    vi.stubGlobal("ResizeObserver", class {
+      constructor(callback: ResizeObserverCallback) { resize = callback; }
+      observe() {}
+      disconnect() { disconnect(); }
+      unobserve() {}
+    });
+
+    const { container } = render(<MetronomePanel api={{} as never} containerApi={{} as never} params={{}} />);
+    const panel = container.querySelector(".cress-metronome-panel")!;
+    act(() => resize?.([{ contentRect: { width: 360, height: 600 } } as ResizeObserverEntry], {} as ResizeObserver));
+    expect(panel.classList.contains("cress-layout-quad")).toBe(true);
+    cleanup();
+    expect(disconnect).toHaveBeenCalledOnce();
+    vi.unstubAllGlobals();
   });
 });

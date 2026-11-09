@@ -4,7 +4,7 @@ import { CressSlider } from "../../../components/CressSlider";
 import { frequencyToNote, noteLabel } from "../../../domain/tuner";
 import { useAudioInputStore } from "../../../stores/audioInputStore";
 import { useTunerStore } from "../../../stores/tunerStore";
-import { useWorkspaceLayoutStore } from "../../../stores/workspaceLayoutStore";
+import { useObservedPanelLayout } from "./useObservedPanelLayout";
 import { AudioDeviceSelector } from "./AudioDeviceSelector";
 import { TunerGauge } from "./TunerGauge";
 import { TunerCarousel } from "./TunerCarousel";
@@ -14,7 +14,8 @@ const SWITCH_DELAY_MS = 160;
 export function TunerPanel() {
   const pitch = useAudioInputStore((s) => s.pitch);
   const inputError = useAudioInputStore((s) => s.error);
-  const panelCount = useWorkspaceLayoutStore((s) => s.panelCount);
+  const root = useRef<HTMLElement>(null);
+  const layoutClass = useObservedPanelLayout(root);
   const a4 = useTunerStore((s) => s.a4);
   const naming = useTunerStore((s) => s.noteNaming);
   const error = Boolean(inputError);
@@ -64,9 +65,8 @@ export function TunerPanel() {
   const status = error ? "Sem entrada de áudio" : !pitch ? "Sem sinal · ouvindo…" : pitch.clarity < 0.7 ? "Detectando…" : Math.abs(note?.cents ?? 50) <= 5 ? "Afinado" : "Ajuste a afinação";
   return (
     <section
-      className={`cress-tuner-panel${
-        panelCount <= 2 ? " cress-layout-duo" : ""
-      }${panelCount >= 4 ? " cress-layout-quad" : ""}`}
+      ref={root}
+      className={`cress-tuner-panel${layoutClass ? ` ${layoutClass}` : ""}`}
       aria-label="Afinador"
     >
       <header><span className={`cress-tuner-status${note && Math.abs(note.cents) <= 5 ? " is-tuned" : ""}`}><i />{status}</span><button type="button" className="cress-control" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={15} /> Configurações</button></header>
