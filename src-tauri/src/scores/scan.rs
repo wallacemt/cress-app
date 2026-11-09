@@ -208,8 +208,8 @@ mod tests {
     #[test]
     fn hidden_entries_count_toward_the_scan_limit() {
         let root = temp();
-        fs::write(root.join(".hidden"), b"").unwrap();
-        fs::write(root.join("visible.pdf"), b"%PDF-").unwrap();
+        fs::write(root.join(".hidden-a"), b"").unwrap();
+        fs::write(root.join(".hidden-b"), b"").unwrap();
         let result = scan_with_limits(&root, 1, 10).unwrap();
         assert!(result.truncated);
         assert!(result.entries.is_empty());
