@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Gauge, Timer } from "lucide-react";
+import { Gauge, Plus, Timer } from "lucide-react";
 import { getDashboard } from "../../application/dashboard";
 import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
@@ -49,45 +49,84 @@ export function DashboardPage() {
   const today = new Date();
   const greeting = today.getHours() < 12 ? "Bom dia" : today.getHours() < 18 ? "Boa tarde" : "Boa noite";
   const maxDay = Math.max(...dashboard.days.map((day) => day.activeMs), 1);
-  return <main className="mx-auto w-full max-w-5xl px-6 py-10 text-[var(--text-primary)]">
-    <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+  const goal = dashboard.recentPiece?.goal;
+  const lastBpm = latest?.final_bpm ?? null;
+  const bpmValues = dashboard.pieceSessions.filter((session) => session.repertoire_item_id === latest?.repertoire_item_id && session.final_bpm != null).slice(0, 20).map((session) => session.final_bpm!).reverse();
+  const activeDays = dashboard.days.filter((day) => day.activeMs > 0).length;
+  const dateLabel = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(today);
+
+  return <main className="mx-auto w-full max-w-[1120px] px-8 pt-12 pb-12 text-[var(--text-primary)]">
+    <header className="mb-8 flex flex-wrap items-end justify-between gap-6">
       <div>
-      <p className="text-sm text-[var(--text-secondary)]">{greeting}, {dashboard.displayName}.</p>
-      <h1 className="mt-1 font-display text-4xl">Continue sua evolução.</h1>
+        <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--text-muted)]">{dateLabel}</p>
+        <h1 className="mt-2 font-display text-[56px] leading-[60px] font-medium italic">{greeting}, {dashboard.displayName}.</h1>
+        <p className="mt-2 text-lg text-[var(--text-secondary)]"><span className="font-metric tabular-nums text-[var(--text-primary)]">{duration(dashboard.weekActiveMs)}</span> nesta semana · <span className="font-metric tabular-nums text-[var(--text-primary)]">{activeDays} de 7</span> dias com prática</p>
       </div>
-      <button type="button" className="cress-btn-primary" disabled={!!open} title={open ? "Finalize ou retome a sessão em andamento antes de iniciar outra." : undefined} onClick={() => setModalOpen(true)}>Nova sessão</button>
+      <div className="flex items-center gap-3">
+        <button type="button" className={dashboard.recentPiece && !open ? "cress-btn-glass" : "cress-btn-primary"} disabled={!!open} title={open ? "Finalize ou retome a sessão em andamento antes de iniciar outra." : undefined} onClick={() => setModalOpen(true)}><Plus size={16} className="mr-2 inline" />Nova sessão</button>
+        <kbd className="text-xs text-[var(--text-subtle)]">Ctrl N</kbd>
+      </div>
     </header>
     {modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
-    {open && <section aria-label="Sessão aberta" className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--violet-400)]/40 bg-[var(--ink-800)] p-5">
-      <div><p className="text-xs font-semibold uppercase tracking-wider text-[var(--violet-300)]">Sessão {open.status === "ACTIVE" ? "ativa" : "pausada"}</p><h2 className="mt-1 text-lg font-medium">{pieceName(open.repertoire_item_id, dashboard.pieces)}</h2><p className="text-sm text-[var(--text-secondary)]">{duration(open.activeMs + (open.status === "ACTIVE" && open.resumedAt ? Math.max(0, Date.now() - open.resumedAt.getTime()) : 0))} estudados</p></div>
-      <button className="cress-btn-primary" onClick={() => navigate(`/practice/${open.id}`)}>Retomar sessão</button>
+    {open && <section aria-label="Sessão aberta" className="cress-glass mb-8 flex h-14 items-center gap-4 rounded-xl px-5">
+      <span aria-hidden="true" className="cress-hairpin-v h-6 shrink-0" />
+      <p className="min-w-0 flex-1 truncate text-sm text-[var(--text-secondary)]">Sessão em andamento · <strong className="font-medium text-[var(--text-primary)]">{pieceName(open.repertoire_item_id, dashboard.pieces)}</strong> · <span className="font-metric tabular-nums">{duration(open.activeMs + (open.status === "ACTIVE" && open.resumedAt ? Math.max(0, Date.now() - open.resumedAt.getTime()) : 0))}</span> · {open.status === "ACTIVE" ? "ativa" : "pausada"}</p>
+      <button className="cress-btn-primary shrink-0" onClick={() => navigate(`/practice/${open.id}`)}>Retomar sessão</button>
     </section>}
-    <div className="grid gap-5 md:grid-cols-2">
-      <section className="relative overflow-hidden rounded-xl border border-[var(--border-subtle)] p-5 md:col-span-2">
-        <div aria-hidden="true" className="cress-hairpin absolute inset-x-0 top-0" />
-        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Continuar estudo</p>
-        {dashboard.recentPiece && latest ? <>
-          <h2 className="mt-3 font-display text-3xl">{dashboard.recentPiece.title}</h2>
-          <p className="mt-1 text-sm text-[var(--text-secondary)]">{dashboard.recentPiece.composer || "Compositor não informado"} · {dashboard.recentPiece.instrument && dashboard.recentPiece.instrument in INSTRUMENTS ? INSTRUMENTS[dashboard.recentPiece.instrument as keyof typeof INSTRUMENTS] : "Instrumento não informado"}</p>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2">
-            {dashboard.recentPiece.goal && <div className="rounded-lg bg-[var(--ink-800)] p-4"><p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Objetivo ativo</p><p className="mt-2">{dashboard.recentPiece.goal.description}</p><div className="mt-3 flex flex-wrap gap-2">{dashboard.recentPiece.goal.targetBpm != null && <span className="rounded-full bg-[var(--ink-700)] px-3 py-1 text-xs">Alvo ♩ {dashboard.recentPiece.goal.targetBpm}</span>}{dashboard.recentPiece.goal.startMeasure != null && dashboard.recentPiece.goal.endMeasure != null && <span className="rounded-full bg-[var(--ink-700)] px-3 py-1 text-xs">Compassos {dashboard.recentPiece.goal.startMeasure}–{dashboard.recentPiece.goal.endMeasure}</span>}</div></div>}
-            <div className="rounded-lg bg-[var(--ink-800)] p-4"><p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Último BPM</p><div className="mt-2 flex items-baseline gap-2"><span className="font-[var(--font-metric)] text-5xl tabular-nums">{latest.final_bpm ?? "—"}</span><span className="text-sm text-[var(--text-secondary)]">BPM</span></div><div className="mt-3"><Sparkline values={dashboard.pieceSessions.filter((session) => session.repertoire_item_id === latest.repertoire_item_id && session.final_bpm != null).slice(0, 20).map((session) => session.final_bpm!).reverse()} ariaLabel="Histórico de BPM da obra" /></div></div>
+
+    <section className="cress-glass relative mb-12 overflow-hidden rounded-2xl">
+      <div aria-hidden="true" className="cress-hairpin absolute inset-x-0 top-0" />
+      {dashboard.recentPiece ? <>
+        <div aria-hidden="true" className="pointer-events-none absolute inset-0" style={{ background: "radial-gradient(560px 260px at 0% 0%, rgb(124 58 237 / .20), transparent 70%)" }} />
+        <div className="relative grid grid-cols-1 gap-8 p-8 lg:grid-cols-[7fr_5fr] lg:gap-12">
+          <div className="flex min-w-0 flex-col">
+            <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--violet-300)]">Continuar estudo</p>
+            <h2 className="mt-3 line-clamp-2 font-display text-[44px] leading-[48px] font-medium italic">{dashboard.recentPiece.title}</h2>
+            <p className="mt-2 text-sm text-[var(--text-secondary)]">{dashboard.recentPiece.composer || "Compositor não informado"} · {dashboard.recentPiece.instrument && dashboard.recentPiece.instrument in INSTRUMENTS ? INSTRUMENTS[dashboard.recentPiece.instrument as keyof typeof INSTRUMENTS] : "Instrumento não informado"}</p>
+            {goal && <div className="mt-6">
+              <p className="text-lg text-[var(--text-primary)]">{goal.description}</p>
+              {goal.targetBpm != null && <div className="mt-3 flex items-center gap-4">
+                <div className="h-1.5 flex-1 rounded-full bg-[var(--ink-600)]" role="progressbar" aria-valuenow={lastBpm ?? 0} aria-valuemax={goal.targetBpm} aria-valuetext={`${lastBpm ?? 0} de ${goal.targetBpm} BPM`} aria-label="Progresso do objetivo de BPM">
+                  <div className="h-full rounded-full" style={{ width: `${Math.min(100, ((lastBpm ?? 0) / goal.targetBpm) * 100)}%`, background: lastBpm != null && lastBpm >= goal.targetBpm ? "var(--gold-400)" : "var(--gradient-hairpin)", clipPath: "polygon(0 35%,100% 0,100% 100%,0 65%)", boxShadow: lastBpm != null && lastBpm >= goal.targetBpm ? "0 0 24px rgb(232 180 92 / .35)" : undefined }} />
+                </div>
+                <span className={`shrink-0 font-metric text-sm tabular-nums ${lastBpm != null && lastBpm >= goal.targetBpm ? "text-[var(--gold-300)]" : "text-[var(--text-secondary)]"}`}>♩ {lastBpm ?? "—"} / {goal.targetBpm}</span>
+              </div>}
+              {goal.startMeasure != null && goal.endMeasure != null && <p className="mt-2 text-xs text-[var(--text-muted)]">Compassos {goal.startMeasure}–{goal.endMeasure}</p>}
+            </div>}
+            <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-5">
+              <div className="flex flex-wrap items-center gap-3"><button className={open ? "cress-btn-glass" : "cress-btn-primary"} onClick={() => navigate(open ? `/practice/${open.id}` : "/practice/new")}>{open ? "Retomar sessão" : "Continuar estudo"}</button><Link className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to={`/repertoire/${dashboard.recentPiece.id}`}>Ver obra</Link></div>
+              <p className="text-xs text-[var(--text-muted)]">Última sessão · {timeLabel(latest?.startedAt ?? null)} · {duration(latest?.activeMs ?? 0)}</p>
+            </div>
           </div>
-          <div className="mt-5 flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-4"><button className={open ? "cress-btn-glass" : "cress-btn-primary"} onClick={() => navigate(open ? `/practice/${open.id}` : "/practice/new")}>{open ? "Retomar sessão" : "Continuar estudo"}</button><Link className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to={`/repertoire/${dashboard.recentPiece.id}`}>Ver obra</Link></div>
-        </> : <><p className="mt-3 text-sm text-[var(--text-muted)]">Comece uma sessão para ver seu repertório recente aqui.</p><button className="cress-btn-primary mt-5" onClick={() => navigate(open ? `/practice/${open.id}` : "/practice/new")}>{open ? "Retomar sessão" : "Continuar estudo"}</button></>}
+          <div className="min-w-0 lg:border-l lg:border-[var(--border-subtle)] lg:pl-8">
+            <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--text-muted)]">Último BPM</p>
+            <div className="mt-3 flex items-baseline gap-2"><span className="font-metric text-[56px] leading-[56px] font-light tabular-nums">{lastBpm ?? "—"}</span><span className="text-sm text-[var(--text-secondary)]">BPM</span></div>
+            <div className="mt-5"><Sparkline values={bpmValues} width={340} height={96} target={goal?.targetBpm ?? undefined} ariaLabel="Histórico de BPM da obra" /></div>
+            <p className="mt-2 text-xs text-[var(--text-muted)]">últimas {bpmValues.length} sessões</p>
+          </div>
+        </div>
+      </> : <div className="relative overflow-hidden p-8">
+        <svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full opacity-[.05]" preserveAspectRatio="none" viewBox="0 0 100 100"><path d="M0 20H100 M0 35H100 M0 50H100 M0 65H100 M0 80H100" stroke="currentColor" strokeWidth=".5" /></svg>
+        <div className="relative"><p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--violet-300)]">Continuar estudo</p><h2 className="mt-3 font-display text-[44px] leading-[48px] italic">Sua estante está pronta.</h2><p className="mt-2 text-sm text-[var(--text-secondary)]">Comece uma sessão para ver seu repertório recente aqui.</p><button className="cress-btn-primary mt-6" onClick={() => setModalOpen(true)}>Nova sessão</button></div>
+      </div>}
+    </section>
+
+    <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-12">
+      <section className="cress-card rounded-xl p-6 md:col-span-7">
+        <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--text-muted)]">Últimos 7 dias</p>
+        <h2 className="mt-3 font-metric text-[36px] leading-tight font-light tabular-nums">{duration(dashboard.weekActiveMs)}</h2>
+        <ul className="mt-5 grid grid-cols-7 gap-2 text-center">{dashboard.days.map((day, index) => <li key={day.date.toISOString()} title={`${day.date.toLocaleDateString("pt-BR", { weekday: "long" })}, ${duration(day.activeMs)}`} aria-label={`${day.date.toLocaleDateString("pt-BR", { weekday: "long" })}, ${duration(day.activeMs)}`} className="flex flex-col items-center"><span className="flex h-24 items-end"><span className={day.activeMs ? "w-2.5 rounded-full" : "mb-0.5 h-1 w-1 rounded-full bg-[var(--ink-700)]"} style={day.activeMs ? { height: `${Math.max(4, (day.activeMs / maxDay) * 96)}px`, background: index === dashboard.days.length - 1 ? "linear-gradient(180deg, var(--violet-400), var(--blue-400))" : "var(--ink-600)" } : undefined} /></span><span className={`mt-2 text-xs ${index === dashboard.days.length - 1 ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{day.date.toLocaleDateString("pt-BR", { weekday: "narrow" })}</span></li>)}</ul>
       </section>
-      <section className="rounded-xl border border-[var(--border-subtle)] p-5">
-        <p className="text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Últimos 7 dias</p>
-        <h2 className="mt-3 font-display text-3xl">{duration(dashboard.weekActiveMs)}</h2>
-        <ul className="mt-5 grid grid-cols-7 gap-2 text-center">{dashboard.days.map((day, index) => <li key={day.date.toISOString()} className="flex flex-col items-center"><span className="flex h-16 items-end"><span className="w-2 rounded-full" style={{ height: `${Math.max(day.activeMs ? 4 : 2, (day.activeMs / maxDay) * 64)}px`, background: index === 6 ? "var(--violet-400)" : "var(--ink-600)" }} /></span><span className="mt-2 text-xs text-[var(--text-muted)]">{day.date.toLocaleDateString("pt-BR", { weekday: "narrow" })}</span></li>)}</ul>
-      </section>
-      <section className="flex flex-col rounded-xl border border-[var(--border-subtle)] p-5">
-        <div className="flex gap-3 text-[var(--violet-300)]"><Gauge size={20} strokeWidth={1.5} /><Timer size={20} strokeWidth={1.5} /></div><h2 className="mt-4 font-display text-2xl">Prática livre</h2><p className="mt-2 text-sm text-[var(--text-secondary)]">Metrônomo e afinador lado a lado, sem abrir sessão.</p><Link className="mt-auto self-start pt-5 text-sm font-medium text-[var(--violet-300)] hover:text-[var(--text-primary)]" to="/tools">Abrir</Link>
-      </section>
-      <section className="rounded-xl border border-[var(--border-subtle)] p-5 md:col-span-2">
-        <div className="flex items-center justify-between"><h2 className="font-display text-2xl">Últimas sessões</h2><Link className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to="/sessions">Ver todas →</Link></div>
-        {dashboard.recentSessions.length ? <ul className="mt-3 divide-y divide-[var(--border-subtle)]">{dashboard.recentSessions.map((session) => <li key={session.id}><Link to={`/sessions/${session.id}`} className="flex flex-wrap items-center justify-between gap-3 py-3 hover:text-[var(--violet-300)]"><span className="min-w-40 flex-1">{pieceName(session.repertoire_item_id, dashboard.pieces)}</span><span className="text-sm text-[var(--text-secondary)]">{timeLabel(session.startedAt)} · {duration(session.activeMs)}</span><span className="min-w-20 text-right text-sm text-[var(--text-secondary)]">{session.final_bpm != null ? `♩ ${session.final_bpm}` : "—"}</span><span className="min-w-36 text-right text-xs">{session.goalCompleted ? <span className="rounded-full bg-[var(--ink-800)] px-3 py-1 text-[var(--violet-300)]">✓ Objetivo concluído</span> : <span className="text-[var(--text-muted)]">—</span>}</span></Link></li>)}</ul> : <p className="mt-3 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada ainda.</p>}
+      <section className="cress-card flex flex-col rounded-xl p-6 md:col-span-5">
+        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--ink-700)] text-[var(--violet-300)]"><span className="flex gap-1.5"><Gauge size={18} strokeWidth={1.5} /><Timer size={18} strokeWidth={1.5} /></span></div><h2 className="mt-4 font-display text-[28px] font-semibold">Prática livre</h2><p className="mt-2 text-sm text-[var(--text-secondary)]">Metrônomo e afinador lado a lado, sem abrir sessão.</p><Link className="mt-auto inline-flex h-9 items-center self-start rounded-lg border border-[var(--border-default)] px-4 text-sm hover:bg-[var(--ink-700)]" to="/tools">Abrir ferramentas</Link>
       </section>
     </div>
+
+    <section>
+      <div className="cress-section-head"><h2>Últimas sessões</h2><div aria-hidden="true" className="cress-hairpin" /><Link className="shrink-0 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to="/sessions">Ver todas →</Link></div>
+      <div className="cress-card rounded-xl">
+        {dashboard.recentSessions.length ? <ul className="divide-y divide-[var(--border-subtle)]">{dashboard.recentSessions.map((session) => <li key={session.id}><Link to={`/sessions/${session.id}`} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:text-[var(--violet-300)]"><span className="min-w-40 flex-1">{pieceName(session.repertoire_item_id, dashboard.pieces)}</span><span className="text-sm text-[var(--text-secondary)]">{timeLabel(session.startedAt)} · {duration(session.activeMs)}</span><span className="min-w-20 text-right text-sm text-[var(--text-secondary)]">{session.final_bpm != null ? `♩ ${session.final_bpm}` : "—"}</span><span className="min-w-36 text-right text-xs">{session.goalCompleted ? <span className="rounded-full bg-[var(--ink-800)] px-3 py-1 text-[var(--violet-300)]">✓ Objetivo concluído</span> : <span className="text-[var(--text-muted)]">—</span>}</span></Link></li>)}</ul> : <p className="p-5 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada ainda.</p>}
+      </div>
+    </section>
   </main>;
 }
