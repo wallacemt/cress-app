@@ -70,12 +70,25 @@ const ent = (r: StudySessionRow): SessionEntity => ({
 });
 export async function listSessions(d: Deps, { repertoireItemId }: { repertoireItemId?: string } = {}) {
   const repo = makeSessionRepo(d.db);
-  const rows = repertoireItemId ? await repo.listByPiece(repertoireItemId) : await repo.list();
-  return rows.map(ent).sort((a, b) => (b.startedAt?.getTime() ?? 0) - (a.startedAt?.getTime() ?? 0));
+  const [rows, goals] = await Promise.all([
+    repertoireItemId ? repo.listByPiece(repertoireItemId) : repo.list(),
+    makeGoalRepo(d.db).list(),
+  ]);
+  return withGoalCompletion(
+    rows.map(ent).sort((a, b) => (b.startedAt?.getTime() ?? 0) - (a.startedAt?.getTime() ?? 0)),
+    goals.map((goal) => ({ id: goal.id, completed: goal.completed_at !== null })),
+  );
 }
 export async function getSession(d: Deps, { id }: { id: string }) {
   const session = await makeSessionRepo(d.db).get(id);
   return session ? ent(session) : null;
+}
+export async function getGoalCompletion(d: Deps, { goalId }: { goalId: string }) {
+  const goal = await makeGoalRepo(d.db).get(goalId);
+  return goal?.completed_at != null;
+}
+export async function listSessionGoals(d: Deps) {
+  return (await makeGoalRepo(d.db).list()).map(({ id, description }) => ({ id, description }));
 }
 const row = (
   r: SessionEntity | StudySession,

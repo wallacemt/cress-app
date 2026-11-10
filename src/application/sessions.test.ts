@@ -48,12 +48,21 @@ describe("sessions application", () => {
       await finishSession(d, { id: session.id, finalBpm: bpm, completeGoal: false });
     }
     await createGoal(d, { repertoireItemId: piece.id, description: "Done", completed: true });
-
     const stats = await getPieceStats(d, { repertoireItemId: piece.id });
 
     expect(stats.finalBpmHistory).toEqual(Array.from({ length: 20 }, (_, index) => index + 62));
     expect(stats).toMatchObject({ completedGoals: 1, totalGoals: 2 });
     expect(goal.id).toBeTruthy();
+  });
+  it("includes the associated goal completion state in listed sessions", async () => {
+    const d = makeTestDeps();
+    const piece = await createPiece(d, { title: "Goal completion" });
+    const goal = await createGoal(d, { repertoireItemId: piece.id, description: "Practice cleanly" });
+    const session = await startSession(d, { repertoireItemId: piece.id, goalId: goal.id });
+    await finishSession(d, { id: session.id, completeGoal: true });
+    await expect(listSessions(d, { repertoireItemId: piece.id })).resolves.toMatchObject([
+      { id: session.id, goalCompleted: true },
+    ]);
   });
   it("lists sessions globally or by piece and reads an individual session", async () => {
     let now = 1_000;

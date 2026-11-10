@@ -7,6 +7,7 @@ import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
 import { INSTRUMENTS } from "../../domain/profile";
 import { Sparkline } from "../../components/ui/Sparkline";
 import { StartSessionModal } from "../workspace/StartSessionModal";
+import { SessionRow } from "../sessions/SessionRow";
 
 type Dashboard = Awaited<ReturnType<typeof getDashboard>>;
 const duration = (ms: number) => {
@@ -125,7 +126,7 @@ export function DashboardPage() {
     <section>
       <div className="cress-section-head"><h2>Últimas sessões</h2><div aria-hidden="true" className="cress-hairpin" /><Link className="shrink-0 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to="/sessions">Ver todas →</Link></div>
       <div className="cress-card rounded-xl">
-        {dashboard.recentSessions.length ? <ul className="divide-y divide-[var(--border-subtle)]">{dashboard.recentSessions.map((session) => <li key={session.id}><Link to={`/sessions/${session.id}`} className="flex flex-wrap items-center justify-between gap-3 px-5 py-3 hover:text-[var(--violet-300)]"><span className="min-w-40 flex-1">{pieceName(session.repertoire_item_id, dashboard.pieces)}</span><span className="text-sm text-[var(--text-secondary)]">{timeLabel(session.startedAt)} · {duration(session.activeMs)}</span><span className="min-w-20 text-right text-sm text-[var(--text-secondary)]">{session.final_bpm != null ? `♩ ${session.final_bpm}` : "—"}</span><span className="min-w-36 text-right text-xs">{session.goalCompleted ? <span className="rounded-full bg-[var(--ink-800)] px-3 py-1 text-[var(--violet-300)]">✓ Objetivo concluído</span> : <span className="text-[var(--text-muted)]">—</span>}</span></Link></li>)}</ul> : <p className="p-5 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada ainda.</p>}
+        {dashboard.recentSessions.length ? <ul className="divide-y divide-[var(--border-subtle)]">{dashboard.recentSessions.map((session) => <li key={session.id}><SessionRow session={session} pieceName={pieceName(session.repertoire_item_id, dashboard.pieces)} to={`/sessions/${session.id}`} /></li>)}</ul> : <p className="p-5 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada ainda.</p>}
       </div>
     </section>
   </main>;
