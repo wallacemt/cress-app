@@ -17,6 +17,7 @@ import { pauseTake, stopTake } from "./recordings";
 import { completeGoal, listGoals } from "./goals";
 import type { StudySession } from "../domain/session";
 import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
+import type { StudyGoal } from "../domain/goal";
 export interface StartSessionInput {
   repertoireItemId: string;
   goalId?: string;
@@ -50,6 +51,9 @@ type SessionEntity = StudySession & {
   initial_bpm: number | null;
   final_bpm: number | null;
 };
+export function withGoalCompletion<T extends SessionEntity>(sessions: T[], goals: Pick<StudyGoal, "id" | "completed">[]) {
+  return sessions.map((session) => ({ ...session, goalCompleted: session.goal_id ? goals.find((goal) => goal.id === session.goal_id)?.completed ?? false : false }));
+}
 const ent = (r: StudySessionRow): SessionEntity => ({
   id: r.id,
   status: r.status,

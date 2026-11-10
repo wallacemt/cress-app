@@ -7,6 +7,7 @@ import { useProfileStore } from "../stores/profileStore";
 import { UpdateCheckProvider } from "../features/updates/UpdateCheckProvider";
 import { Monogram } from "../components/ui/Monogram";
 import { StageBackdrop } from "../components/ui/StageBackdrop";
+import { StartSessionModal } from "../features/workspace/StartSessionModal";
 
 const destinations: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/", label: "Início", icon: Home, end: true },
@@ -22,6 +23,7 @@ export function AppShell() {
   const isWorkspace = pathname === "/tools" || pathname === "/practice/new" || /^\/practice\/[^/]+$/.test(pathname);
   const hasBackdrop = !isWorkspace && (pathname === "/" || pathname.startsWith("/sessions") || pathname.startsWith("/repertoire"));
   const [hidden, setHidden] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -39,11 +41,23 @@ export function AppShell() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (!isWorkspace && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "n") {
+        event.preventDefault();
+        setModalOpen(true);
+      }
+    };
+    document.addEventListener("keydown", onKeyDown);
+    return () => document.removeEventListener("keydown", onKeyDown);
+  }, [isWorkspace]);
+
   return (
     <UpdateCheckProvider>
       <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
         {hasBackdrop && <StageBackdrop />}
         <main><Outlet /></main>
+        {!isWorkspace && modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
         {!isWorkspace && (
           <nav
             ref={navigationRef}

@@ -6,6 +6,7 @@ import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
 import { INSTRUMENTS } from "../../domain/profile";
 import { Sparkline } from "../../components/ui/Sparkline";
+import { StartSessionModal } from "../workspace/StartSessionModal";
 
 type Dashboard = Awaited<ReturnType<typeof getDashboard>>;
 const duration = (ms: number) => {
@@ -33,6 +34,7 @@ export function DashboardPage() {
   const navigate = useNavigate();
   const [dashboard, setDashboard] = useState<Dashboard>();
   const [error, setError] = useState("");
+  const [modalOpen, setModalOpen] = useState(false);
   useEffect(() => {
     let active = true;
     void container.getDeps().then(getDashboard).then((data) => { if (active) setDashboard(data); }).catch(() => { if (active) setError("Não foi possível carregar o painel."); });
@@ -48,10 +50,14 @@ export function DashboardPage() {
   const greeting = today.getHours() < 12 ? "Bom dia" : today.getHours() < 18 ? "Boa tarde" : "Boa noite";
   const maxDay = Math.max(...dashboard.days.map((day) => day.activeMs), 1);
   return <main className="mx-auto w-full max-w-5xl px-6 py-10 text-[var(--text-primary)]">
-    <header className="mb-8">
+    <header className="mb-8 flex flex-wrap items-end justify-between gap-4">
+      <div>
       <p className="text-sm text-[var(--text-secondary)]">{greeting}, {dashboard.displayName}.</p>
       <h1 className="mt-1 font-display text-4xl">Continue sua evolução.</h1>
+      </div>
+      <button type="button" className="cress-btn-primary" disabled={!!open} title={open ? "Finalize ou retome a sessão em andamento antes de iniciar outra." : undefined} onClick={() => setModalOpen(true)}>Nova sessão</button>
     </header>
+    {modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
     {open && <section aria-label="Sessão aberta" className="mb-6 flex flex-wrap items-center justify-between gap-4 rounded-xl border border-[var(--violet-400)]/40 bg-[var(--ink-800)] p-5">
       <div><p className="text-xs font-semibold uppercase tracking-wider text-[var(--violet-300)]">Sessão {open.status === "ACTIVE" ? "ativa" : "pausada"}</p><h2 className="mt-1 text-lg font-medium">{pieceName(open.repertoire_item_id, dashboard.pieces)}</h2><p className="text-sm text-[var(--text-secondary)]">{duration(open.activeMs + (open.status === "ACTIVE" && open.resumedAt ? Math.max(0, Date.now() - open.resumedAt.getTime()) : 0))} estudados</p></div>
       <button className="cress-btn-primary" onClick={() => navigate(`/practice/${open.id}`)}>Retomar sessão</button>

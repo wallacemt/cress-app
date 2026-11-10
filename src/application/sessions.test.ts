@@ -14,10 +14,16 @@ import {
   getPieceStats,
   listSessions,
   getSession,
+  withGoalCompletion,
 } from "./sessions";
 import { startTake } from "./recordings";
 import { makeTestDeps } from "./test-support";
 describe("sessions application", () => {
+  it("adds goal completion state to sessions", () => {
+    const session = { id: "s1", status: "FINISHED" as const, startedAt: null, resumedAt: null, lastHeartbeatAt: null, endedAt: null, activeMs: 0, notes: "", repertoire_item_id: "p1", goal_id: "g1", initial_bpm: null, final_bpm: null };
+    expect(withGoalCompletion([session], [{ id: "g1", completed: true }])[0]?.goalCompleted).toBe(true);
+    expect(withGoalCompletion([session], [])[0]?.goalCompleted).toBe(false);
+  });
   it("aggregates piece practice stats with newest session first", async () => {
     const d = makeTestDeps({ now: () => new Date("2026-11-08T12:00:00Z") });
     const piece = await createPiece(d, { title: "Stats" });

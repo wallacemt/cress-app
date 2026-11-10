@@ -1,6 +1,6 @@
 import type { Deps } from "./deps";
 import { getProfile } from "./profile";
-import { listSessions } from "./sessions";
+import { listSessions, withGoalCompletion } from "./sessions";
 import { makeSessionRepo } from "../infrastructure/repositories/sessionRepo";
 import { makeRepertoireRepo } from "../infrastructure/repositories/repertoireRepo";
 import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
@@ -40,7 +40,7 @@ export async function getDashboard(d: Deps) {
     latestPieceSession: latest ?? null,
     days,
     weekActiveMs: days.reduce((total, day) => total + day.activeMs, 0),
-    recentSessions: sessions.slice(0, 5).map((session) => ({ ...session, goalCompleted: session.goal_id ? goals.find((item) => item.id === session.goal_id)?.completed_at != null : false })),
+    recentSessions: withGoalCompletion(sessions.slice(0, 5), goals.map((goal) => ({ id: goal.id, completed: goal.completed_at != null }))),
     pieceSessions,
     pieces: pieces.map((item) => ({ id: item.id, title: item.title })),
   };
