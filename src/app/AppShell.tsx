@@ -5,6 +5,8 @@ import { Toaster } from "sonner";
 import cressSymbol from "../assets/brand/cress-symbol-gold.svg";
 import { useProfileStore } from "../stores/profileStore";
 import { UpdateCheckProvider } from "../features/updates/UpdateCheckProvider";
+import { Monogram } from "../components/ui/Monogram";
+import { StageBackdrop } from "../components/ui/StageBackdrop";
 
 const destinations: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/", label: "Início", icon: Home, end: true },
@@ -14,14 +16,11 @@ const destinations: { to: string; label: string; icon: LucideIcon; end?: boolean
   { to: "/changelog", label: "Novidades", icon: FileClock },
 ];
 
-function initials(name: string) {
-  return name.trim().split(/\s+/).slice(0, 2).map((part) => part[0]?.toLocaleUpperCase()).join("") || "?";
-}
-
 export function AppShell() {
   const { pathname } = useLocation();
   const profile = useProfileStore((state) => state.profile);
   const isWorkspace = pathname === "/tools" || pathname === "/practice/new" || /^\/practice\/[^/]+$/.test(pathname);
+  const hasBackdrop = !isWorkspace && (pathname === "/" || pathname.startsWith("/sessions") || pathname.startsWith("/repertoire"));
   const [hidden, setHidden] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
 
@@ -43,6 +42,7 @@ export function AppShell() {
   return (
     <UpdateCheckProvider>
       <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
+        {hasBackdrop && <StageBackdrop />}
         <main><Outlet /></main>
         {!isWorkspace && (
           <nav
@@ -65,7 +65,7 @@ export function AppShell() {
               <Search size={16} strokeWidth={1.5} /><span>Ctrl K</span>
             </button>
             <span className="atril-separator atril-avatar-separator" aria-hidden="true" />
-            <NavLink to="/settings" className="atril-avatar" aria-label="Configurações" title="Configurações">{initials(profile?.displayName ?? "")}</NavLink>
+            <NavLink to="/settings" className="atril-avatar" aria-label="Configurações" title={`Perfil · ${profile?.displayName ?? ""}`}><Monogram name={profile?.displayName ?? ""} size="sm" /></NavLink>
           </nav>
         )}
         <Toaster

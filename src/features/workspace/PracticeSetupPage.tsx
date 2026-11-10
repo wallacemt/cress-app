@@ -190,7 +190,7 @@ export function PracticeSetupPage() {
         <button
           type="submit"
           disabled={busy || !pieces.length}
-          className="min-h-12 rounded-lg bg-[var(--gradient-brand)] px-4 font-medium text-white disabled:opacity-45"
+          className="cress-btn-primary min-h-12"
         >
           {busy ? "Iniciando…" : "Iniciar sessão"}
         </button>
