@@ -56,4 +56,12 @@ describe("dashboard application", () => {
     const result = await getDashboard(d);
     expect(result).toMatchObject({ displayName: "", openSession: null, recentPiece: null, latestPieceSession: null, weekActiveMs: 0, recentSessions: [] });
   });
+
+  it("does not present the free practice sentinel as an open study session", async () => {
+    const d = makeTestDeps();
+    await d.db.execute("INSERT INTO repertoire_items VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)", [FREE_PRACTICE_PIECE_ID, "Prática livre", null, null, null, null, null, 0, 0]);
+    await startSession(d, { repertoireItemId: FREE_PRACTICE_PIECE_ID });
+
+    expect((await getDashboard(d)).openSession).toBeNull();
+  });
 });

@@ -66,6 +66,19 @@ describe("sessions application", () => {
     expect(await getSession(d, { id: first.id })).toMatchObject({ initial_bpm: null, final_bpm: 72 });
     expect(await getSession(d, { id: "missing" })).toBeNull();
   });
+  it("does not block starting a real session while free practice is open", async () => {
+    const d = makeTestDeps();
+    const p = await createPiece(d, { title: "P" });
+    await d.db.execute(
+      "INSERT INTO repertoire_items VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9)",
+      [FREE_PRACTICE_PIECE_ID, "Free practice", null, null, null, null, null, 0, 0],
+    );
+    await ensureFreeSession(d);
+
+    const session = await startSession(d, { repertoireItemId: p.id });
+
+    expect(await getSession(d, { id: session.id })).toMatchObject({ repertoire_item_id: p.id, status: "ACTIVE" });
+  });
   it("resumes an existing paused free-practice session", async () => {
     const d = makeTestDeps();
     await d.db.execute(

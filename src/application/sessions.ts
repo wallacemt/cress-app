@@ -98,7 +98,7 @@ const row = (
 });
 export async function startSession(d: Deps, x: StartSessionInput) {
   const repo = makeSessionRepo(d.db);
-  if ((await repo.open()).length)
+  if ((await repo.open()).some((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID))
     throw new DomainError("SESSION_ALREADY_OPEN", "Session already open");
   return createAndSaveSession(d, x);
 }

@@ -32,7 +32,7 @@ export async function getDashboard(d: Deps) {
   const latest = pieceSessions[0];
   const piece = latest && pieces.find((item) => item.id === latest.repertoire_item_id);
   const goal = latest?.goal_id ? goals.find((item) => item.id === latest.goal_id && item.completed_at === null) : undefined;
-  const open = openRows.sort((a, b) => b.started_at - a.started_at)[0];
+  const open = openRows.filter((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID).sort((a, b) => b.started_at - a.started_at)[0];
   return {
     displayName: profile?.displayName ?? "",
     openSession: open ? sessions.find((session) => session.id === open.id) ?? null : null,
