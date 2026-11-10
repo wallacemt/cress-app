@@ -46,7 +46,7 @@ export function SessionDetailPage() {
   }, [sessionId, audio]);
 
   if (error) return <main className="mx-auto max-w-[1120px] px-8 pt-12"><p role="alert" className="text-[var(--danger)]">{error}</p><button className="mt-4 text-sm text-[var(--text-secondary)]" onClick={() => navigate("/sessions")}>← Sessões</button></main>;
-  if (!session || !deps) return <main className="mx-auto max-w-[1120px] px-8 pt-12 text-sm text-[var(--text-muted)]" aria-busy="true">Carregando sessão…</main>;
+  if (!session || !deps) return <main aria-label="Carregando sessão" aria-busy="true" className="mx-auto max-w-[1120px] px-8 pt-12"><div className="cress-skeleton h-12 w-2/3" /><div className="cress-skeleton mt-3 h-5 w-1/3" /><div className="mt-10 grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-3"><div className="cress-skeleton h-32" /><div className="cress-skeleton h-32" /><div className="cress-skeleton h-32" /></div></main>;
 
   const refresh = async () => setTakes(await listTakes(deps, { sessionId }));
   const delta = session.initial_bpm != null && session.final_bpm != null && session.final_bpm > session.initial_bpm ? session.final_bpm - session.initial_bpm : 0;

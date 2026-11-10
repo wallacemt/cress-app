@@ -87,6 +87,7 @@ O Blueprint-001 assumia que a Store receberia um instalador Win32; na prática, 
 - `Position` em `moveTo` usa `top/bottom/left/right/center`, nunca `above/below`.
 - Variáveis de tema seguem `dockview-react/dist/styles/dockview.css` exatamente (ex. `--dv-group-view-background-color`) — nomes sem `-color` não têm efeito.
 - No Windows, `app.windows[].dragDropEnabled: true` (padrão do Tauri) intercepta o HTML5 Drag-and-Drop nativo do WebView2 antes de chegar ao DOM, quebrando o DnD do dockview. Setar `false` em `tauri.conf.json` se o app não usa drop de arquivo do Explorer em lugar nenhum. **Não revalidado em runtime real** (precisa rebuild+reinstall no Windows).
+- `api.getPopouts()` retorna `{ group, window }`; para descartar um popout via API, use `popout.group.api.close()` antes de `closeAllGroups()`. Fonte: `dockview-core` 8.4.1 instalado (`PopoutGroup`, `DockviewGroupPanelApi.close()`).
 
 ## 8. Armadilhas de runtime já confirmadas (evitar repetir)
 

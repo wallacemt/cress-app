@@ -79,7 +79,7 @@ export function WorkspaceHeader({
             </strong>
             <span>{goalSummary || "Sem objetivo"}</span>
           </div>
-          <span className="cress-clock-placeholder" aria-label="Tempo ativo">{clock}</span>
+          <span className="cress-session-clock" data-live={current?.status === "ACTIVE"} aria-label="Tempo ativo"><i aria-hidden="true" />{clock}</span>
           <div className="cress-header-spacer" />
           <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />

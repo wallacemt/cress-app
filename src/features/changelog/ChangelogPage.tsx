@@ -17,7 +17,7 @@ export function ChangelogPage() {
         <h1 className="font-display text-4xl">Novidades</h1>
       </header>
 
-      {status === "loading" && <p role="status">Carregando novidades…</p>}
+      {status === "loading" && <div role="status" aria-label="Carregando novidades" aria-busy="true" className="grid min-h-0 flex-1 grid-cols-[200px_1fr] gap-6"><div className="space-y-4 border-r border-[var(--border-subtle)] pr-4">{[0, 1, 2, 3].map((i) => <div key={i} className="space-y-2"><div className="cress-skeleton" style={{ width: `${52 + i * 8}%`, height: `${14 + (i % 3) * 2}px` }} /><div className="cress-skeleton h-3 w-2/5" /></div>)}</div><div className="space-y-5"><div className="cress-skeleton h-6 w-2/3" /><div className="cress-skeleton h-4 w-1/3" /><div className="space-y-3 pt-3">{[100, 91, 96, 68, 87, 56].map((width, i) => <div key={i} className="cress-skeleton h-4" style={{ width: `${width}%` }} />)}</div></div></div>}
       {status === "offline" && <p role="status">Sem conexão. Não foi possível carregar as novidades.</p>}
       {status === "error" && <p role="alert">Não foi possível carregar as novidades agora.</p>}
       {status === "ready" && entries.length === 0 && <p>Nenhuma release publicada ainda.</p>}

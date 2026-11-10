@@ -92,6 +92,13 @@
 * {
   box-sizing: border-box;
 }
+.cress-skeleton { background: var(--ink-750); border-radius: 0.5rem; animation: cress-skeleton-pulse 1.8s ease-in-out infinite; }
+@keyframes cress-skeleton-pulse { 50% { opacity: 0.55; } }
+.cress-session-clock { display: inline-flex; align-items: center; gap: 8px; padding-left: 8px; color: var(--text-primary); font: 600 22px/1 var(--font-metric); font-variant-numeric: tabular-nums; letter-spacing: 0.04em; }
+.cress-session-clock i { width: 8px; height: 8px; flex: 0 0 8px; border-radius: 50%; background: var(--text-muted); }
+.cress-session-clock[data-live="true"] i { background: var(--danger); animation: cress-rec-pulse 1.6s ease-in-out infinite; }
+@keyframes cress-rec-pulse { 50% { opacity: 0.35; } }
+@media (prefers-reduced-motion: reduce) { .cress-skeleton, .cress-session-clock[data-live="true"] i { animation: none; } }
 html, body, #root { height: 100%; }
 * {
   scrollbar-width: thin;

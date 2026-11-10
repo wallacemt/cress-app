@@ -43,7 +43,7 @@ export function DashboardPage() {
   }, []);
 
   if (error) return <main className="mx-auto max-w-5xl px-6 py-10"><p role="alert" className="text-[var(--danger)]">{error}</p></main>;
-  if (!dashboard) return <main className="mx-auto max-w-5xl px-6 py-10 text-sm text-[var(--text-muted)]" aria-busy="true">Carregando painel…</main>;
+  if (!dashboard) return <main aria-label="Carregando painel" aria-busy="true" className="mx-auto w-full max-w-[1120px] px-8 pt-12 pb-12"><div className="cress-skeleton mb-8 h-24 rounded-xl" /><div className="cress-skeleton mb-12 h-80 rounded-2xl" /><div className="grid grid-cols-1 gap-6 md:grid-cols-12"><div className="cress-skeleton h-56 rounded-xl md:col-span-7" /><div className="cress-skeleton h-56 rounded-xl md:col-span-5" /></div></main>;
 
   const open = dashboard.openSession;
   const latest = dashboard.latestPieceSession;

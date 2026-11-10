@@ -1,12 +1,16 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import type { StudyGoal } from "../../../domain/goal";
 
 const { completeGoal, reopenGoal, listGoals, updateSessionNotes, setSessionGoal } = vi.hoisted(() => ({
   completeGoal: vi.fn(), reopenGoal: vi.fn(), listGoals: vi.fn(), updateSessionNotes: vi.fn(), setSessionGoal: vi.fn(),
 }));
 vi.mock("../../../application/goals", () => ({ completeGoal, reopenGoal, listGoals }));
 vi.mock("../../../application/sessions", () => ({ updateSessionNotes, setSessionGoal }));
+vi.mock("../../repertoire/GoalFormDialog", () => ({
+  GoalFormDialog: ({ onSaved }: { onSaved: (goal: StudyGoal) => void }) => <button type="button" onClick={() => onSaved({ id: "goal-new", description: "Escalas rápidas", completed: false })}>Salvar novo objetivo</button>,
+}));
 
 import { SessionPanel } from "./SessionPanel";
 
@@ -19,6 +23,8 @@ function renderPanel(value = session) {
 }
 
 describe("SessionPanel", () => {
+  afterEach(cleanup);
+
   beforeEach(() => {
     listGoals.mockReset().mockResolvedValue(goals);
     completeGoal.mockReset().mockResolvedValue({});
@@ -42,6 +48,17 @@ describe("SessionPanel", () => {
     fireEvent.click(screen.getByText("Definir objetivo"));
     fireEvent.change(screen.getByLabelText("Escolher objetivo"), { target: { value: "goal-1" } });
     await waitFor(() => expect(setSessionGoal).toHaveBeenCalledWith(deps, { id: "session-1", goalId: "goal-1" }));
+  });
+
+  it("creates and assigns a goal from an active session with no goals", async () => {
+    const saved = { id: "goal-new", description: "Escalas rápidas", completed: false };
+    listGoals.mockReset().mockResolvedValueOnce([]).mockResolvedValueOnce([saved]);
+    renderPanel({ ...(session as object), goal_id: null } as never);
+    expect(await screen.findByText("Nenhum objetivo para esta sessão.")).toBeTruthy();
+    fireEvent.click(screen.getByText("Novo objetivo"));
+    fireEvent.click(screen.getByText("Salvar novo objetivo"));
+    await waitFor(() => expect(setSessionGoal).toHaveBeenCalledWith(deps, { id: "session-1", goalId: saved.id }));
+    expect(await screen.findByText(saved.description)).toBeTruthy();
   });
 
   it("debounces notes updates and caps input at 2000 characters", async () => {
