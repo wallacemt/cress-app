@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { createPiece } from "./repertoire";
-import { createGoal } from "./goals";
+import { completeGoal, createGoal } from "./goals";
 import { finishSession, pauseSession, startSession } from "./sessions";
 import { completeOnboarding } from "./profile";
 import { getDashboard } from "./dashboard";
@@ -13,7 +13,7 @@ describe("dashboard application", () => {
     const d = makeTestDeps({ now: () => now });
     await completeOnboarding(d, { displayName: "Ana", instruments: ["violin"], primaryInstrument: "violin", musicalRoles: [] , a4: 440, noteNaming: "letter" });
     const piece = await createPiece(d, { title: "Concerto", composer: "Bach" });
-    const goal = await createGoal(d, { repertoireItemId: piece.id, description: "Andamento" });
+    const goal = await createGoal(d, { repertoireItemId: piece.id, description: "Andamento", targetBpm: 120, startMeasure: 8, endMeasure: 16 });
     const sessions = [];
     for (let index = 0; index < 6; index += 1) {
       now = new Date("2026-11-09T10:00:00");
@@ -26,6 +26,11 @@ describe("dashboard application", () => {
     now = new Date("2026-11-09T11:00:00");
     const freeSession = await startSession(d, { repertoireItemId: FREE_PRACTICE_PIECE_ID });
     await finishSession(d, { id: freeSession.id, finalBpm: 90, completeGoal: false });
+    now = new Date("2026-11-09T11:30:00");
+    const completedGoal = await createGoal(d, { repertoireItemId: piece.id, description: "Escalas" });
+    const completedSession = await startSession(d, { repertoireItemId: piece.id, goalId: completedGoal.id });
+    await finishSession(d, { id: completedSession.id, finalBpm: 80, completeGoal: false });
+    await completeGoal(d, { id: completedGoal.id });
     now = new Date("2026-11-09T12:00:00");
     const open = await startSession(d, { repertoireItemId: piece.id, goalId: goal.id });
     await pauseSession(d, { id: open.id });
@@ -35,10 +40,12 @@ describe("dashboard application", () => {
 
     expect(result.displayName).toBe("Ana");
     expect(result.openSession).toMatchObject({ id: open.id, status: "PAUSED" });
-    expect(result.recentPiece).toMatchObject({ title: "Concerto", composer: "Bach", goal: "Andamento" });
+    expect(result.recentPiece).toMatchObject({ title: "Concerto", composer: "Bach", goal: { description: "Andamento", targetBpm: 120, startMeasure: 8, endMeasure: 16 } });
     expect(result.weekActiveMs).toBe(0);
     expect(result.recentSessions).toHaveLength(5);
     expect(result.recentSessions[0]?.id).toBe(open.id);
+    expect(result.recentSessions[0]?.goalCompleted).toBe(false);
+    expect(result.recentSessions.find((session) => session.id === completedSession.id)?.goalCompleted).toBe(true);
     expect(result.pieceSessions[0]?.id).toBe(open.id);
     expect(result.pieceSessions.every((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID)).toBe(true);
     expect(result.days).toHaveLength(7);

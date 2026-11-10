@@ -36,11 +36,11 @@ export async function getDashboard(d: Deps) {
   return {
     displayName: profile?.displayName ?? "",
     openSession: open ? sessions.find((session) => session.id === open.id) ?? null : null,
-    recentPiece: piece ? { ...piece, goal: goal?.description ?? null } : null,
+    recentPiece: piece ? { ...piece, goal: goal ? { description: goal.description, targetBpm: goal.target_bpm, startMeasure: goal.measure_start, endMeasure: goal.measure_end } : null } : null,
     latestPieceSession: latest ?? null,
     days,
     weekActiveMs: days.reduce((total, day) => total + day.activeMs, 0),
-    recentSessions: sessions.slice(0, 5),
+    recentSessions: sessions.slice(0, 5).map((session) => ({ ...session, goalCompleted: session.goal_id ? goals.find((item) => item.id === session.goal_id)?.completed_at != null : false })),
     pieceSessions,
     pieces: pieces.map((item) => ({ id: item.id, title: item.title })),
   };
