@@ -28,7 +28,7 @@ export function LoadingScreen() {
       <svg
         aria-hidden="true"
         viewBox="0 0 480 48"
-        className="absolute bottom-[10%] w-[480px] cress-loading-staff"
+        className="absolute bottom-[10%] left-1/2 w-[480px] -translate-x-1/2 cress-loading-staff"
       >
         {[8, 16, 24, 32, 40].map((y) => (
           <line

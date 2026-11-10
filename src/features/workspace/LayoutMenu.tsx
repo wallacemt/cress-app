@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { LayoutPanelLeft } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
 import { buildDefaultLayoutAddPanelSpecs, type WorkspaceMode } from "../../domain/workspace";
@@ -24,6 +24,17 @@ export function LayoutMenu({
   firstScoreId?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current || !popoverRef.current) return;
+    const trigger = triggerRef.current.getBoundingClientRect();
+    const popover = popoverRef.current.getBoundingClientRect();
+    const left = Math.min(trigger.right - popover.width, window.innerWidth - popover.width - 8);
+    const top = Math.min(trigger.bottom + 6, window.innerHeight - popover.height - 8);
+    setPos({ top: Math.max(8, top), left: Math.max(8, left) });
+  }, [open]);
   const move = (direction: "left" | "right" | "top" | "bottom" | "center") => {
     const panel = api?.activePanel;
     if (!api || !panel) return;
@@ -98,6 +109,7 @@ export function LayoutMenu({
   return (
     <div className="cress-menu">
       <button
+        ref={triggerRef}
         type="button"
         className="cress-icon-control"
         aria-label="Layout"
@@ -109,9 +121,11 @@ export function LayoutMenu({
       </button>
       {open && (
         <div
+          ref={popoverRef}
           role="menu"
           aria-label="Opções de layout"
           className="cress-menu-popover cress-layout-menu"
+          style={{ top: pos.top, left: pos.left }}
         >
           <button role="menuitem" type="button" onClick={() => void reset()}>
             Restaurar layout padrão

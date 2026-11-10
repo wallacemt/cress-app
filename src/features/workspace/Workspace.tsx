@@ -138,6 +138,10 @@ export function Workspace({
               typeof event.api.fromJSON
             >[0],
           );
+          // Painéis dentro de popouts reabrem de forma assíncrona — sem aguardar,
+          // o loop abaixo roda antes deles existirem em event.api.panels e nunca
+          // recebem params (session/deps), travando session.id como undefined.
+          await event.api.popoutRestorationPromise;
           for (const panel of event.api.panels) {
             if ((panel.api.component === "session" || panel.api.component === "recorder") && activeSession && activeDeps) {
               panel.api.updateParameters({ session: activeSession, pieceId, deps: activeDeps });
