@@ -1,15 +1,17 @@
 import { useState } from "react";
 import { LayoutPanelLeft } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
-import { buildDefaultLayoutPanels, type WorkspaceMode } from "../../domain/workspace";
+import { buildDefaultLayoutAddPanelSpecs, type WorkspaceMode } from "../../domain/workspace";
 import { resetLayouts, saveLayout } from "../../application/workspace";
 import type { Deps } from "../../application/deps";
+import type { StudySessionRow } from "../../infrastructure/db/rows";
 
 export function LayoutMenu({
   api,
   mode,
   deps,
   pieceId,
+  session,
   hasScores = false,
   firstScoreId,
 }: {
@@ -17,6 +19,7 @@ export function LayoutMenu({
   mode: WorkspaceMode;
   deps: Deps | null;
   pieceId?: string;
+  session?: StudySessionRow | null;
   hasScores?: boolean;
   firstScoreId?: string;
 }) {
@@ -66,12 +69,8 @@ export function LayoutMenu({
     api.getPopouts().forEach((popout) => popout.group.api.close());
     api.closeAllGroups();
     const containerSize = { width: api.width, height: api.height };
-    const plan = buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize);
-    for (const panel of plan)
-      api.addPanel({
-        ...panel,
-        renderer: panel.component === "score" ? "always" : undefined,
-      });
+    const sessionParams = session && deps ? { session, pieceId, deps } : undefined;
+    for (const panel of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, sessionParams)) api.addPanel(panel);
     if (deps) {
       await saveLayout(
         deps,

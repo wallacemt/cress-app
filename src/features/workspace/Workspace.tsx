@@ -6,7 +6,7 @@ import {
 } from "dockview-react";
 import "dockview-react/dist/styles/dockview.css";
 import {
-  buildDefaultLayoutPanels,
+  buildDefaultLayoutAddPanelSpecs,
   chooseLayoutSource,
   type WorkspaceMode,
 } from "../../domain/workspace";
@@ -49,6 +49,7 @@ export function Workspace({
     ReturnType<typeof container.getDeps>
   > | null>(null);
   const [freeSession, setFreeSession] = useState<StudySessionRow | null>(null);
+  const [scoresInfo, setScoresInfo] = useState<{ hasScores: boolean; firstScoreId?: string }>({ hasScores: false });
   const effectiveSession = session ?? freeSession;
   const apiRef = useRef<DockviewReadyEvent["api"] | null>(null);
   const layoutReadyRef = useRef(false);
@@ -101,21 +102,14 @@ export function Workspace({
     event.api.onDidRemoveGroup(() => {});
     let activeDeps: Awaited<ReturnType<typeof container.getDeps>> | null = null;
     let activeSession = session ?? freeSession;
-    let hasScores = false;
-    let firstScoreId: string | undefined;
+    let hasScores = scoresInfo.hasScores;
+    let firstScoreId = scoresInfo.firstScoreId;
     let scoreIds = new Set<string>();
     const scopedPieceId = mode === "session" ? pieceId : undefined;
     const applyDefault = () => {
       event.api.closeAllGroups();
       const containerSize = { width: event.api.width, height: event.api.height };
-      for (const spec of buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize)) {
-        event.api.addPanel({
-          ...spec,
-          params: (spec.component === "session" || spec.component === "recorder") && activeSession && activeDeps
-            ? { session: activeSession, pieceId, deps: activeDeps }
-            : undefined,
-        });
-      }
+      for (const spec of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, activeSession && activeDeps ? { session: activeSession, pieceId, deps: activeDeps } : undefined)) event.api.addPanel(spec);
     };
     try {
       activeDeps = await container.getDeps();
@@ -129,6 +123,7 @@ export function Workspace({
         scoreIds = new Set(scores.map((score) => score.id));
         hasScores = scores.length > 0;
         firstScoreId = scores[0]?.id;
+        setScoresInfo({ hasScores, firstScoreId });
       }
       const saved = await loadLayout(activeDeps, {
         pieceId: scopedPieceId,
@@ -195,6 +190,8 @@ export function Workspace({
         api={ready?.api ?? null}
         deps={deps}
         session={effectiveSession}
+        hasScores={scoresInfo.hasScores}
+        firstScoreId={scoresInfo.firstScoreId}
         pieceId={pieceId}
         pieceTitle={pieceTitle}
         goalSummary={goalSummary}

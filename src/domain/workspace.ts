@@ -48,6 +48,24 @@ export interface AddPanelSpec {
   initialWidth?: number;
   initialHeight?: number;
 }
+export function buildDefaultLayoutAddPanelSpecs(
+  mode: WorkspaceMode,
+  hasScores: boolean,
+  firstScoreId: string | undefined,
+  containerSize: { width: number; height: number } | undefined,
+  sessionParams: { session: unknown; pieceId?: string; deps: unknown } | undefined,
+) {
+  return buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize).map(
+    (spec) => ({
+      ...spec,
+      params:
+        (spec.component === "session" || spec.component === "recorder")
+          ? sessionParams
+          : undefined,
+      renderer: spec.component === "score" ? "always" as const : undefined,
+    }),
+  );
+}
 // ponytail: single source of truth for walking the group plan into dockview addPanel
 // calls, so Workspace.tsx (initial mount) and LayoutMenu.tsx ("restaurar layout
 // padrão") never drift from each other.

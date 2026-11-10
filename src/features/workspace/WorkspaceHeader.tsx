@@ -21,6 +21,8 @@ export function WorkspaceHeader({
   pieceTitle,
   goalSummary,
   session,
+  hasScores,
+  firstScoreId,
   onBack,
 }: {
   mode: WorkspaceMode;
@@ -30,6 +32,8 @@ export function WorkspaceHeader({
   pieceTitle?: string;
   goalSummary?: string;
   session?: StudySessionRow | null;
+  hasScores: boolean;
+  firstScoreId?: string;
   onBack?: () => void;
 }) {
   const navigate = useNavigate();
@@ -82,7 +86,7 @@ export function WorkspaceHeader({
           <span className="cress-session-clock" data-live={current?.status === "ACTIVE"} aria-label="Tempo ativo"><i aria-hidden="true" />{clock}</span>
           <div className="cress-header-spacer" />
           <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
-          <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />
+          <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} session={session} hasScores={hasScores} firstScoreId={firstScoreId} />
           <button type="button" className="cress-control" disabled={!current || busy} onClick={() => void changeSession(current?.status === "ACTIVE" ? "pause" : "resume")}>
             {current?.status === "ACTIVE" ? <><Pause size={15} /> Pausar</> : <><Play size={15} /> Retomar</>}
           </button>
@@ -101,7 +105,7 @@ export function WorkspaceHeader({
             <button type="button" aria-label="Parar metrônomo" disabled={!metronomeRunning} onClick={stopMetronome}><Square size={13} /></button>
           </span>
           <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
-          <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} />
+          <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} session={session} hasScores={hasScores} firstScoreId={firstScoreId} />
         </>
       )}
     </header>
