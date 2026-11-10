@@ -26,7 +26,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
   const [error, setError] = useState("");
 
   useEffect(() => {
-    if (!deps) return;
+    if (!deps || !pieceId) return;
     let active = true;
     void listGoals(deps, { repertoireItemId: pieceId }).then((items) => {
       if (!active) return;
@@ -69,7 +69,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
   }
 
   async function saveGoal(savedGoal: StudyGoal) {
-    if (!deps || !session) return;
+    if (!deps || !session || !pieceId) return;
     try {
       await setSessionGoal(deps, { id: session.id, goalId: savedGoal.id });
       setGoal(savedGoal);
