@@ -3,6 +3,7 @@ import {
   createSession,
   finish,
   heartbeat,
+  liveActiveMs,
   pause,
   recover,
   resume,
@@ -10,6 +11,10 @@ import {
 } from "./session";
 const date = (ms: number) => new Date(ms);
 describe("session", () => {
+  it("includes elapsed time only while active", () => {
+    expect(liveActiveMs({ status: "ACTIVE", activeMs: 500, resumedAt: date(1000) }, date(2500))).toBe(2000);
+    expect(liveActiveMs({ status: "PAUSED", activeMs: 500, resumedAt: null }, date(2500))).toBe(500);
+  });
   it("covers valid lifecycle transitions", () => {
     const active = createSession("s", date(0));
     expect(active.status).toBe("ACTIVE");

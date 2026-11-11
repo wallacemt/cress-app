@@ -5,6 +5,7 @@ import { getDashboard } from "../../application/dashboard";
 import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
 import { INSTRUMENTS } from "../../domain/profile";
+import { liveActiveMs } from "../../domain/session";
 import { Sparkline } from "../../components/ui/Sparkline";
 import { StartSessionModal } from "../workspace/StartSessionModal";
 import { SessionRow } from "../sessions/SessionRow";
@@ -51,7 +52,7 @@ export function DashboardPage() {
   const greeting = today.getHours() < 12 ? "Bom dia" : today.getHours() < 18 ? "Boa tarde" : "Boa noite";
   const maxDay = Math.max(...dashboard.days.map((day) => day.activeMs), 1);
   const goal = dashboard.recentPiece?.goal;
-  const lastBpm = latest?.final_bpm ?? null;
+  const lastBpm = dashboard.pieceSessions.find((session) => session.repertoire_item_id === latest?.repertoire_item_id && session.final_bpm != null)?.final_bpm ?? null;
   const bpmValues = dashboard.pieceSessions.filter((session) => session.repertoire_item_id === latest?.repertoire_item_id && session.final_bpm != null).slice(0, 20).map((session) => session.final_bpm!).reverse();
   const activeDays = dashboard.days.filter((day) => day.activeMs > 0).length;
   const dateLabel = new Intl.DateTimeFormat("pt-BR", { weekday: "long", day: "numeric", month: "long" }).format(today);
@@ -71,7 +72,7 @@ export function DashboardPage() {
     {modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
     {open && <section aria-label="Sessão aberta" className="cress-glass mb-8 flex h-14 items-center gap-4 rounded-xl px-5">
       <span aria-hidden="true" className="cress-hairpin-v h-6 shrink-0" />
-      <p className="min-w-0 flex-1 truncate text-sm text-[var(--text-secondary)]">Sessão em andamento · <strong className="font-medium text-[var(--text-primary)]">{pieceName(open.repertoire_item_id, dashboard.pieces)}</strong> · <span className="font-metric tabular-nums">{duration(open.activeMs + (open.status === "ACTIVE" && open.resumedAt ? Math.max(0, Date.now() - open.resumedAt.getTime()) : 0))}</span> · {open.status === "ACTIVE" ? "ativa" : "pausada"}</p>
+      <p className="min-w-0 flex-1 truncate text-sm text-[var(--text-secondary)]">Sessão em andamento · <strong className="font-medium text-[var(--text-primary)]">{pieceName(open.repertoire_item_id, dashboard.pieces)}</strong> · <span className="font-metric tabular-nums">{duration(liveActiveMs(open, new Date()))}</span> · {open.status === "ACTIVE" ? "ativa" : "pausada"}</p>
       <button className="cress-btn-primary shrink-0" onClick={() => navigate(`/practice/${open.id}`)}>Retomar sessão</button>
     </section>}
 
@@ -95,8 +96,8 @@ export function DashboardPage() {
               {goal.startMeasure != null && goal.endMeasure != null && <p className="mt-2 text-xs text-[var(--text-muted)]">Compassos {goal.startMeasure}–{goal.endMeasure}</p>}
             </div>}
             <div className="mt-auto flex flex-wrap items-center justify-between gap-3 border-t border-[var(--border-subtle)] pt-5">
-              <div className="flex flex-wrap items-center gap-3"><button className={open ? "cress-btn-glass" : "cress-btn-primary"} onClick={() => navigate(open ? `/practice/${open.id}` : "/practice/new")}>{open ? "Retomar sessão" : "Continuar estudo"}</button><Link className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to={`/repertoire/${dashboard.recentPiece.id}`}>Ver obra</Link></div>
-              <p className="text-xs text-[var(--text-muted)]">Última sessão · {timeLabel(latest?.startedAt ?? null)} · {duration(latest?.activeMs ?? 0)}</p>
+              <div className="flex flex-wrap items-center gap-3"><button className={open ? "cress-btn-glass" : "cress-btn-primary"} onClick={() => navigate(open ? `/practice/${open.id}` : `/practice/new?pieceId=${encodeURIComponent(dashboard.recentPiece!.id)}`)}>{open ? "Retomar sessão" : "Continuar estudo"}</button><Link className="text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]" to={`/repertoire/${dashboard.recentPiece.id}`}>Ver obra</Link></div>
+              <p className="text-xs text-[var(--text-muted)]">Última sessão · {timeLabel(latest?.startedAt ?? null)} · {duration(latest ? liveActiveMs(latest, new Date()) : 0)}</p>
             </div>
           </div>
           <div className="min-w-0 lg:border-l lg:border-[var(--border-subtle)] lg:pl-8">

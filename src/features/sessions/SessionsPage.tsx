@@ -5,6 +5,7 @@ import { listPieces } from "../../application/repertoire";
 import { listSessionGoals, listSessions } from "../../application/sessions";
 import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
+import { liveActiveMs } from "../../domain/session";
 import { StartSessionModal } from "../workspace/StartSessionModal";
 import { SessionRow } from "./SessionRow";
 
@@ -62,7 +63,7 @@ export function SessionsPage() {
       <div>
         <p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">HISTÓRICO</p>
         <h1 className="mt-2 font-display text-[56px] leading-[60px] font-medium">Sessões</h1>
-        <p className="mt-2 text-lg text-[var(--text-secondary)]"><span className="font-metric tabular-nums text-[var(--text-primary)]">{sessions.length}</span> sessões · <span className="font-metric tabular-nums text-[var(--text-primary)]">{duration(sessions.reduce((total, session) => total + session.activeMs, 0))}</span> estudadas</p>
+        <p className="mt-2 text-lg text-[var(--text-secondary)]"><span className="font-metric tabular-nums text-[var(--text-primary)]">{sessions.length}</span> sessões · <span className="font-metric tabular-nums text-[var(--text-primary)]">{duration(sessions.reduce((total, session) => total + liveActiveMs(session, new Date()), 0))}</span> estudadas</p>
         {pieceId && <span className="mt-4 inline-flex h-8 items-center gap-2 rounded-full bg-[var(--violet-tint)] px-3 text-sm text-[var(--violet-300)]">Obra: {filteredPiece?.title ?? "Obra indisponível"}<button type="button" aria-label="Remover filtro" onClick={() => setSearchParams({})}><X size={14} /></button></span>}
       </div>
       <button type="button" className="cress-btn-primary" disabled={!loaded || hasOpenSession} title={hasOpenSession ? "Finalize ou retome a sessão em andamento antes de iniciar outra." : undefined} onClick={() => setModalOpen(true)}>Nova sessão</button>

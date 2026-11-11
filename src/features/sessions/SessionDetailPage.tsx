@@ -8,6 +8,7 @@ import { getGoalCompletion, getSession } from "../../application/sessions";
 import type { Deps } from "../../application/deps";
 import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
+import { liveActiveMs } from "../../domain/session";
 import type { RecordingRow } from "../../infrastructure/db/rows";
 import { RecordingItem } from "../workspace/panels/RecordingItem";
 
@@ -64,7 +65,7 @@ export function SessionDetailPage() {
     </header>
     <section aria-label="Métricas da sessão" className="cress-glass relative mb-10 grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-3 sm:divide-x sm:divide-[var(--border-subtle)]">
       {goalCompleted && <div aria-hidden="true" className="cress-hairpin absolute inset-x-0 top-0" style={{ background: "var(--gold-400)" }} />}
-      <div className="p-6"><p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">DURAÇÃO</p><p className="mt-2 font-metric text-[36px] leading-tight font-light tabular-nums">{duration(session.activeMs)}</p></div>
+      <div className="p-6"><p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">DURAÇÃO</p><p className="mt-2 font-metric text-[36px] leading-tight font-light tabular-nums">{duration(liveActiveMs(session, new Date()))}</p></div>
       <div className="p-6"><p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">BPM</p><p className="mt-2 flex items-baseline gap-2 font-metric text-[36px] leading-tight font-light tabular-nums"><span>{session.initial_bpm ?? "—"}</span><span className="text-[var(--text-subtle)]">→</span><span>{session.final_bpm ?? "—"}</span>{delta > 0 && <span className="text-sm text-[var(--violet-300)]">+{delta}</span>}</p></div>
       <div className="p-6"><p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">OBJETIVO</p>{goalDescription ? <><p className="mt-2 line-clamp-2 text-base">{goalDescription}</p><p className="mt-2">{goalCompleted ? <GoalBadge /> : <span className="text-xs text-[var(--text-muted)]">Em andamento</span>}</p></> : <p className="mt-2 text-xs text-[var(--text-muted)]">Sem objetivo</p>}</div>
     </section>
