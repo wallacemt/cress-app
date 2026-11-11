@@ -13,6 +13,7 @@ import {
   ensureFreeSession,
   getPieceStats,
   listSessions,
+  listSessionsPage,
   getSession,
   withGoalCompletion,
 } from "./sessions";
@@ -80,6 +81,24 @@ describe("sessions application", () => {
     expect((await listSessions(d, { repertoireItemId: p.id })).map((session) => session.id)).toEqual([first.id]);
     expect(await getSession(d, { id: first.id })).toMatchObject({ initial_bpm: null, final_bpm: 72 });
     expect(await getSession(d, { id: "missing" })).toBeNull();
+  });
+  it("returns a limited session page and reports whether another page exists", async () => {
+    let now = 0;
+    const d = makeTestDeps({ now: () => new Date(now += 1_000) });
+    const piece = await createPiece(d, { title: "Paged" });
+    for (let i = 0; i < 3; i++) {
+      const session = await startSession(d, { repertoireItemId: piece.id });
+      await finishSession(d, { id: session.id, completeGoal: false });
+    }
+
+    await expect(listSessionsPage(d, { repertoireItemId: piece.id, page: 0, pageSize: 2 })).resolves.toMatchObject({
+      sessions: [{ id: expect.any(String) }, { id: expect.any(String) }],
+      hasMore: true,
+    });
+    await expect(listSessionsPage(d, { repertoireItemId: piece.id, page: 1, pageSize: 2 })).resolves.toMatchObject({
+      sessions: [{ id: expect.any(String) }],
+      hasMore: false,
+    });
   });
   it("does not block starting a real session while free practice is open", async () => {
     const d = makeTestDeps();

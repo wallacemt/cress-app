@@ -1,7 +1,11 @@
 import type { SqlDb } from "../db/sqlDb";
 import type { StudySessionRow } from "../db/rows";
 export const makeSessionRepo = (db: SqlDb) => ({
-  list: () => db.select<StudySessionRow>("SELECT * FROM study_sessions"),
+  list: () => db.select<StudySessionRow>("SELECT * FROM study_sessions ORDER BY started_at DESC"),
+  listPage: ({ limit, offset, repertoireItemId }: { limit: number; offset: number; repertoireItemId?: string }) =>
+    repertoireItemId
+      ? db.select<StudySessionRow>("SELECT * FROM study_sessions WHERE repertoire_item_id=$1 ORDER BY started_at DESC LIMIT $2 OFFSET $3", [repertoireItemId, limit, offset])
+      : db.select<StudySessionRow>("SELECT * FROM study_sessions ORDER BY started_at DESC LIMIT $1 OFFSET $2", [limit, offset]),
   listByPiece: (pieceId: string) =>
     db.select<StudySessionRow>(
       "SELECT * FROM study_sessions WHERE repertoire_item_id=$1 ORDER BY started_at DESC",
