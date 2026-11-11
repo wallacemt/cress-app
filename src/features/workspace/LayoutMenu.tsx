@@ -1,15 +1,17 @@
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 import { LayoutPanelLeft } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
-import { buildDefaultLayoutPanels, type WorkspaceMode } from "../../domain/workspace";
+import { buildDefaultLayoutAddPanelSpecs, type WorkspaceMode } from "../../domain/workspace";
 import { resetLayouts, saveLayout } from "../../application/workspace";
 import type { Deps } from "../../application/deps";
+import type { StudySessionRow } from "../../infrastructure/db/rows";
 
 export function LayoutMenu({
   api,
   mode,
   deps,
   pieceId,
+  session,
   hasScores = false,
   firstScoreId,
 }: {
@@ -17,10 +19,22 @@ export function LayoutMenu({
   mode: WorkspaceMode;
   deps: Deps | null;
   pieceId?: string;
+  session?: StudySessionRow | null;
   hasScores?: boolean;
   firstScoreId?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const popoverRef = useRef<HTMLDivElement>(null);
+  const [pos, setPos] = useState({ top: 0, left: 0 });
+  useLayoutEffect(() => {
+    if (!open || !triggerRef.current || !popoverRef.current) return;
+    const trigger = triggerRef.current.getBoundingClientRect();
+    const popover = popoverRef.current.getBoundingClientRect();
+    const left = Math.min(trigger.right - popover.width, window.innerWidth - popover.width - 8);
+    const top = Math.min(trigger.bottom + 6, window.innerHeight - popover.height - 8);
+    setPos({ top: Math.max(8, top), left: Math.max(8, left) });
+  }, [open]);
   const move = (direction: "left" | "right" | "top" | "bottom" | "center") => {
     const panel = api?.activePanel;
     if (!api || !panel) return;
@@ -63,14 +77,11 @@ export function LayoutMenu({
   const reset = async () => {
     if (!api) return;
     if (deps) await resetLayouts(deps);
+    api.getPopouts().forEach((popout) => popout.group.api.close());
     api.closeAllGroups();
     const containerSize = { width: api.width, height: api.height };
-    const plan = buildDefaultLayoutPanels(mode, hasScores, firstScoreId, containerSize);
-    for (const panel of plan)
-      api.addPanel({
-        ...panel,
-        renderer: panel.component === "score" ? "always" : undefined,
-      });
+    const sessionParams = session && deps ? { session, pieceId, deps } : undefined;
+    for (const panel of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, sessionParams)) api.addPanel(panel);
     if (deps) {
       await saveLayout(
         deps,
@@ -98,6 +109,7 @@ export function LayoutMenu({
   return (
     <div className="cress-menu">
       <button
+        ref={triggerRef}
         type="button"
         className="cress-icon-control"
         aria-label="Layout"
@@ -109,9 +121,11 @@ export function LayoutMenu({
       </button>
       {open && (
         <div
+          ref={popoverRef}
           role="menu"
           aria-label="Opções de layout"
           className="cress-menu-popover cress-layout-menu"
+          style={{ top: pos.top, left: pos.left }}
         >
           <button role="menuitem" type="button" onClick={() => void reset()}>
             Restaurar layout padrão

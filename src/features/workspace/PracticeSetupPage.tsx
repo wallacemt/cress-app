@@ -7,7 +7,7 @@ import { startSession } from "../../application/sessions";
 import { container } from "../../app/container";
 import { makeSessionRepo } from "../../infrastructure/repositories/sessionRepo";
 import type { StudyGoal } from "../../domain/goal";
-import type { RepertoireItem } from "../../domain/repertoire";
+import { FREE_PRACTICE_PIECE_ID, type RepertoireItem } from "../../domain/repertoire";
 import { validateBpm } from "../../domain/bpm";
 import { GoalSelect } from "./GoalSelect";
 
@@ -89,7 +89,7 @@ export function PracticeSetupPage() {
     setBusy(true);
     try {
       const deps: Deps = await container.getDeps();
-      if ((await makeSessionRepo(deps.db).open()).length) {
+      if ((await makeSessionRepo(deps.db).open()).some((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID)) {
         setError("Finalize ou retome a sessão aberta antes de iniciar outra.");
         return;
       }
@@ -190,7 +190,7 @@ export function PracticeSetupPage() {
         <button
           type="submit"
           disabled={busy || !pieces.length}
-          className="min-h-12 rounded-lg bg-[var(--gradient-brand)] px-4 font-medium text-white disabled:opacity-45"
+          className="cress-btn-primary min-h-12"
         >
           {busy ? "Iniciando…" : "Iniciar sessão"}
         </button>

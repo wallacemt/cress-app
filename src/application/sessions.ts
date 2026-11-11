@@ -14,9 +14,10 @@ import { makeRecordingRepo } from "../infrastructure/repositories/recordingRepo"
 import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
 import type { StudySessionRow } from "../infrastructure/db/rows";
 import { pauseTake, stopTake } from "./recordings";
-import { completeGoal } from "./goals";
+import { completeGoal, listGoals } from "./goals";
 import type { StudySession } from "../domain/session";
 import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
+import type { StudyGoal } from "../domain/goal";
 export interface StartSessionInput {
   repertoireItemId: string;
   goalId?: string;
@@ -29,8 +30,20 @@ export interface FinishSessionInput {
   completeGoal: boolean;
 }
 export async function getPieceStats(d: Deps, { repertoireItemId }: { repertoireItemId: string }) {
-  const sessions = (await makeSessionRepo(d.db).listByPiece(repertoireItemId)).map(ent);
-  return { totalSessions: sessions.length, totalActiveMs: sessions.reduce((total, session) => total + session.activeMs, 0), lastPracticeAt: sessions[0]?.startedAt ?? null, sessions };
+  const [rows, goals] = await Promise.all([
+    makeSessionRepo(d.db).listByPiece(repertoireItemId),
+    listGoals(d, { repertoireItemId }),
+  ]);
+  const sessions = rows.map(ent);
+  return {
+    totalSessions: sessions.length,
+    totalActiveMs: sessions.reduce((total, session) => total + session.activeMs, 0),
+    lastPracticeAt: sessions[0]?.startedAt ?? null,
+    sessions,
+    completedGoals: goals.filter((goal) => goal.completed).length,
+    totalGoals: goals.length,
+    finalBpmHistory: sessions.filter((session) => session.final_bpm != null).slice(0, 20).map((session) => session.final_bpm!).reverse(),
+  };
 }
 type SessionEntity = StudySession & {
   repertoire_item_id: string;
@@ -38,6 +51,9 @@ type SessionEntity = StudySession & {
   initial_bpm: number | null;
   final_bpm: number | null;
 };
+export function withGoalCompletion<T extends SessionEntity>(sessions: T[], goals: Pick<StudyGoal, "id" | "completed">[]) {
+  return sessions.map((session) => ({ ...session, goalCompleted: session.goal_id ? goals.find((goal) => goal.id === session.goal_id)?.completed ?? false : false }));
+}
 const ent = (r: StudySessionRow): SessionEntity => ({
   id: r.id,
   status: r.status,
@@ -52,6 +68,28 @@ const ent = (r: StudySessionRow): SessionEntity => ({
   initial_bpm: r.initial_bpm,
   final_bpm: r.final_bpm,
 });
+export async function listSessions(d: Deps, { repertoireItemId }: { repertoireItemId?: string } = {}) {
+  const repo = makeSessionRepo(d.db);
+  const [rows, goals] = await Promise.all([
+    repertoireItemId ? repo.listByPiece(repertoireItemId) : repo.list(),
+    makeGoalRepo(d.db).list(),
+  ]);
+  return withGoalCompletion(
+    rows.map(ent).sort((a, b) => (b.startedAt?.getTime() ?? 0) - (a.startedAt?.getTime() ?? 0)),
+    goals.map((goal) => ({ id: goal.id, completed: goal.completed_at !== null })),
+  );
+}
+export async function getSession(d: Deps, { id }: { id: string }) {
+  const session = await makeSessionRepo(d.db).get(id);
+  return session ? ent(session) : null;
+}
+export async function getGoalCompletion(d: Deps, { goalId }: { goalId: string }) {
+  const goal = await makeGoalRepo(d.db).get(goalId);
+  return goal?.completed_at != null;
+}
+export async function listSessionGoals(d: Deps) {
+  return (await makeGoalRepo(d.db).list()).map(({ id, description }) => ({ id, description }));
+}
 const row = (
   r: SessionEntity | StudySession,
   x: Partial<StudySessionRow> & {
@@ -77,7 +115,7 @@ const row = (
 });
 export async function startSession(d: Deps, x: StartSessionInput) {
   const repo = makeSessionRepo(d.db);
-  if ((await repo.open()).length)
+  if ((await repo.open()).some((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID))
     throw new DomainError("SESSION_ALREADY_OPEN", "Session already open");
   return createAndSaveSession(d, x);
 }

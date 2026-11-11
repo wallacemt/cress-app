@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   buildDefaultLayoutPanels,
+  buildDefaultLayoutAddPanelSpecs,
   chooseLayoutSource,
   defaultLayoutPlan,
   layoutKey,
@@ -68,6 +69,15 @@ describe("workspace", () => {
       position: { referencePanel: "session", direction: "below" },
       initialHeight: 50,
     });
+  });
+  it("adds params only to session panels and includes scores when available", () => {
+    const params = { session: { id: "s1" }, pieceId: "p1", deps: {} };
+    const specs = buildDefaultLayoutAddPanelSpecs("session", true, "score1", undefined, params);
+    expect(specs.find((spec) => spec.component === "score")).toMatchObject({
+      id: "score:score1", renderer: "always", params: undefined,
+    });
+    expect(specs.filter((spec) => spec.component === "recorder" || spec.component === "session").map((spec) => spec.params)).toEqual([params, params]);
+    expect(specs.filter((spec) => spec.component === "metronome" || spec.component === "tuner").every((spec) => spec.params === undefined)).toBe(true);
   });
   it("sanitizes invalid and duplicate panels", () => {
     const layout = sanitizeLayout(

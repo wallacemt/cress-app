@@ -17,7 +17,7 @@ export function GoalFormDialog({
   repertoireItemId: string;
   goal?: StudyGoal;
   onClose: () => void;
-  onSaved: () => void;
+  onSaved: (goal: StudyGoal) => void;
 }) {
   const [description, setDescription] = useState(goal?.description ?? "");
   const [targetBpm, setTargetBpm] = useState(goal?.targetBpm?.toString() ?? "");
@@ -39,9 +39,10 @@ export function GoalFormDialog({
     };
     try {
       const deps = await container.getDeps();
-      if (goal) await updateGoal(deps, { ...input, id: goal.id });
-      else await createGoal(deps, input);
-      onSaved();
+      const saved = goal
+        ? await updateGoal(deps, { ...input, id: goal.id })
+        : await createGoal(deps, input);
+      onSaved({ id: saved.id, description: saved.description, targetBpm: saved.target_bpm, startMeasure: saved.measure_start, endMeasure: saved.measure_end, completed: saved.completed_at !== null });
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : "Não foi possível salvar o objetivo.");
     } finally {

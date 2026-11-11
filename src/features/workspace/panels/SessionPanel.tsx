@@ -6,6 +6,7 @@ import { setSessionGoal, updateSessionNotes } from "../../../application/session
 import type { Deps } from "../../../application/deps";
 import type { StudySessionRow } from "../../../infrastructure/db/rows";
 import { GoalSelect } from "../GoalSelect";
+import { GoalFormDialog } from "../../repertoire/GoalFormDialog";
 
 interface SessionPanelParams {
   session: StudySessionRow;
@@ -14,28 +15,31 @@ interface SessionPanelParams {
 }
 
 export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params }) => {
-  const { session, pieceId, deps } = params as SessionPanelParams;
+  const { session, pieceId, deps } = (params ?? {}) as Partial<SessionPanelParams>;
   const [goal, setGoal] = useState<StudyGoal>();
   const [goals, setGoals] = useState<StudyGoal[]>([]);
-  const [notes, setNotes] = useState(session.notes ?? "");
+  const [notes, setNotes] = useState(session?.notes ?? "");
   const [selecting, setSelecting] = useState(false);
+  const [creatingGoal, setCreatingGoal] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(true);
   const [error, setError] = useState("");
 
   useEffect(() => {
+    if (!deps || !pieceId) return;
     let active = true;
     void listGoals(deps, { repertoireItemId: pieceId }).then((items) => {
       if (!active) return;
       setGoals(items);
-      setGoal(items.find((item) => item.id === session.goal_id));
+      setGoal(items.find((item) => item.id === session?.goal_id));
     }).catch((cause: unknown) => {
       if (active) setError(cause instanceof Error ? cause.message : "Não foi possível carregar os objetivos.");
     });
     return () => { active = false; };
-  }, [deps, pieceId, session.goal_id]);
+  }, [deps, pieceId, session?.goal_id]);
 
   useEffect(() => {
+    if (!deps || !session) return;
     if (notes === (session.notes ?? "")) return;
     // ponytail: 1 s reduz gravações repetidas enquanto a pessoa digita.
     const timer = setTimeout(() => {
@@ -49,9 +53,10 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
       }).finally(() => setSaving(false));
     }, 1000);
     return () => clearTimeout(timer);
-  }, [deps, notes, session.id, session.notes]);
+  }, [deps, notes, session]);
 
   async function chooseGoal(id: string) {
+    if (!deps || !session) return;
     try {
       const next = id ? goals.find((item) => item.id === id) : undefined;
       await setSessionGoal(deps, { id: session.id, goalId: id || null });
@@ -63,8 +68,25 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
     }
   }
 
+  async function saveGoal(savedGoal: StudyGoal) {
+    if (!deps || !session || !pieceId) return;
+    try {
+      await setSessionGoal(deps, { id: session.id, goalId: savedGoal.id });
+      setGoal(savedGoal);
+      setCreatingGoal(false);
+      setSelecting(false);
+      const items = await listGoals(deps, { repertoireItemId: pieceId });
+      setGoals(items);
+      setGoal(items.find((item) => item.id === savedGoal.id) ?? savedGoal);
+      setError("");
+    } catch (cause) {
+      setCreatingGoal(false);
+      setError(cause instanceof Error ? cause.message : "Não foi possível definir o objetivo.");
+    }
+  }
+
   async function toggleComplete() {
-    if (!goal) return;
+    if (!goal || !deps) return;
     try {
       if (goal.completed) await reopenGoal(deps, { id: goal.id });
       else await completeGoal(deps, { id: goal.id });
@@ -75,21 +97,22 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
     }
   }
 
+  if (!session || !deps || !pieceId) return null; // layout restaurado ainda não injetou os params da sessão (updateParameters chega um tick depois do fromJSON) — todos os hooks já rodaram acima
   return (
     <section className="cress-session-panel" aria-label="Painel da sessão">
       <article className="cress-session-goal">
         <p className="cress-session-eyebrow">OBJETIVO</p>
-        {selecting ? <div className="cress-session-goal-select"><GoalSelect label="Escolher objetivo" goals={goals.filter((item) => !item.completed || item.id === goal?.id)} value={goal?.id ?? ""} onChange={(id) => void chooseGoal(id)} /><button type="button" className="cress-session-ghost" onClick={() => setSelecting(false)}>Cancelar</button></div> : goal ? <>
+        {selecting ? <div className="cress-session-goal-select"><GoalSelect label="Escolher objetivo" goals={goals.filter((item) => !item.completed || item.id === goal?.id)} value={goal?.id ?? ""} onChange={(id) => void chooseGoal(id)} /><button type="button" className="cress-session-ghost" onClick={() => setSelecting(false)}>Cancelar</button><button type="button" className="cress-session-secondary" onClick={() => setCreatingGoal(true)}>Novo objetivo</button></div> : goal ? <>
           <p className="cress-session-goal-description">{goal.description}</p>
           <div className="cress-session-chips">
             {goal.targetBpm != null && <span>Alvo ♩ {goal.targetBpm}</span>}
             {goal.startMeasure != null && goal.endMeasure != null && <span>Compassos {goal.startMeasure}–{goal.endMeasure}</span>}
           </div>
           <label className="cress-session-complete"><input type="checkbox" checked={goal.completed} onChange={() => void toggleComplete()} /> Objetivo concluído</label>
-          <button type="button" className="cress-session-ghost" onClick={() => setSelecting(true)}>Trocar objetivo</button>
+          <div className="flex flex-wrap gap-2"><button type="button" className="cress-session-ghost" onClick={() => setSelecting(true)}>Trocar objetivo</button><button type="button" className="cress-session-secondary" onClick={() => setCreatingGoal(true)}>Novo objetivo</button></div>
         </> : <>
           <p>Nenhum objetivo para esta sessão.</p>
-          <button type="button" className="cress-session-secondary" disabled={!goals.length} onClick={() => setSelecting(true)}>Definir objetivo</button>
+          <div className="flex flex-wrap gap-2"><button type="button" className="cress-session-secondary" disabled={!goals.length} onClick={() => setSelecting(true)}>Definir objetivo</button><button type="button" className="cress-session-secondary" onClick={() => setCreatingGoal(true)}>Novo objetivo</button></div>
         </>}
       </article>
       <label className="cress-session-notes-label" htmlFor={`session-notes-${session.id}`}>NOTAS DA SESSÃO</label>
@@ -98,6 +121,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
         {error && <span role="alert">{error}</span>}
         <span className="cress-session-save-status" aria-live="polite">{saving ? "Salvando…" : saved ? "Salvo" : ""}</span>
       </div>
+      {creatingGoal && <GoalFormDialog repertoireItemId={pieceId} onClose={() => setCreatingGoal(false)} onSaved={(saved) => void saveGoal(saved)} />}
     </section>
   );
 };

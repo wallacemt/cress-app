@@ -17,6 +17,7 @@ import { GoalList } from "./GoalList";
 import { PieceFormDialog } from "./PieceFormDialog";
 import { ScoreList } from "./ScoreList";
 import type { StudySession } from "../../domain/session";
+import { Sparkline } from "../../components/ui/Sparkline";
 
 type PieceStats = Awaited<ReturnType<typeof getPieceStats>>;
 function formatDuration(ms: number) {
@@ -172,11 +173,16 @@ export function PieceDetailPage() {
       <GoalList goals={goals} repertoireItemId={pieceId} onChanged={reloadGoals} />
       <section aria-labelledby="piece-practice-title" className="mt-10">
         <h2 id="piece-practice-title" className="font-display text-2xl text-[var(--text-primary)]">Prática</h2>
-        <dl className="mt-4 grid gap-4 sm:grid-cols-3">
+        <dl className="mt-4 grid gap-4 sm:grid-cols-4">
           <div><dt className="text-xs text-[var(--text-muted)]">Tempo estudado</dt><dd className="mt-1 text-sm">{formatDuration(stats?.totalActiveMs ?? 0)}</dd></div>
           <div><dt className="text-xs text-[var(--text-muted)]">Sessões</dt><dd className="mt-1 text-sm">{stats?.totalSessions ?? 0}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">Objetivos concluídos</dt><dd className="mt-1 text-sm">{stats?.completedGoals ?? 0}/{stats?.totalGoals ?? 0}</dd></div>
           <div><dt className="text-xs text-[var(--text-muted)]">Última prática</dt><dd className="mt-1 text-sm">{formatDate(stats?.lastPracticeAt ?? null)}</dd></div>
         </dl>
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold">Evolução do BPM final</h3>
+          <div className="mt-2"><Sparkline values={stats?.finalBpmHistory ?? []} ariaLabel="Evolução do BPM final nas últimas sessões" /></div>
+        </div>
         <h3 className="mt-6 text-sm font-semibold">Histórico de sessões</h3>
         {!stats?.sessions.length ? <p className="mt-3 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada.</p> : <ul className="mt-2 divide-y divide-[var(--border-subtle)]">
           {stats.sessions.map((session: StudySession & { initial_bpm: number | null; final_bpm: number | null }) => <li key={session.id} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">

@@ -10,18 +10,9 @@ import { PracticeSetupPage } from "../features/workspace/PracticeSetupPage";
 import { PracticePage } from "../features/workspace/PracticePage";
 import { ToolsPage } from "../features/workspace/ToolsPage";
 import { ChangelogPage } from "../features/changelog/ChangelogPage";
-
-function Placeholder({ name }: { name: string }) {
-  return (
-    <section className="placeholder">
-      <p className="eyebrow">CRESS</p>
-      <h1>{name}</h1>
-      <p>Esta área será implementada nas próximas fases.</p>
-    </section>
-  );
-}
-
-const placeholderRoutes = ["/sessions", "/sessions/:sessionId"];
+import { SessionsPage } from "../features/sessions/SessionsPage";
+import { SessionDetailPage } from "../features/sessions/SessionDetailPage";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 
 export const router = createHashRouter([
   {
@@ -36,18 +27,16 @@ export const router = createHashRouter([
     element: <AppShell />,
     hydrateFallbackElement: <LoadingScreen />,
     children: [
-      { index: true, element: <Placeholder name="Dashboard" /> },
+      { index: true, element: <DashboardPage /> },
       { path: "settings", element: <SettingsPage /> },
       { path: "changelog", element: <ChangelogPage /> },
       { path: "repertoire", element: <RepertoirePage /> },
       { path: "repertoire/:pieceId", element: <PieceDetailPage /> },
       { path: "practice/new", element: <PracticeSetupPage /> },
       { path: "practice/:sessionId", element: <PracticePage /> },
+      { path: "sessions", element: <SessionsPage /> },
+      { path: "sessions/:sessionId", element: <SessionDetailPage /> },
       { path: "tools", element: <ToolsPage /> },
-      ...placeholderRoutes.map((path) => ({
-        path: path.slice(1),
-        element: <Placeholder name={path} />,
-      })),
     ],
   },
   { path: "*", element: <Navigate to="/" replace /> },

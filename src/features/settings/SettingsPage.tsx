@@ -10,6 +10,7 @@ import {
 } from "../../domain/profile";
 import { useProfileStore } from "../../stores/profileStore";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
+import { Monogram } from "../../components/ui/Monogram";
 
 const levels = [
   ["beginner", "Iniciante"],
@@ -91,16 +92,23 @@ export function SettingsPage() {
   return (
     <main className="mx-auto w-full max-w-3xl px-6 py-10 text-[var(--text-primary)]">
       <section aria-labelledby="settings-profile-title">
-        <header className="mb-8 border-b border-[var(--border-subtle)] pb-6">
-          <p className="mb-2 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">CONFIGURAÇÕES</p>
-          <h1 id="settings-profile-title" className="font-display text-4xl">Perfil</h1>
-          {ensembleName.trim() && <p className="mt-2 text-[var(--text-secondary)]">{ensembleName.trim()}</p>}
-        </header>
-        <section aria-labelledby="settings-updates-title" className="mb-8 border-b border-[var(--border-subtle)] pb-6">
-          <h2 id="settings-updates-title" className="mb-2 text-lg font-semibold">Atualizações</h2>
-          <p className="mb-4 text-sm text-[var(--text-secondary)]">{update.status === "checking" ? "Verificando…" : update.status === "none" ? "O Cress está atualizado." : update.status === "available" ? "Há uma atualização disponível." : update.status === "error" ? "Não foi possível verificar agora." : "Verifique se há uma nova versão do Cress."}</p>
-          <button type="button" disabled={update.status === "checking" || update.installing} onClick={() => void update.check()} className={`${button} gap-2 border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--ink-700)]`}><RefreshCw size={16} />Verificar atualizações</button>
-          {update.status === "available" && <button type="button" disabled={update.installing} onClick={() => void update.install()} className={`${button} ml-2 bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{update.installing ? update.progress === null ? "Baixando…" : `Baixando… ${update.progress}%` : "Atualizar agora"}</button>}
+        <section aria-labelledby="settings-profile-title" className="cress-card relative mb-8 overflow-hidden rounded-2xl p-8">
+          <div aria-hidden="true" className="absolute inset-0" style={{ background: "radial-gradient(520px 220px at 0% 0%, rgb(124 58 237 / .16), transparent 70%)" }} />
+          <div className="cress-hairpin absolute inset-x-0 bottom-0" />
+          <div className="relative flex items-center gap-8">
+            <Monogram name={displayName || "?"} size="lg" />
+            <div className="min-w-0">
+              <p className="mb-2 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">CONFIGURAÇÕES · PERFIL</p>
+              <h1 id="settings-profile-title" className={`font-display text-[44px] leading-[48px] font-semibold ${displayName.trim() ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{displayName.trim() || "Seu nome"}</h1>
+              <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-[var(--text-secondary)]">
+                <Star size={14} className="text-[var(--gold-300)]" fill="currentColor" aria-hidden="true" />
+                <span>{primaryInstrument ? INSTRUMENTS[primaryInstrument] === "Outro" && otherInstrumentLabel.trim() ? otherInstrumentLabel.trim() : INSTRUMENTS[primaryInstrument] : "Instrumento principal"}</span>
+                <span aria-hidden="true">·</span><span>{levels.find(([value]) => value === experienceLevel)?.[1] ?? "Nível não informado"}</span>
+              </div>
+              {ensembleName.trim() && <p className="mt-1 text-sm text-[var(--text-muted)]">{ensembleName.trim()}</p>}
+              {!!musicalRoles.length && <div className="mt-3 flex flex-wrap gap-2">{musicalRoles.map((role) => <span key={role} className="inline-flex h-6 items-center rounded-full bg-[var(--ink-700)] px-2.5 text-xs text-[var(--text-secondary)]">{roles[role]}</span>)}</div>}
+            </div>
+          </div>
         </section>
         <form onSubmit={save}>
           <label className="mb-7 block text-sm text-[var(--text-secondary)]">Seu nome
@@ -139,6 +147,13 @@ export function SettingsPage() {
           {error && <p role="alert" className="mb-4 text-sm text-[var(--danger)]">{error}</p>}
           <button type="submit" disabled={saving} className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{saving ? "Salvando…" : "Salvar perfil"}</button>
         </form>
+        <section aria-labelledby="settings-updates-title" className="mt-10 border-t border-[var(--border-subtle)] pt-6">
+          <h2 className="mb-4 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">APLICATIVO</h2>
+          <h3 id="settings-updates-title" className="mb-2 text-lg font-semibold">Atualizações</h3>
+          <p className="mb-4 text-sm text-[var(--text-secondary)]">{update.status === "checking" ? "Verificando…" : update.status === "none" ? "O Cress está atualizado." : update.status === "available" ? "Há uma atualização disponível." : update.status === "error" ? "Não foi possível verificar agora." : "Verifique se há uma nova versão do Cress."}</p>
+          <button type="button" disabled={update.status === "checking" || update.installing} onClick={() => void update.check()} className={`${button} gap-2 border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--ink-700)]`}><RefreshCw size={16} />Verificar atualizações</button>
+          {update.status === "available" && <button type="button" disabled={update.installing} onClick={() => void update.install()} className={`${button} ml-2 bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{update.installing ? update.progress === null ? "Baixando…" : `Baixando… ${update.progress}%` : "Atualizar agora"}</button>}
+        </section>
       </section>
     </main>
   );

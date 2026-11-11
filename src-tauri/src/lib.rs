@@ -5,6 +5,15 @@ pub mod scores;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Em dev no Windows, o WebView2 mantém disk cache entre execuções mesmo com o
+    // Vite servindo código novo — um perfil de user-data-folder novo por execução
+    // evita módulos JS obsoletos sem depender de flags de cache do Chromium (sem
+    // efeito documentado/confiável no WebView2).
+    #[cfg(debug_assertions)]
+    {
+        let profile = std::env::temp_dir().join(format!("cress-dev-webview2-{}", std::process::id()));
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", profile);
+    }
     tauri::Builder::default()
         .plugin(
             tauri_plugin_sql::Builder::default()
