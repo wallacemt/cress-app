@@ -14,6 +14,19 @@ pub fn run() {
         let profile = std::env::temp_dir().join(format!("cress-dev-webview2-{}", std::process::id()));
         std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", profile);
     }
+    // Em produção, o WebView2 também guarda disk cache entre execuções — depois de
+    // um auto-update, ele pode continuar servindo index.html/CSS/JS da versão
+    // anterior (UI quebrada/desalinhada). Um perfil por versão (não por processo,
+    // como em dev) força cache novo só quando a versão muda, preservando o cache
+    // normal entre reinícios da mesma versão.
+    #[cfg(not(debug_assertions))]
+    if let Some(local_app_data) = std::env::var_os("LOCALAPPDATA") {
+        let profile = std::path::Path::new(&local_app_data)
+            .join("dev.wallacesantana.cress")
+            .join("webview2")
+            .join(env!("CARGO_PKG_VERSION"));
+        std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", profile);
+    }
     tauri::Builder::default()
         .plugin(
             tauri_plugin_sql::Builder::default()
