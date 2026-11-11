@@ -80,6 +80,10 @@ describe("sessions application", () => {
     expect((await listSessions(d)).map((session) => session.id)).toEqual([second.id, first.id]);
     expect((await listSessions(d, { repertoireItemId: p.id })).map((session) => session.id)).toEqual([first.id]);
     expect(await getSession(d, { id: first.id })).toMatchObject({ initial_bpm: null, final_bpm: 72 });
+    await expect(getSession(d, { id: second.id })).resolves.toMatchObject({
+      id: second.id,
+      repertoire_item_id: FREE_PRACTICE_PIECE_ID,
+    });
     expect(await getSession(d, { id: "missing" })).toBeNull();
   });
   it("returns a limited session page and reports whether another page exists", async () => {
