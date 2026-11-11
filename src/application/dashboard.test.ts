@@ -3,7 +3,7 @@ import { createPiece } from "./repertoire";
 import { completeGoal, createGoal } from "./goals";
 import { finishSession, pauseSession, startSession } from "./sessions";
 import { completeOnboarding } from "./profile";
-import { getDashboard } from "./dashboard";
+import { getDashboard, getMonthActivity } from "./dashboard";
 import { makeTestDeps } from "./test-support";
 import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
 
@@ -15,7 +15,7 @@ describe("dashboard application", () => {
     const piece = await createPiece(d, { title: "Concerto", composer: "Bach" });
     const goal = await createGoal(d, { repertoireItemId: piece.id, description: "Andamento", targetBpm: 120, startMeasure: 8, endMeasure: 16 });
     const sessions = [];
-    for (let index = 0; index < 6; index += 1) {
+    for (let index = 0; index < 7; index += 1) {
       now = new Date("2026-11-09T10:00:00");
       now.setDate(now.getDate() - index);
       const session = await startSession(d, { repertoireItemId: piece.id, goalId: goal.id });
@@ -42,7 +42,7 @@ describe("dashboard application", () => {
     expect(result.displayName).toBe("Ana");
     expect(result.openSession).toMatchObject({ id: open.id, status: "PAUSED" });
     expect(result.recentPiece).toMatchObject({ title: "Concerto", composer: "Bach", goal: { description: "Andamento", targetBpm: 120, startMeasure: 8, endMeasure: 16 } });
-    // Only the newest piece session spans time: 30 minutes; the remaining sessions are instantaneous.
+    // Only the Monday session in this calendar week spans time; earlier sessions are outside the week.
     expect(result.weekActiveMs).toBe(1_800_000);
     expect(result.recentSessions).toHaveLength(5);
     expect(result.recentSessions[0]?.id).toBe(open.id);
@@ -51,6 +51,23 @@ describe("dashboard application", () => {
     expect(result.pieceSessions[0]?.id).toBe(open.id);
     expect(result.pieceSessions.every((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID)).toBe(true);
     expect(result.days).toHaveLength(7);
+    expect(result.days.map((day) => day.date.getDay())).toEqual([1, 2, 3, 4, 5, 6, 0]);
+    expect(result.days[0]?.activeMs).toBe(1_800_000);
+  });
+
+  it("returns practice activity for every day in a requested month", async () => {
+    let now = new Date("2026-11-09T10:00:00");
+    const d = makeTestDeps({ now: () => now });
+    const piece = await createPiece(d, { title: "Concerto", composer: "Bach" });
+    const session = await startSession(d, { repertoireItemId: piece.id });
+    now = new Date("2026-11-09T10:20:00");
+    await finishSession(d, { id: session.id, finalBpm: 80, completeGoal: false });
+
+    const activity = await getMonthActivity(d, 2026, 10);
+
+    expect(activity).toHaveLength(30);
+    expect(activity[8]?.activeMs).toBe(1_200_000);
+    expect(activity[7]?.activeMs).toBe(0);
   });
 
   it("returns an empty dashboard when no study data exists", async () => {

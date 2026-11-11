@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
 import { Gauge, Plus, Timer } from "lucide-react";
-import { getDashboard } from "../../application/dashboard";
+import { getDashboard, getMonthActivity } from "../../application/dashboard";
 import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
 import { INSTRUMENTS } from "../../domain/profile";
@@ -37,6 +37,8 @@ export function DashboardPage() {
   const [dashboard, setDashboard] = useState<Dashboard>();
   const [error, setError] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
+  const [activityView, setActivityView] = useState<"week" | "month">("week");
+  const [monthDays, setMonthDays] = useState<Awaited<ReturnType<typeof getMonthActivity>>>();
   useEffect(() => {
     let active = true;
     void container.getDeps().then(getDashboard).then((data) => { if (active) setDashboard(data); }).catch(() => { if (active) setError("Não foi possível carregar o painel."); });
@@ -49,8 +51,12 @@ export function DashboardPage() {
   const open = dashboard.openSession;
   const latest = dashboard.latestPieceSession;
   const today = new Date();
+  const todayKey = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
   const greeting = today.getHours() < 12 ? "Bom dia" : today.getHours() < 18 ? "Boa tarde" : "Boa noite";
   const maxDay = Math.max(...dashboard.days.map((day) => day.activeMs), 1);
+  const activityDays = activityView === "month" ? monthDays ?? [] : dashboard.days;
+  const maxActivity = Math.max(...activityDays.map((day) => day.activeMs), 1);
+  const monthOffset = activityView === "month" && monthDays?.[0] ? (new Date(monthDays[0].date.getFullYear(), monthDays[0].date.getMonth(), 1).getDay() + 6) % 7 : 0;
   const goal = dashboard.recentPiece?.goal;
   const lastBpm = dashboard.pieceSessions.find((session) => session.repertoire_item_id === latest?.repertoire_item_id && session.final_bpm != null)?.final_bpm ?? null;
   const bpmValues = dashboard.pieceSessions.filter((session) => session.repertoire_item_id === latest?.repertoire_item_id && session.final_bpm != null).slice(0, 20).map((session) => session.final_bpm!).reverse();
@@ -115,9 +121,11 @@ export function DashboardPage() {
 
     <div className="mb-12 grid grid-cols-1 gap-6 md:grid-cols-12">
       <section className="cress-card rounded-xl p-6 md:col-span-7">
-        <p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--text-muted)]">Últimos 7 dias</p>
-        <h2 className="mt-3 font-metric text-[36px] leading-tight font-light tabular-nums">{duration(dashboard.weekActiveMs)}</h2>
-        <ul className="mt-5 grid grid-cols-7 gap-2 text-center">{dashboard.days.map((day, index) => <li key={day.date.toISOString()} title={`${day.date.toLocaleDateString("pt-BR", { weekday: "long" })}, ${duration(day.activeMs)}`} aria-label={`${day.date.toLocaleDateString("pt-BR", { weekday: "long" })}, ${duration(day.activeMs)}`} className="flex flex-col items-center"><span className="flex h-24 items-end"><span className={day.activeMs ? "w-2.5 rounded-full" : "mb-0.5 h-1 w-1 rounded-full bg-[var(--ink-700)]"} style={day.activeMs ? { height: `${Math.max(4, (day.activeMs / maxDay) * 96)}px`, background: index === dashboard.days.length - 1 ? "linear-gradient(180deg, var(--violet-400), var(--blue-400))" : "var(--ink-600)" } : undefined} /></span><span className={`mt-2 text-xs ${index === dashboard.days.length - 1 ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{day.date.toLocaleDateString("pt-BR", { weekday: "narrow" })}</span></li>)}</ul>
+        <div className="flex items-start justify-between gap-4"><div><p className="text-xs font-semibold uppercase tracking-[.08em] text-[var(--text-muted)]">Esta semana</p><h2 className="mt-3 font-metric text-[36px] leading-tight font-light tabular-nums">{duration(dashboard.weekActiveMs)}</h2></div><div role="group" aria-label="Período de atividade" className="flex rounded-lg bg-[var(--ink-800)] p-1 text-xs"><button type="button" aria-pressed={activityView === "week"} className={`rounded-md px-3 py-1.5 ${activityView === "week" ? "bg-[var(--ink-600)] text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`} onClick={() => setActivityView("week")}>Semana</button><button type="button" aria-pressed={activityView === "month"} className={`rounded-md px-3 py-1.5 ${activityView === "month" ? "bg-[var(--ink-600)] text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`} onClick={() => {
+          setActivityView("month");
+          if (!monthDays) void container.getDeps().then((deps) => getMonthActivity(deps, today.getFullYear(), today.getMonth())).then(setMonthDays).catch(() => setError("Não foi possível carregar a atividade do mês."));
+        }}>Mês</button></div></div>
+        {activityView === "week" ? <ul className="mt-5 grid grid-cols-7 gap-2 text-center">{dashboard.days.map((day) => { const isToday = day.date.toISOString() === todayKey; return <li key={day.date.toISOString()} title={`${day.date.toLocaleDateString("pt-BR", { weekday: "long" })}, ${duration(day.activeMs)}`} aria-label={`${day.date.toLocaleDateString("pt-BR", { weekday: "long" })}, ${duration(day.activeMs)}`} className="flex flex-col items-center"><span className="flex h-24 items-end"><span className={day.activeMs ? "w-2.5 rounded-full" : "mb-0.5 h-1 w-1 rounded-full bg-[var(--ink-700)]"} style={day.activeMs ? { height: `${Math.max(4, (day.activeMs / maxDay) * 96)}px`, background: isToday ? "linear-gradient(180deg, var(--violet-400), var(--blue-400))" : "var(--ink-600)" } : undefined} /></span><span className={`mt-2 text-xs ${isToday ? "text-[var(--text-primary)]" : "text-[var(--text-muted)]"}`}>{day.date.toLocaleDateString("pt-BR", { weekday: "narrow" })}</span></li>; })}</ul> : <div className="mt-5">{monthDays ? <><div className="grid grid-cols-7 gap-1 text-center text-[10px] text-[var(--text-muted)]">{["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"].map((label) => <span key={label}>{label}</span>)}</div><div className="mt-2 grid grid-cols-7 gap-1">{Array.from({ length: monthOffset }, (_, index) => <span key={`empty-${index}`} aria-hidden="true" />)}{activityDays.map((day) => { const intensity = day.activeMs ? Math.max(.12, day.activeMs / maxActivity) : 0; const label = `${day.date.toLocaleDateString("pt-BR", { weekday: "long", day: "numeric", month: "long" })}, ${duration(day.activeMs)}`; return <span key={day.date.toISOString()} title={label} aria-label={label} className="flex aspect-square items-center justify-center rounded-md text-xs" style={{ background: intensity ? `rgb(167 139 250 / ${intensity * .55})` : "var(--ink-800)", color: intensity ? "var(--text-primary)" : "var(--text-muted)" }}>{day.date.getDate()}</span>; })}</div></> : <p role="status" className="py-8 text-center text-sm text-[var(--text-muted)]">Carregando atividade do mês…</p>}</div>}
       </section>
       <section className="cress-card flex flex-col rounded-xl p-6 md:col-span-5">
         <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--ink-700)] text-[var(--violet-300)]"><span className="flex gap-1.5"><Gauge size={18} strokeWidth={1.5} /><Timer size={18} strokeWidth={1.5} /></span></div><h2 className="mt-4 font-display text-[28px] font-semibold">Prática livre</h2><p className="mt-2 text-sm text-[var(--text-secondary)]">Metrônomo e afinador lado a lado, sem abrir sessão.</p><Link className="mt-auto inline-flex h-9 items-center self-start rounded-lg border border-[var(--border-default)] px-4 text-sm hover:bg-[var(--ink-700)]" to="/tools">Abrir ferramentas</Link>
