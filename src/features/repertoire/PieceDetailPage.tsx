@@ -41,7 +41,12 @@ export function PieceDetailPage() {
 
   async function reloadGoals() {
     const deps = await container.getDeps();
-    setGoals(await listGoals(deps, { repertoireItemId: pieceId }));
+    const [items, pieceStats] = await Promise.all([
+      listGoals(deps, { repertoireItemId: pieceId }),
+      getPieceStats(deps, { repertoireItemId: pieceId }),
+    ]);
+    setGoals(items);
+    setStats(pieceStats);
   }
 
   useEffect(() => {
