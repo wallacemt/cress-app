@@ -8,6 +8,7 @@ import { UpdateCheckProvider } from "../features/updates/UpdateCheckProvider";
 import { Monogram } from "../components/ui/Monogram";
 import { StageBackdrop } from "../components/ui/StageBackdrop";
 import { StartSessionModal } from "../features/workspace/StartSessionModal";
+import { SearchModal } from "../features/search/SearchModal";
 
 const destinations: { to: string; label: string; icon: LucideIcon; end?: boolean }[] = [
   { to: "/", label: "Início", icon: Home, end: true },
@@ -24,6 +25,7 @@ export function AppShell() {
   const hasBackdrop = !isWorkspace && (pathname === "/" || pathname.startsWith("/sessions") || pathname.startsWith("/repertoire"));
   const [hidden, setHidden] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [searchOpen, setSearchOpen] = useState(false);
   const navigationRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
@@ -47,6 +49,10 @@ export function AppShell() {
         event.preventDefault();
         setModalOpen(true);
       }
+      if (!isWorkspace && (event.ctrlKey || event.metaKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault();
+        setSearchOpen(true);
+      }
     };
     document.addEventListener("keydown", onKeyDown);
     return () => document.removeEventListener("keydown", onKeyDown);
@@ -58,6 +64,7 @@ export function AppShell() {
         {hasBackdrop && <StageBackdrop />}
         <main><Outlet /></main>
         {!isWorkspace && modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
+        {!isWorkspace && searchOpen && <SearchModal onClose={() => setSearchOpen(false)} />}
         {!isWorkspace && (
           <nav
             ref={navigationRef}
@@ -75,7 +82,7 @@ export function AppShell() {
               ))}
             </div>
             <span className="atril-separator" aria-hidden="true" />
-            <button type="button" className="atril-search" aria-label="Buscar (Ctrl K)" title="Buscar · Ctrl K">
+            <button type="button" className="atril-search" aria-label="Buscar (Ctrl K)" title="Buscar · Ctrl K" onClick={() => setSearchOpen(true)}>
               <Search size={16} strokeWidth={1.5} /><span>Ctrl K</span>
             </button>
             <span className="atril-separator atril-avatar-separator" aria-hidden="true" />
