@@ -29,6 +29,8 @@ export function SessionDetailPage() {
   const [goalCompleted, setGoalCompleted] = useState(false);
   const [deps, setDeps] = useState<Deps>();
   const [error, setError] = useState("");
+  const [takeError, setTakeError] = useState("");
+  const [activeTakeId, setActiveTakeId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -50,6 +52,8 @@ export function SessionDetailPage() {
   if (!session || !deps) return <main aria-label="Carregando sessão" aria-busy="true" className="mx-auto max-w-[1120px] px-8 pt-12"><div className="cress-skeleton h-12 w-2/3" /><div className="cress-skeleton mt-3 h-5 w-1/3" /><div className="mt-10 grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-3"><div className="cress-skeleton h-32" /><div className="cress-skeleton h-32" /><div className="cress-skeleton h-32" /></div></main>;
 
   const refresh = async () => setTakes(await listTakes(deps, { sessionId }));
+  const visibleTakes = takes.filter((take) => take.status !== "RECORDING");
+  const recordingInProgress = takes.some((take) => take.status === "RECORDING");
   const delta = session.initial_bpm != null && session.final_bpm != null && session.final_bpm > session.initial_bpm ? session.final_bpm - session.initial_bpm : 0;
   const date = session.startedAt;
   const end = date && session.endedAt ? session.endedAt : date && session.status === "FINISHED" ? new Date(date.getTime() + session.activeMs) : null;
@@ -70,6 +74,6 @@ export function SessionDetailPage() {
       <div className="p-6"><p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">OBJETIVO</p>{goalDescription ? <><p className="mt-2 line-clamp-2 text-base">{goalDescription}</p><p className="mt-2">{goalCompleted ? <GoalBadge /> : <span className="text-xs text-[var(--text-muted)]">Em andamento</span>}</p></> : <p className="mt-2 text-xs text-[var(--text-muted)]">Sem objetivo</p>}</div>
     </section>
     {session.notes && <section className="mb-10"><div className="cress-section-head"><h2>Observações</h2><div aria-hidden="true" className="cress-hairpin" /></div><p className="max-w-[68ch] whitespace-pre-wrap border-l-2 border-[var(--ink-600)] pl-4 text-base">{session.notes}</p></section>}
-    <section aria-labelledby="session-recordings-title"><div className="cress-section-head"><h2 id="session-recordings-title">Gravações · {takes.length}</h2><div aria-hidden="true" className="cress-hairpin" /></div>{!takes.length ? <p className="text-sm text-[var(--text-muted)]">Esta sessão não tem gravações.</p> : <div className="cress-card cress-takes rounded-xl p-2">{takes.filter((take) => take.status !== "RECORDING").map((take) => <RecordingItem key={take.id} take={take} deps={deps} onChange={() => void refresh()} onError={setError} audio={audio} onPlay={() => {}} />)}</div>}</section>
+    <section aria-labelledby="session-recordings-title"><div className="cress-section-head"><h2 id="session-recordings-title">Gravações · {takes.length}</h2><div aria-hidden="true" className="cress-hairpin" /></div>{takeError && <p role="alert" className="text-[var(--danger)]">{takeError}</p>}{!visibleTakes.length ? <p className="text-sm text-[var(--text-muted)]">{recordingInProgress ? "Gravação em andamento…" : "Esta sessão não tem gravações."}</p> : <div className="cress-card cress-takes rounded-xl p-2">{visibleTakes.map((take) => <RecordingItem key={take.id} take={take} deps={deps} onChange={() => void refresh()} onError={setTakeError} audio={audio} activeTakeId={activeTakeId} onPlay={(id) => setActiveTakeId(id)} />)}</div>}</section>
   </main>;
 }
