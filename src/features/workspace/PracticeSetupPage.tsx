@@ -1,5 +1,5 @@
 import { useEffect, useState, type FormEvent } from "react";
-import { useNavigate } from "react-router";
+import { useNavigate, useSearchParams } from "react-router";
 import { createGoal, listGoals } from "../../application/goals";
 import type { Deps } from "../../application/deps";
 import { listPieces } from "../../application/repertoire";
@@ -13,6 +13,7 @@ import { GoalSelect } from "./GoalSelect";
 
 export function PracticeSetupPage() {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const [pieces, setPieces] = useState<RepertoireItem[]>([]);
   const [goals, setGoals] = useState<StudyGoal[]>([]);
   const [pieceId, setPieceId] = useState("");
@@ -31,7 +32,8 @@ export function PracticeSetupPage() {
         if (!active) return;
         const available = items.filter((piece) => !piece.archived);
         setPieces(available);
-        setPieceId(available[0]?.id ?? "");
+        const requestedPieceId = searchParams.get("pieceId");
+        setPieceId(available.some((piece) => piece.id === requestedPieceId) ? requestedPieceId! : available[0]?.id ?? "");
       })
       .catch(() => {
         if (active) setError("Não foi possível carregar o repertório.");
@@ -39,7 +41,7 @@ export function PracticeSetupPage() {
     return () => {
       active = false;
     };
-  }, []);
+  }, [searchParams]);
 
   useEffect(() => {
     let active = true;

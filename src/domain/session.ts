@@ -10,6 +10,9 @@ export interface StudySession {
   activeMs: number;
   notes: string;
 }
+export function liveActiveMs(session: Pick<StudySession, "status" | "activeMs" | "resumedAt">, now: Date): number {
+  return session.activeMs + (session.status === "ACTIVE" && session.resumedAt ? Math.max(0, now.getTime() - session.resumedAt.getTime()) : 0);
+}
 export function createSession(id: string, now = new Date()): StudySession {
   return {
     id,

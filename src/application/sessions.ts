@@ -79,6 +79,20 @@ export async function listSessions(d: Deps, { repertoireItemId }: { repertoireIt
     goals.map((goal) => ({ id: goal.id, completed: goal.completed_at !== null })),
   );
 }
+export async function listSessionsPage(d: Deps, { repertoireItemId, page, pageSize }: { repertoireItemId?: string; page: number; pageSize: number }) {
+  const [rows, goals] = await Promise.all([
+    makeSessionRepo(d.db).listPage({ limit: pageSize + 1, offset: page * pageSize, repertoireItemId }),
+    makeGoalRepo(d.db).list(),
+  ]);
+  const sessions = rows.map(ent);
+  return {
+    sessions: withGoalCompletion(sessions.slice(0, pageSize), goals.map((goal) => ({ id: goal.id, completed: goal.completed_at !== null }))),
+    hasMore: sessions.length > pageSize,
+  };
+}
+export async function hasOpenStudySession(d: Deps) {
+  return (await makeSessionRepo(d.db).open()).some((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID);
+}
 export async function getSession(d: Deps, { id }: { id: string }) {
   const session = await makeSessionRepo(d.db).get(id);
   return session ? ent(session) : null;

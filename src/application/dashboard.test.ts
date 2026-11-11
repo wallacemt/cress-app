@@ -19,6 +19,7 @@ describe("dashboard application", () => {
       now = new Date("2026-11-09T10:00:00");
       now.setDate(now.getDate() - index);
       const session = await startSession(d, { repertoireItemId: piece.id, goalId: goal.id });
+      if (index === 0) now = new Date(now.getTime() + 30 * 60 * 1_000);
       await finishSession(d, { id: session.id, finalBpm: 70 + index, completeGoal: false });
       sessions.push(session);
     }
@@ -41,7 +42,8 @@ describe("dashboard application", () => {
     expect(result.displayName).toBe("Ana");
     expect(result.openSession).toMatchObject({ id: open.id, status: "PAUSED" });
     expect(result.recentPiece).toMatchObject({ title: "Concerto", composer: "Bach", goal: { description: "Andamento", targetBpm: 120, startMeasure: 8, endMeasure: 16 } });
-    expect(result.weekActiveMs).toBe(0);
+    // Only the newest piece session spans time: 30 minutes; the remaining sessions are instantaneous.
+    expect(result.weekActiveMs).toBe(1_800_000);
     expect(result.recentSessions).toHaveLength(5);
     expect(result.recentSessions[0]?.id).toBe(open.id);
     expect(result.recentSessions[0]?.goalCompleted).toBe(false);

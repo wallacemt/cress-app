@@ -32,14 +32,14 @@ const getPeaks = (path: string, src: string) => {
   return task;
 };
 
-interface RecordingItemProps { take: RecordingRow; deps: Deps; onChange: () => void; onError: (message: string) => void; audio: HTMLAudioElement; onPlay: (takeId: string) => void; }
+interface RecordingItemProps { take: RecordingRow; deps: Deps; onChange: () => void; onError: (message: string) => void; audio: HTMLAudioElement; activeTakeId: string | null; onPlay: (takeId: string) => void; }
 function durationLabel(ms: number | null) { const s = Math.floor((ms ?? 0) / 1000); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
 function recordedAtLabel(ms: number) {
   const date = new Date(ms);
   return `${date.toLocaleDateString("pt-BR")} ${date.toLocaleTimeString("pt-BR", { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, deps, onChange, onError, audio, onPlay }) => {
+export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, deps, onChange, onError, audio, activeTakeId, onPlay }) => {
   const [src, setSrc] = useState("");
   const [peaks, setPeaks] = useState<Float32Array | null>(null);
   const [failed, setFailed] = useState(false);
@@ -72,6 +72,7 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
   }, [take.relative_path, onError]);
 
   useEffect(() => { setTitle(take.title); setNotes(take.notes ?? ""); }, [take.title, take.notes]);
+  useEffect(() => { if (activeTakeId !== take.id) setPlaying(false); }, [activeTakeId, take.id]);
   useEffect(() => {
     if (!menuOpen) return;
     const close = () => setMenuOpen(false);
