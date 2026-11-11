@@ -4,6 +4,9 @@ import { AudioLines, Search } from "lucide-react";
 import { container } from "../../app/container";
 import { listPieces } from "../../application/repertoire";
 import { listSessions, startSession } from "../../application/sessions";
+import { listGoals } from "../../application/goals";
+import type { StudyGoal } from "../../domain/goal";
+import { GoalFormDialog } from "../repertoire/GoalFormDialog";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
 import { normalizeName } from "../../domain/score";
 import type { RepertoireItem } from "../../domain/repertoire";
@@ -16,6 +19,9 @@ export function StartSessionModal({ onClose }: { onClose: () => void }) {
   const [selected, setSelected] = useState("free");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
+  const [goals, setGoals] = useState<StudyGoal[]>([]);
+  const [goalId, setGoalId] = useState("");
+  const [goalDialog, setGoalDialog] = useState(false);
   const searchRef = useRef<HTMLInputElement>(null);
   useEffect(() => {
     let active = true;
@@ -29,6 +35,16 @@ export function StartSessionModal({ onClose }: { onClose: () => void }) {
     searchRef.current?.focus();
     return () => { active = false; };
   }, []);
+  useEffect(() => {
+    setGoalId("");
+    setGoals([]);
+    if (selected === "free" || !pieces.some((piece) => piece.id === selected)) return;
+    let active = true;
+    void container.getDeps().then((deps) => listGoals(deps, { repertoireItemId: selected })).then((items) => {
+      if (active) setGoals(items.filter((goal) => !goal.completed));
+    }).catch(() => { if (active) setError("Não foi possível carregar os objetivos."); });
+    return () => { active = false; };
+  }, [selected, pieces]);
   const needle = normalizeName(query);
   const matches = (piece: RepertoireItem) => !needle || normalizeName(`${piece.title} ${piece.composer ?? ""}`).includes(needle);
   const recent = pieces.filter((piece) => recentIds.includes(piece.id) && matches(piece));
@@ -43,7 +59,7 @@ export function StartSessionModal({ onClose }: { onClose: () => void }) {
     setError("");
     try {
       const deps = await container.getDeps();
-      const session = await startSession(deps, { repertoireItemId: piece.id });
+      const session = await startSession(deps, { repertoireItemId: piece.id, ...(goalId ? { goalId } : {}) });
       onClose();
       navigate(`/practice/${session.id}`);
     } catch (cause) {
@@ -70,11 +86,13 @@ export function StartSessionModal({ onClose }: { onClose: () => void }) {
         <p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Prática livre</p><button type="button" onClick={() => setSelected("free")} className={`relative flex h-14 w-full items-center gap-3 rounded-lg px-4 text-left ${selected === "free" ? "bg-[var(--ink-600)]" : "hover:bg-[var(--ink-800)]"}`}><AudioLines size={19} /><span className="italic">Prática livre</span>{selected === "free" && <span className="cress-hairpin-v absolute inset-y-0 left-0" />}</button>
         {recent.length > 0 && <><p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Recentes</p>{recent.map(pieceButton)}</>}
         {repertoire.length > 0 && <><p className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Repertório</p>{repertoire.map(pieceButton)}</>}
+        {selected !== "free" && pieces.some((piece) => piece.id === selected) && <section className="mt-4 border-t border-[var(--border-subtle)] px-3 pt-3"><p className="mb-2 text-xs font-semibold uppercase tracking-wider text-[var(--text-muted)]">Objetivo de estudo</p>{goals.map((goal) => <label key={goal.id} className="flex cursor-pointer items-center gap-2 py-1.5 text-sm"><input type="radio" name="session-goal" checked={goalId === goal.id} onChange={() => setGoalId(goal.id)} />{goal.description}</label>)}<button type="button" className="mt-2 text-sm text-[var(--violet-300)]" onClick={() => setGoalDialog(true)}>+ Novo objetivo</button></section>}
         {!loading && !error && !recent.length && !repertoire.length && <p className="p-4 text-sm text-[var(--text-muted)]">Nenhuma obra encontrada. <a className="text-[var(--violet-300)]" href="/repertoire" onClick={(event) => { event.preventDefault(); onClose(); navigate("/repertoire"); }}>Ir para Repertório</a></p>}
         {loading && <p role="status" className="p-4 text-sm text-[var(--text-muted)]">Carregando repertório…</p>}
         {error && <p role="alert" className="p-3 text-sm text-[var(--danger)]">{error}</p>}
       </div>
       <footer className="flex justify-end border-t border-[var(--border-subtle)] p-4"><button type="button" className="cress-btn-primary" disabled={loading || (selected !== "free" && !pieces.some((piece) => piece.id === selected))} onClick={() => void confirm()}>Iniciar estudo</button></footer>
     </section>
+    {goalDialog && <GoalFormDialog repertoireItemId={selected} onClose={() => setGoalDialog(false)} onSaved={(goal) => { setGoals((items) => [...items, goal]); setGoalId(goal.id); setGoalDialog(false); }} />}
   </div>;
 }
