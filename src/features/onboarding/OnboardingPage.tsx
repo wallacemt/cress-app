@@ -27,9 +27,9 @@ const roles: Record<MusicalRole, string> = {
   amateur: "Amador(a)",
 };
 const control =
-  "rounded-xl border border-[var(--border-default)] bg-[var(--ink-800)] px-5 text-[var(--text-primary)] outline-none focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]";
+  "rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)] outline-none focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]";
 const button =
-  "inline-flex min-h-14 items-center justify-center rounded-xl px-7 text-base font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)] disabled:cursor-not-allowed disabled:opacity-45";
+  "inline-flex min-h-11 items-center justify-center rounded-lg px-5 font-medium transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)] disabled:cursor-not-allowed disabled:opacity-45";
 const chip = (selected: boolean) =>
   `${button} w-full border ${selected ? "border-[var(--violet-400)] bg-[var(--violet-tint)] text-[var(--text-primary)]" : "border-[var(--border-default)] bg-[var(--ink-800)] text-[var(--text-secondary)] hover:bg-[var(--ink-700)]"}`;
 
@@ -140,18 +140,9 @@ export function OnboardingPage() {
   ] as const;
 
   return (
-    <main className="cress-content-enter relative flex min-h-screen items-center overflow-hidden bg-[var(--ink-900)] px-8 py-8 text-[var(--text-primary)] lg:px-14">
-      <div aria-hidden="true" className="pointer-events-none absolute -left-40 top-1/4 h-[560px] w-[560px] rounded-full bg-[var(--violet-600)] opacity-[.12] blur-[140px]" />
-      <div className="relative mx-auto grid w-full max-w-[1440px] items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(560px,0.9fr)] lg:gap-20">
-      <aside className="hidden lg:block">
-        <img src={cressStacked} alt="Cress" className="mb-10 h-40" />
-        <p className="mb-5 text-sm font-semibold tracking-[0.12em] text-[var(--violet-300)]">PRACTICE. MEASURE. CRESCENDO.</p>
-        <p className="max-w-[11ch] font-display text-[64px] leading-[1.05] font-medium">Sua música, em <i>movimento.</i></p>
-        <div aria-hidden="true" className="cress-hairpin mt-10 w-56" />
-      </aside>
-      <section className="cress-glass relative w-full rounded-2xl p-8 shadow-2xl shadow-black/20 sm:p-10 lg:p-12" aria-label="Configuração inicial do Cress">
-        <div aria-hidden="true" className="cress-hairpin absolute inset-x-0 top-0 rounded-t-2xl" />
-        <div className="mb-8 flex items-center justify-between gap-8">
+    <main className="flex min-h-screen items-center justify-center bg-[var(--ink-900)] px-8 py-10">
+      <section className="w-full max-w-[560px]" aria-label="Configuração inicial do Cress">
+        <div className="mb-12 flex items-center justify-between gap-8">
           <img src={cressSymbol} alt="Cress" className="h-8 w-8" />
           <div className="text-right">
             <div className="mb-2 flex justify-end gap-1" aria-hidden="true">
@@ -164,24 +155,24 @@ export function OnboardingPage() {
         </div>
 
         <form onSubmit={advance}>
-          {step === 1 && <div className="py-6 lg:hidden">
+          {step === 1 && <div className="py-8">
             <img src={cressStacked} alt="Cress" className="mb-8 h-32" />
             <p className="mb-5 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">PRACTICE. MEASURE. CRESCENDO.</p>
             <h1 className="mb-6 font-display text-[72px] leading-[76px] font-medium text-[var(--text-primary)]">Cada estudo, um pequeno <i>crescendo</i>.</h1>
             <p className="max-w-[68ch] text-lg leading-7 text-[var(--text-secondary)]">O Cress reúne partitura, metrônomo, afinador e gravador numa mesma mesa de estudo — e guarda a sua evolução.</p>
           </div>}
 
-          {step === 2 && <div className="py-6">
-            <h1 className="mb-10 font-display text-5xl leading-[1.08] text-[var(--text-primary)]">Como podemos te chamar?</h1>
-            <input ref={(node) => { fieldRef.current = node; focusRef.current = node; }} autoFocus aria-label="Seu nome" className={`${control} h-16 w-full text-xl`} maxLength={60} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
+          {step === 2 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">Como podemos te chamar?</h1>
+            <input ref={(node) => { fieldRef.current = node; focusRef.current = node; }} autoFocus aria-label="Seu nome" className={`${control} h-[52px] w-full text-lg`} maxLength={60} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />
             <p className="mt-3 text-sm text-[var(--text-muted)]">Usamos só para te cumprimentar. Fica neste computador.</p>
           </div>}
 
-          {step === 3 && <div className="py-6">
-            <h1 className="mb-10 font-display text-5xl leading-[1.08] text-[var(--text-primary)]">O que você toca?</h1>
-            <div ref={(node) => { focusRef.current = node?.querySelector("button") ?? null; }} className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {step === 3 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">O que você toca?</h1>
+            <div ref={(node) => { focusRef.current = node?.querySelector("button") ?? null; }} className="grid grid-cols-4 gap-2">
               {(Object.entries(INSTRUMENTS) as [InstrumentCode, string][]).map(([code, label]) => <div key={code} className="relative">
-                <button type="button" aria-pressed={instruments.includes(code)} className={`${chip(instruments.includes(code))} min-h-[68px]`} onClick={() => toggleInstrument(code)}>
+                <button type="button" aria-pressed={instruments.includes(code)} className={chip(instruments.includes(code))} onClick={() => toggleInstrument(code)}>
                   {instruments.includes(code) && <Check size={15} aria-hidden="true" />} {label}
                 </button>
                 {instruments.includes(code) && <button type="button" aria-label={`Definir ${label} como principal`} title="Principal" className={`absolute -right-1 -top-2 rounded-full p-1 ${primaryInstrument === code ? "text-[var(--gold-300)]" : "text-[var(--text-muted)]"}`} onClick={() => setPrimaryInstrument(code)}><Star size={16} fill={primaryInstrument === code ? "currentColor" : "none"} /></button>}
@@ -192,9 +183,9 @@ export function OnboardingPage() {
             </label>}
           </div>}
 
-          {step === 4 && <div className="py-6">
-            <h1 className="mb-3 font-display text-5xl leading-[1.08] text-[var(--text-primary)]">Você e a música</h1>
-            <p className="mb-10 text-lg text-[var(--text-secondary)]">Tudo opcional. Ajuda o Cress a se adaptar a você.</p>
+          {step === 4 && <div className="py-8">
+            <h1 className="mb-2 font-display text-4xl leading-10 text-[var(--text-primary)]">Você e a música</h1>
+            <p className="mb-8 text-[var(--text-secondary)]">Tudo opcional. Ajuda o Cress a se adaptar a você.</p>
             <fieldset className="mb-7">
               <legend className="mb-3 text-sm text-[var(--text-secondary)]">Nível</legend>
               <div className="flex flex-wrap gap-2">{levels.map(([value, label]) => <button key={value} type="button" aria-pressed={experienceLevel === value} className={chip(experienceLevel === value)} onClick={() => setExperienceLevel(experienceLevel === value ? undefined : value)}>{label}</button>)}
@@ -210,8 +201,8 @@ export function OnboardingPage() {
             </label>
           </div>}
 
-          {step === 5 && <div className="py-6">
-            <h1 className="mb-10 font-display text-5xl leading-[1.08] text-[var(--text-primary)]">Sua afinação</h1>
+          {step === 5 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">Sua afinação</h1>
             <fieldset className="mb-8">
               <legend className="mb-3 text-sm text-[var(--text-secondary)]">Frequência de A4</legend>
               <div className="flex gap-2">{[440, 442, 443].map((value) => <button key={value} type="button" aria-pressed={Number(a4) === value} className={chip(Number(a4) === value)} onClick={() => setA4(String(value))}>{value} Hz</button>)}
@@ -224,8 +215,8 @@ export function OnboardingPage() {
             </fieldset>
           </div>}
 
-          {step === 6 && <div className="py-6">
-            <h1 className="mb-10 font-display text-5xl leading-[1.08] text-[var(--text-primary)]">Tudo pronto, {displayName.trim()}.</h1>
+          {step === 6 && <div className="py-8">
+            <h1 className="mb-8 font-display text-4xl leading-10 text-[var(--text-primary)]">Tudo pronto, {displayName.trim()}.</h1>
             <dl className="divide-y divide-[var(--border-subtle)]">
               {summary.map(([label, value, editStep]) => <div key={label} className="flex items-start justify-between gap-4 py-4">
                 <dt className="w-28 shrink-0 text-sm text-[var(--text-muted)]">{label}</dt>
@@ -236,13 +227,12 @@ export function OnboardingPage() {
           </div>}
 
           {error && <p role="alert" className="mb-4 text-sm text-[var(--danger)]">{error}</p>}
-          <div className="mt-8 flex items-center justify-between border-t border-[var(--border-subtle)] pt-7">
+          <div className="mt-6 flex items-center justify-between border-t border-[var(--border-subtle)] pt-6">
             {step > 1 ? <button type="button" className={`${button} bg-transparent text-[var(--text-secondary)] hover:bg-[var(--accent)]`} onClick={() => { setError(""); setStep((current) => current - 1); }}>Voltar</button> : <span />}
             {step < 6 ? <button type="submit" className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{step === 1 ? "Começar" : "Continuar"}</button> : <button type="button" disabled={saving} className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`} onClick={finish}>{saving ? "Salvando…" : "Entrar no Cress"}</button>}
           </div>
         </form>
       </section>
-      </div>
     </main>
   );
 }
