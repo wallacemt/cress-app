@@ -140,7 +140,7 @@ export function OnboardingPage() {
   ] as const;
 
   return (
-    <main className="relative flex min-h-screen items-center overflow-hidden bg-[var(--ink-900)] px-8 py-8 text-[var(--text-primary)] lg:px-14">
+    <main className="cress-content-enter relative flex min-h-screen items-center overflow-hidden bg-[var(--ink-900)] px-8 py-8 text-[var(--text-primary)] lg:px-14">
       <div aria-hidden="true" className="pointer-events-none absolute -left-40 top-1/4 h-[560px] w-[560px] rounded-full bg-[var(--violet-600)] opacity-[.12] blur-[140px]" />
       <div className="relative mx-auto grid w-full max-w-[1440px] items-center gap-12 lg:grid-cols-[minmax(0,1fr)_minmax(560px,0.9fr)] lg:gap-20">
       <aside className="hidden lg:block">

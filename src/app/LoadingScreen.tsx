@@ -21,14 +21,15 @@ export function LoadingScreen() {
       style={{ backgroundColor: "var(--ink-900, #090b14)" }}
       className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden cress-loading-fade"
     >
-      <img src={cressStacked} alt="Cress" className="h-48 cress-loading-logo" />
-      <p className="mt-10 text-sm font-medium text-[var(--text-muted)] cress-loading-text">
+      <div className="flex flex-col items-center">
+      <img src={cressStacked} alt="Cress" className="h-56 cress-loading-logo" />
+      <p className="mt-8 text-base font-medium text-[var(--text-muted)] cress-loading-text">
         Preparando sua mesa de estudo…
       </p>
       <svg
         aria-hidden="true"
         viewBox="0 0 480 48"
-        className="absolute bottom-[10%] left-1/2 w-[480px] -translate-x-1/2 cress-loading-staff"
+        className="mt-12 w-[min(640px,85vw)] cress-loading-staff"
       >
         {[8, 16, 24, 32, 40].map((y) => (
           <line
@@ -67,6 +68,7 @@ export function LoadingScreen() {
           </g>
         ))}
       </svg>
+      </div>
     </main>
   );
 }

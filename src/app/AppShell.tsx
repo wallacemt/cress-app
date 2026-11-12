@@ -60,7 +60,7 @@ export function AppShell() {
 
   return (
     <UpdateCheckProvider>
-      <div className={`app-shell${isWorkspace ? " app-shell-workspace" : ""}`}>
+      <div className={`app-shell cress-content-enter${isWorkspace ? " app-shell-workspace" : ""}`}>
         {hasBackdrop && <StageBackdrop />}
         <main><Outlet /></main>
         {!isWorkspace && modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
