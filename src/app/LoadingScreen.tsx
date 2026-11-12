@@ -19,17 +19,17 @@ export function LoadingScreen() {
       role="status"
       aria-live="polite"
       style={{ backgroundColor: "var(--ink-900, #090b14)" }}
-      className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden cress-loading-fade"
+      className=" w-full h-full   flex items-center justify-center  cress-loading-fade"
     >
       <div className="flex flex-col items-center">
-      <img src={cressStacked} alt="Cress" className="h-56 cress-loading-logo" />
+      <img src={cressStacked} alt="Cress" className="h-82 cress-loading-logo" />
       <p className="mt-8 text-base font-medium text-[var(--text-muted)] cress-loading-text">
-        Preparando sua mesa de estudo…
+        Preparando sua mesa de estudo musical…
       </p>
       <svg
         aria-hidden="true"
         viewBox="0 0 480 48"
-        className="mt-12 w-[min(640px,85vw)] cress-loading-staff"
+        className="mt-12 w-[min(840px,85vw)] cress-loading-staff"
       >
         {[8, 16, 24, 32, 40].map((y) => (
           <line
