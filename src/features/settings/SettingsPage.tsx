@@ -9,9 +9,9 @@ import {
   type MusicalRole,
 } from "../../domain/profile";
 import { useProfileStore } from "../../stores/profileStore";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useUpdateCheck } from "../../hooks/useUpdateCheck";
 import { Monogram } from "../../components/ui/Monogram";
-import { useLanguageStore } from "../../stores/languageStore";
 import { LANGUAGES, t, type LanguageCode } from "../../lib/i18n";
 
 const levels = [
@@ -42,7 +42,8 @@ function labelFor(code: InstrumentCode, otherLabel: string | null) {
 
 export function SettingsPage() {
   const profile = useProfileStore((state) => state.profile);
-  const { language } = useLanguageStore.getState();
+  const language = useLanguageStore((state) => state.language);
+  const setLanguage = useLanguageStore((state) => state.setLanguage);
   const update = useUpdateCheck();
   const [edit, setEdit] = useState(false);
   const [displayName, setDisplayName] = useState(profile?.displayName ?? "");
@@ -54,12 +55,10 @@ export function SettingsPage() {
   const [ensembleName, setEnsembleName] = useState(profile?.ensembleName ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-  const [dbReady, setDbReady] = useState(false);
 
   useEffect(() => {
     container.getDeps().then((deps) => {
       useLanguageStore.getState().loadLanguage(deps.db);
-      setDbReady(true);
     });
   }, []);
 
@@ -146,39 +145,45 @@ export function SettingsPage() {
           </div>
         </section>
 
-        {/* Idioma (preferência persistida) */}
+        {/* Idioma (só configurado na visualização; seletor só no modo edição) */}
         <section className="mb-8">
           <div className="flex items-center justify-between mb-3">
             <div>
               <p className="mb-1 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">{t("profile.idioma")}</p>
               <p className="text-sm text-[var(--text-secondary)]">{t("profile.idioma_desc")}</p>
             </div>
-          </div>
-          <div className="flex flex-wrap gap-2">
-            {Object.entries(LANGUAGES).map(([code, info]) => {
-              const selected = language === code;
-              return (
-                <button
-                  key={code}
-                  type="button"
-                  aria-pressed={selected}
-                  className={chip(selected)}
-                  onClick={() => {
-                    if (!dbReady) return;
-                    void container.getDeps().then((deps) =>
-                      useLanguageStore.getState().setLanguage(code as LanguageCode, deps.db),
-                    );
-                  }}
-                >
-                  {info.native}
-                </button>
-              );
-            })}
+            <span className="text-sm font-medium text-[var(--text-primary)]">
+              {LANGUAGES[language].native}
+            </span>
           </div>
         </section>
 
         {edit && (
           <form onSubmit={save}>
+            <fieldset className="mb-7">
+              <legend className="mb-3 text-sm text-[var(--text-secondary)]">{t("profile.idioma")}</legend>
+              <p className="mb-3 text-sm text-[var(--text-secondary)]">{t("profile.idioma_desc")}</p>
+              <div className="flex flex-wrap gap-2">
+                {Object.entries(LANGUAGES).map(([code, info]) => {
+                  const selected = language === code;
+                  return (
+                    <button
+                      key={code}
+                      type="button"
+                      aria-pressed={selected}
+                      className={chip(selected)}
+                      onClick={() => {
+                        void container.getDeps().then((deps) =>
+                          setLanguage(code as LanguageCode, deps.db),
+                        );
+                      }}
+                    >
+                      {info.native}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
             <fieldset className="mb-7">
               <legend className="mb-3 text-sm text-[var(--text-secondary)]">{t("settings.seu_nome")}</legend>
               <input aria-label={t("settings.seu_nome")} className={`${control} mt-2 h-12 w-full`} maxLength={60} value={displayName} onChange={(event) => setDisplayName(event.target.value)} />

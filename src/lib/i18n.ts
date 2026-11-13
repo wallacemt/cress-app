@@ -16,6 +16,12 @@ const locales: Record<LanguageCode, Locale> = {
 
 let current: LanguageCode = "pt-BR";
 
+export function detectSystemLanguage(): LanguageCode {
+  if (typeof navigator === "undefined") return "pt-BR";
+  const lang = navigator.language || navigator.languages?.[0] || "";
+  return lang.toLowerCase().startsWith("pt") ? "pt-BR" : "en-US";
+}
+
 export function setLanguage(code: LanguageCode) {
   if (!(code in locales)) return;
   current = code;

@@ -42,6 +42,24 @@ describe("SettingsPage", () => {
     expect(screen.getByRole("button", { name: /editar/i })).toBeTruthy();
     // Campos de edição não devem estar visíveis no modo visualização
     expect(screen.queryByRole("textbox", { name: /seu nome/i })).toBeNull();
+    // O seletor de idioma não aparece na visualização
+    expect(screen.queryByRole("button", { name: /Português/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /English/i })).toBeNull();
+  });
+
+  it("mostra apenas o idioma configurado na visualização", () => {
+    renderSettings();
+    // Deve mostrar o idioma atual (Português por padrão / detectado do sistema)
+    expect(screen.getByText(/Português|English/)).toBeTruthy();
+  });
+
+  it("exibe o seletor de idioma apenas no modo edição", async () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: /editar/i }));
+
+    // Agora os botões de idioma aparecem no formulário de edição
+    expect(screen.getByRole("button", { name: /Português/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /English/i })).toBeTruthy();
   });
 
   it("preenche os campos após entrar no modo edição e valida campos obrigatórios", async () => {
