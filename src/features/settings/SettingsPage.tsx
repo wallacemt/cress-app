@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from "react";
+import { useState, type FormEvent } from "react";
 import { Check, Edit2, RefreshCw, Star } from "lucide-react";
 import { saveProfile } from "../../application/profile";
 import { container } from "../../app/container";
@@ -55,12 +55,6 @@ export function SettingsPage() {
   const [ensembleName, setEnsembleName] = useState(profile?.ensembleName ?? "");
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
-
-  useEffect(() => {
-    container.getDeps().then((deps) => {
-      useLanguageStore.getState().loadLanguage(deps.db);
-    });
-  }, []);
 
   const toggleInstrument = (code: InstrumentCode) => {
     setInstruments((current) => {

@@ -1,5 +1,5 @@
 import { create } from "zustand";
-import { detectSystemLanguage, type LanguageCode } from "../lib/i18n";
+import { detectSystemLanguage, setLanguage as setI18nLanguage, type LanguageCode } from "../lib/i18n";
 import { makeSettingsRepo } from "../infrastructure/repositories/settingsRepo";
 import type { SqlDb } from "../infrastructure/db/sqlDb";
 
@@ -16,6 +16,7 @@ export const useLanguageStore = create<LanguageState>((set) => ({
   setLanguage: async (code, db) => {
     const settings = makeSettingsRepo(db);
     await settings.set("app.language", JSON.stringify(code));
+    setI18nLanguage(code);
     set({ language: code });
   },
   loadLanguage: async (db) => {
@@ -27,6 +28,7 @@ export const useLanguageStore = create<LanguageState>((set) => ({
     } else {
       code = detectSystemLanguage();
     }
+    setI18nLanguage(code);
     set({ language: code });
   },
 }));
