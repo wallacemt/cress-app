@@ -95,11 +95,23 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
   async function saveNotes() { if (notes === (take.notes ?? "")) return; try { await setRecordingNotes(deps, { id: take.id, notes: notes || null }); onChange(); } catch (cause) { onError(cause instanceof Error ? cause.message : t("workspace.save_notes_error")); } }
   async function togglePlay() {
     if (failed || !src) return;
-    if (audio.src === src && !audio.paused) { audio.pause(); setPlaying(false); return; }
+    if (audio.src === src) {
+      if (!audio.paused) { audio.pause(); setPlaying(false); return; }
+      onPlay(take.id);
+      try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(cause instanceof Error ? cause.message : t("workspace.play_recording_error")); }
+      return;
+    }
     onPlay(take.id); audio.src = src; audio.load(); audio.onerror = () => { const e = audio.error; console.error("[Cress] Erro no áudio", { code: e?.code, message: e?.message, src }); setFailed(true); };
     try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(cause instanceof Error ? cause.message : t("workspace.play_recording_error")); }
   }
-  function seek(clientX: number) { const rect = waveRef.current?.getBoundingClientRect(); if (!rect || !duration) return; audio.currentTime = Math.max(0, Math.min(duration, (clientX - rect.left) / rect.width * duration)); setCurrent(audio.currentTime); }
+  function seek(clientX: number) {
+    const rect = waveRef.current?.getBoundingClientRect();
+    if (!rect || !duration) return;
+    const target = Math.max(0, Math.min(duration, (clientX - rect.left) / rect.width * duration));
+    if (audio.src !== src) { onPlay(take.id); audio.src = src; audio.load(); }
+    audio.currentTime = target;
+    setCurrent(target);
+  }
   function onWaveKey(event: React.KeyboardEvent<HTMLDivElement>) { if (event.key === " ") { event.preventDefault(); void togglePlay(); } else if (event.key === "Home") audio.currentTime = 0; else if (event.key === "End") audio.currentTime = duration; else if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); audio.currentTime = Math.max(0, Math.min(duration, audio.currentTime + (event.key === "ArrowRight" ? 5 : -5) * (event.shiftKey ? 3 : 1))); } }
   async function remove() { try { await deleteRecording(deps, { id: take.id }); onChange(); } catch (cause) { onError(cause instanceof Error ? cause.message : t("workspace.delete_recording_error")); } }
   const progress = duration ? current / duration : 0;
