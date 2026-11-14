@@ -16,6 +16,7 @@ export function UpdateCheckProvider({ children }: { children: ReactNode }) {
   const [status, setStatus] = useState<Status>("idle");
   const [installing, setInstalling] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
+  const [version, setVersion] = useState<string | null>(null);
   const update = useRef<Update | null>(null);
   const checking = useRef(false);
   const installingRef = useRef(false);
@@ -63,7 +64,11 @@ export function UpdateCheckProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  useEffect(() => { void check(); }, []);
+  useEffect(() => {
+    void check();
+    if (!inTauri()) return;
+    void import("@tauri-apps/api/app").then(({ getVersion }) => getVersion()).then(setVersion).catch((error: unknown) => { console.warn("[updates] getVersion failed:", error); });
+  }, []);
   useEffect(() => {
     if (status !== "available" || !update.current) {
       toast.dismiss("cress-update");
@@ -78,6 +83,6 @@ export function UpdateCheckProvider({ children }: { children: ReactNode }) {
     });
   }, [status, installing, progress, language]);
 
-  const value = useMemo(() => ({ status, check, install, installing, progress }), [status, installing, progress]);
+  const value = useMemo(() => ({ status, check, install, installing, progress, version }), [status, installing, progress, version]);
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;
 }

@@ -221,9 +221,10 @@ export function SettingsPage() {
       <section aria-labelledby="settings-updates-title" className="mt-10 border-t border-[var(--border-subtle)] pt-6">
         <h2 className="mb-4 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">{t("app.atualizacoes")}</h2>
         <h3 id="settings-updates-title" className="mb-2 text-lg font-semibold">{t("app.atualizacoes")}</h3>
+        {update.version && <p className="mb-2 text-xs text-[var(--text-muted)]">{t("app.versao_instalada", { version: update.version })}</p>}
         <p className="mb-4 text-sm text-[var(--text-secondary)]">{update.status === "checking" ? t("app.verificando") : update.status === "none" ? t("app.atualizado") : update.status === "available" ? t("app.disponivel") : update.status === "error" ? t("app.erro_verificar") : t("app.erro_verificar")}</p>
         <button type="button" disabled={update.status === "checking" || update.installing} onClick={() => void update.check()} className={`${button} gap-2 border border-[var(--border-default)] text-[var(--text-primary)] hover:bg-[var(--ink-700)]`}><RefreshCw size={16} />{t("app.verificar_atualizacoes")}</button>
-        {update.status === "available" && <button type="button" disabled={update.installing} onClick={() => void update.install()} className={`${button} ml-2 bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{update.installing ? update.progress === null ? t("app.baixando") : `Baixando… ${update.progress}%` : t("app.atualizar_agora")}</button>}
+        {update.status === "available" && <button type="button" disabled={update.installing} onClick={() => void update.install()} className={`${button} ml-2 bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}>{update.installing ? update.progress === null ? t("app.baixando") : t("app.baixando_progresso", { progress: String(update.progress) }) : t("app.atualizar_agora")}</button>}
       </section>
     </main>
   );

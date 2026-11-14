@@ -40,6 +40,8 @@ const dictionary: Locale = {
   "app.verificar_atualizacoes": "Verificar atualizações",
   "app.atualizar_agora": "Atualizar agora",
   "app.baixando": "Baixando…",
+  "app.baixando_progresso": "Baixando… {{progress}}%",
+  "app.versao_instalada": "Versão instalada: {{version}}",
 
   // Perfil
   "profile.nome": "Nome",
