@@ -6,6 +6,7 @@ export interface UpdateCheckState {
   install: () => Promise<void>;
   installing: boolean;
   progress: number | null;
+  version: string | null;
 }
 
 export const UpdateContext = createContext<UpdateCheckState | null>(null);
