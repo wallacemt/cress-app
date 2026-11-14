@@ -1,4 +1,6 @@
 import cressStacked from "../assets/brand/cress-stacked-gold.svg";
+import { useLanguageStore } from "../stores/languageStore";
+import { t } from "../lib/i18n";
 
 // Posição (x) e linha do pentagrama (y) de cada nota do progresso — ritmo levemente
 // irregular (não um metrônomo robótico) para parecer uma frase musical de verdade.
@@ -14,21 +16,23 @@ const LOADING_NOTES = [
 ];
 
 export function LoadingScreen() {
+  useLanguageStore((state) => state.language);
   return (
     <main
       role="status"
       aria-live="polite"
       style={{ backgroundColor: "var(--ink-900, #090b14)" }}
-      className="fixed inset-0 flex flex-col items-center justify-center overflow-hidden cress-loading-fade"
+      className=" w-full h-full   flex items-center justify-center  cress-loading-fade"
     >
-      <img src={cressStacked} alt="Cress" className="h-48 cress-loading-logo" />
-      <p className="mt-10 text-sm font-medium text-[var(--text-muted)] cress-loading-text">
-        Preparando sua mesa de estudo…
+      <div className="flex flex-col items-center">
+      <img src={cressStacked} alt="Cress" className="h-82 cress-loading-logo" />
+      <p className="mt-8 text-base font-medium text-[var(--text-muted)] cress-loading-text">
+        {t("loading.mensagem")}
       </p>
       <svg
         aria-hidden="true"
         viewBox="0 0 480 48"
-        className="absolute bottom-[10%] left-1/2 w-[480px] -translate-x-1/2 cress-loading-staff"
+        className="mt-12 w-[min(840px,85vw)] cress-loading-staff"
       >
         {[8, 16, 24, 32, 40].map((y) => (
           <line
@@ -67,6 +71,7 @@ export function LoadingScreen() {
           </g>
         ))}
       </svg>
+      </div>
     </main>
   );
 }

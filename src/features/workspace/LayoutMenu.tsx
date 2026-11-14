@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useLayoutEffect, useRef, useState } from "react";
 import { LayoutPanelLeft } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
@@ -5,6 +7,7 @@ import { buildDefaultLayoutAddPanelSpecs, type WorkspaceMode } from "../../domai
 import { resetLayouts, saveLayout } from "../../application/workspace";
 import type { Deps } from "../../application/deps";
 import type { StudySessionRow } from "../../infrastructure/db/rows";
+import { getPanelTitle } from "./panelRegistry";
 
 export function LayoutMenu({
   api,
@@ -23,6 +26,7 @@ export function LayoutMenu({
   hasScores?: boolean;
   firstScoreId?: string;
 }) {
+  useLanguageStore((state) => state.language);
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const popoverRef = useRef<HTMLDivElement>(null);
@@ -81,7 +85,7 @@ export function LayoutMenu({
     api.closeAllGroups();
     const containerSize = { width: api.width, height: api.height };
     const sessionParams = session && deps ? { session, pieceId, deps } : undefined;
-    for (const panel of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, sessionParams)) api.addPanel(panel);
+    for (const panel of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, sessionParams)) api.addPanel({ ...panel, title: getPanelTitle(panel.component) });
     if (deps) {
       await saveLayout(
         deps,
@@ -112,7 +116,7 @@ export function LayoutMenu({
         ref={triggerRef}
         type="button"
         className="cress-icon-control"
-        aria-label="Layout"
+        aria-label={t("workspace.layout")}
         aria-haspopup="menu"
         aria-expanded={open}
         onClick={() => setOpen(!open)}
@@ -123,22 +127,22 @@ export function LayoutMenu({
         <div
           ref={popoverRef}
           role="menu"
-          aria-label="Opções de layout"
+          aria-label={t("workspace.layout_options")}
           className="cress-menu-popover cress-layout-menu"
           style={{ top: pos.top, left: pos.left }}
         >
           <button role="menuitem" type="button" onClick={() => void reset()}>
-            Restaurar layout padrão
+            {t("workspace.restore_layout")}
           </button>
           <div className="cress-menu-separator" />
-          <span className="cress-menu-heading">Mover painel ativo</span>
+          <span className="cress-menu-heading">{t("workspace.move_active_panel")}</span>
           {(
             [
-              ["left", "Esquerda"],
-              ["right", "Direita"],
-              ["top", "Cima"],
-              ["bottom", "Baixo"],
-              ["center", "Juntar ao grupo ativo"],
+              ["left", t("workspace.left")],
+              ["right", t("workspace.right")],
+              ["top", t("workspace.top")],
+              ["bottom", t("workspace.bottom")],
+              ["center", t("workspace.join_active_group")],
             ] as const
           ).map(([direction, label]) => (
             <button
@@ -161,8 +165,8 @@ export function LayoutMenu({
             api
               .getPopouts()
               .some((item) => item.group.id === api.activePanel?.api.group.id)
-              ? "Reacoplar painel ativo"
-              : "Flutuar painel ativo"}
+              ? t("workspace.dock_active_panel")
+              : t("workspace.float_active_panel")}
           </button>
         </div>
       )}

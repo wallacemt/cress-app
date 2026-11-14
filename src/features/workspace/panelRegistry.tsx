@@ -1,7 +1,9 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import type { FunctionComponent } from "react";
 import { AudioLines, FileMusic, Gauge, NotebookPen, PanelsTopLeft } from "lucide-react";
 import type { IDockviewPanelProps } from "dockview-react";
-import { PANEL_CATALOG, PANEL_ICON_NAMES, PANEL_TITLES } from "../../domain/workspace";
+import { PANEL_CATALOG, PANEL_ICON_NAMES } from "../../domain/workspace";
 import { MetronomeIcon } from "../../components/icons/MetronomeIcon";
 import { SessionPanel } from "./panels/SessionPanel";
 import { MetronomePanel } from "./panels/MetronomePanel";
@@ -9,8 +11,20 @@ import { TunerPanel } from "./panels/TunerPanel";
 import { RecorderPanel } from "./panels/RecorderPanel";
 import { ScorePanel } from "./panels/ScorePanel";
 
+export function getPanelTitle(component: string) {
+  const titles: Record<string, string> = {
+    metronome: t("workspace.panel_metronome"),
+    tuner: t("workspace.panel_tuner"),
+    score: t("workspace.panel_score"),
+    recorder: t("workspace.panel_recordings"),
+    session: t("workspace.panel_session"),
+  };
+  return titles[component] ?? component;
+}
+
 const icons = { metronome: MetronomeIcon, gauge: Gauge, "file-music": FileMusic, "audio-lines": AudioLines, "notebook-pen": NotebookPen };
 export function PanelTab({ api }: IDockviewPanelProps) {
+  useLanguageStore((state) => state.language);
   const Icon = icons[PANEL_ICON_NAMES[api.component as keyof typeof PANEL_ICON_NAMES]];
   return <span className="cress-panel-tab"><Icon size={16} /><span>{api.title}</span></span>;
 }
@@ -18,11 +32,12 @@ export function PanelTab({ api }: IDockviewPanelProps) {
 type PanelId = keyof typeof PANEL_CATALOG;
 
 function EmptyPanel({ api }: IDockviewPanelProps) {
+  useLanguageStore((state) => state.language);
   const id = api.component as PanelId;
   return (
-    <section className="cress-panel-placeholder" aria-label={PANEL_TITLES[id]}>
-      <h2>{PANEL_TITLES[id]}</h2>
-      <p>Este painel estará disponível em uma próxima fase.</p>
+    <section className="cress-panel-placeholder" aria-label={getPanelTitle(id)}>
+      <h2>{getPanelTitle(id)}</h2>
+      <p>{t("workspace.panel_future")}</p>
     </section>
   );
 }
@@ -48,6 +63,7 @@ export function panelRenderer(component: string): "onlyWhenVisible" | "always" {
 }
 
 export function WorkspaceWatermark() {
+  useLanguageStore((state) => state.language);
   return (
     <div className="cress-watermark">
       <svg
@@ -60,10 +76,10 @@ export function WorkspaceWatermark() {
         ))}
       </svg>
       <PanelsTopLeft className="cress-watermark-icon" aria-hidden="true" />
-      <h2>Espaço livre</h2>
-      <p>Arraste uma aba para cá ou abra um painel.</p>
+      <h2>{t("workspace.free_space")}</h2>
+      <p>{t("workspace.watermark_hint")}</p>
       <button type="button" className="cress-watermark-button">
-        + Painel
+        {`+ ${t("workspace.panel")}`}
       </button>
     </div>
   );

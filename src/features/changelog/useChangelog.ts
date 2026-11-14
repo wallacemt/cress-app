@@ -4,9 +4,27 @@ export interface ChangelogEntry {
   version: string;
   title: string;
   notes: string;
+  notesByLocale: { "pt-BR": string; "en-US": string } | null;
   date: string;
   url: string;
 }
+
+export function parseLocalizedNotes(body: string): ChangelogEntry["notesByLocale"] {
+  const sections = new Map<string, string>();
+  const header = /^## (pt-BR|en-US)\s*$/gm;
+  const matches = [...body.matchAll(header)];
+  for (const [index, match] of matches.entries()) {
+    const locale = match[1];
+    if (!locale) continue;
+    const start = (match.index ?? 0) + match[0].length;
+    const end = matches[index + 1]?.index ?? body.length;
+    sections.set(locale, body.slice(start, end).trim());
+  }
+  const ptBR = sections.get("pt-BR");
+  const enUS = sections.get("en-US");
+  return ptBR === undefined || enUS === undefined ? null : { "pt-BR": ptBR, "en-US": enUS };
+}
+
 type State = { status: "loading" | "ready" | "offline" | "error"; entries: ChangelogEntry[] };
 
 export function useChangelog(): State {
@@ -22,6 +40,7 @@ export function useChangelog(): State {
           version: String(release.tag_name ?? ""),
           title: String(release.name || release.tag_name || "Release"),
           notes: String(release.body ?? ""),
+          notesByLocale: parseLocalizedNotes(String(release.body ?? "")),
           date: String(release.published_at ?? release.created_at ?? ""),
           url: String(release.html_url ?? "https://github.com/wallacemt/cress-app/releases"),
         }));

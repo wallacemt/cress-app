@@ -7,6 +7,8 @@ import { container } from "../../app/container";
 import { liveActiveMs } from "../../domain/session";
 import { StartSessionModal } from "../workspace/StartSessionModal";
 import { SessionRow } from "./SessionRow";
+import { useLanguageStore } from "../../stores/languageStore";
+import { getLanguage, t } from "../../lib/i18n";
 
 const duration = (ms: number) => {
   const minutes = Math.floor(ms / 60_000);
@@ -17,14 +19,15 @@ const dayLabel = (date: Date, now: Date) => {
   const today = new Date(now); today.setHours(0, 0, 0, 0);
   const day = new Date(date); day.setHours(0, 0, 0, 0);
   const offset = Math.round((today.getTime() - day.getTime()) / 86_400_000);
-  if (offset === 0) return "Hoje";
-  if (offset === 1) return "Ontem";
+  if (offset === 0) return t("sessions.today");
+  if (offset === 1) return t("sessions.yesterday");
   const startOfWeek = new Date(today); startOfWeek.setDate(today.getDate() - ((today.getDay() + 6) % 7));
-  if (day >= startOfWeek && day < today) return `${date.toLocaleDateString("pt-BR", { weekday: "short" }).replace(".", "")}, ${date.toLocaleDateString("pt-BR", { day: "numeric", month: "short" })}`;
-  return date.toLocaleDateString("pt-BR", { day: "numeric", month: "long", ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" as const } : {}) });
+  if (day >= startOfWeek && day < today) return `${date.toLocaleDateString(getLanguage(), { weekday: "short" }).replace(".", "")}, ${date.toLocaleDateString(getLanguage(), { day: "numeric", month: "short" })}`;
+  return date.toLocaleDateString(getLanguage(), { day: "numeric", month: "long", ...(date.getFullYear() !== now.getFullYear() ? { year: "numeric" as const } : {}) });
 };
 
 export function SessionsPage() {
+  useLanguageStore((state) => state.language);
   const [searchParams, setSearchParams] = useSearchParams();
   const pieceId = searchParams.get("pieceId") ?? undefined;
   const [sessions, setSessions] = useState<Awaited<ReturnType<typeof listSessionsPage>>["sessions"]>([]);
@@ -44,7 +47,7 @@ export function SessionsPage() {
     void container.getDeps().then(async (deps) => {
       const [items, openSession, goalRows, firstPage] = await Promise.all([listPieces(deps), hasOpenStudySession(deps), listSessionGoals(deps), listSessionsPage(deps, { repertoireItemId: pieceId, page: 0, pageSize: 30 })]);
       if (active) { setPieces(items); setGoals(goalRows); setHasOpenSession(openSession); setSessions(firstPage.sessions); setHasMore(firstPage.hasMore); setLoaded(true); }
-    }).catch(() => { if (active) { setError("Não foi possível carregar as sessões."); setLoaded(true); } });
+    }).catch(() => { if (active) { setError(t("sessions.load_error")); setLoaded(true); } });
     return () => { active = false; };
   }, [pieceId]);
 
@@ -55,7 +58,7 @@ export function SessionsPage() {
     let active = true;
     void container.getDeps().then((deps) => listSessionsPage(deps, { repertoireItemId: pieceId, page, pageSize: 30 })).then((result) => {
       if (active) { setSessions((current) => [...current, ...result.sessions]); setHasMore(result.hasMore); }
-    }).catch(() => { if (active) setError("Não foi possível carregar as sessões."); });
+    }).catch(() => { if (active) setError(t("sessions.load_error")); });
     return () => { active = false; };
     // eslint-disable-next-line react-hooks/exhaustive-deps -- pieceId muda junto com o setPage(0) do efeito acima, que já descarta este fetch antes de rodar com o filtro novo
   }, [page]);
@@ -74,15 +77,15 @@ export function SessionsPage() {
   return <main className="mx-auto w-full max-w-[1120px] px-8 pt-12 pb-12 text-[var(--text-primary)]">
     <header className="mb-10 flex flex-wrap items-end justify-between gap-6">
       <div>
-        <p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">HISTÓRICO</p>
-        <h1 className="mt-2 font-display text-[56px] leading-[60px] font-medium">Sessões</h1>
-        <p className="mt-2 text-lg text-[var(--text-secondary)]"><span className="font-metric tabular-nums text-[var(--text-primary)]">{sessions.length}</span> sessões · <span className="font-metric tabular-nums text-[var(--text-primary)]">{duration(sessions.reduce((total, session) => total + liveActiveMs(session, new Date()), 0))}</span> estudadas</p>
-        {pieceId && <span className="mt-4 inline-flex h-8 items-center gap-2 rounded-full bg-[var(--violet-tint)] px-3 text-sm text-[var(--violet-300)]">Obra: {filteredPiece?.title ?? "Obra indisponível"}<button type="button" aria-label="Remover filtro" onClick={() => setSearchParams({})}><X size={14} /></button></span>}
+        <p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">{t("sessions.history")}</p>
+        <h1 className="mt-2 font-display text-[56px] leading-[60px] font-medium">{t("sessions.title")}</h1>
+        <p className="mt-2 text-lg text-[var(--text-secondary)]"><span className="font-metric tabular-nums text-[var(--text-primary)]">{sessions.length}</span> {t("sessions.count_label")} · <span className="font-metric tabular-nums text-[var(--text-primary)]">{duration(sessions.reduce((total, session) => total + liveActiveMs(session, new Date()), 0))}</span> {t("sessions.studied_label")}</p>
+        {pieceId && <span className="mt-4 inline-flex h-8 items-center gap-2 rounded-full bg-[var(--violet-tint)] px-3 text-sm text-[var(--violet-300)]">{t("sessions.piece_filter", { title: filteredPiece?.title ?? t("sessions.piece_unavailable") })}<button type="button" aria-label={t("sessions.remove_filter")} onClick={() => setSearchParams({})}><X size={14} /></button></span>}
       </div>
-      <button type="button" className="cress-btn-primary" disabled={!loaded || hasOpenSession} title={hasOpenSession ? "Finalize ou retome a sessão em andamento antes de iniciar outra." : undefined} onClick={() => setModalOpen(true)}>Nova sessão</button>
+      <button type="button" className="cress-btn-primary" disabled={!loaded || hasOpenSession} title={hasOpenSession ? t("sessions.open_session_block") : undefined} onClick={() => setModalOpen(true)}>{t("sessions.new_session")}</button>
     </header>
     {modalOpen && <StartSessionModal onClose={() => setModalOpen(false)} />}
     {error && <p role="alert" className="mb-6 text-sm text-[var(--danger)]">{error}</p>}
-    {!loaded ? <div role="status" aria-label="Carregando sessões" aria-busy="true" className="space-y-3">{[0, 1, 2, 3].map((i) => <div key={i} className="cress-skeleton h-16 rounded-xl" />)}</div> : !sessions.length ? <div className="cress-card relative overflow-hidden rounded-xl p-8"><svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full opacity-[.05]" preserveAspectRatio="none" viewBox="0 0 100 100"><path d="M0 20H100 M0 35H100 M0 50H100 M0 65H100 M0 80H100" stroke="currentColor" strokeWidth=".5" /></svg><div className="relative"><p className="font-display text-[36px] italic">Nenhuma sessão ainda</p><button className="cress-btn-primary mt-6" onClick={() => setModalOpen(true)}>Nova sessão</button></div></div> : <><div className="space-y-8">{groups.map((group) => <section key={dayKey(group[0]!.startedAt!)}><div className="cress-section-head"><h2>{dayLabel(group[0]!.startedAt!, new Date())}</h2><div aria-hidden="true" className="cress-hairpin" /><span className="shrink-0 font-metric text-xs tabular-nums text-[var(--text-muted)]">{group.length}</span></div><div className="cress-card divide-y divide-[var(--border-subtle)] rounded-xl">{group.map((session) => { const piece = pieces.find((item) => item.id === session.repertoire_item_id); return <SessionRow key={session.id} session={session} pieceName={piece?.title ?? "Obra indisponível"} pieceSubtitle={piece?.composer ?? undefined} goalDescription={session.goal_id ? goals.find((goal) => goal.id === session.goal_id)?.description : undefined} to={`/sessions/${session.id}`} />; })}</div></section>)}</div>{hasMore && <button type="button" className="cress-btn-glass mx-auto mt-8 block" onClick={() => setPage((current) => current + 1)}>Carregar mais</button>}</>}
+    {!loaded ? <div role="status" aria-label={t("sessions.loading")} aria-busy="true" className="space-y-3">{[0, 1, 2, 3].map((i) => <div key={i} className="cress-skeleton h-16 rounded-xl" />)}</div> : !sessions.length ? <div className="cress-card relative overflow-hidden rounded-xl p-8"><svg aria-hidden="true" className="pointer-events-none absolute inset-0 h-full w-full opacity-[.05]" preserveAspectRatio="none" viewBox="0 0 100 100"><path d="M0 20H100 M0 35H100 M0 50H100 M0 65H100 M0 80H100" stroke="currentColor" strokeWidth=".5" /></svg><div className="relative"><p className="font-display text-[36px] italic">{t("sessions.empty")}</p><button className="cress-btn-primary mt-6" onClick={() => setModalOpen(true)}>{t("sessions.new_session")}</button></div></div> : <><div className="space-y-8">{groups.map((group) => <section key={dayKey(group[0]!.startedAt!)}><div className="cress-section-head"><h2>{dayLabel(group[0]!.startedAt!, new Date())}</h2><div aria-hidden="true" className="cress-hairpin" /><span className="shrink-0 font-metric text-xs tabular-nums text-[var(--text-muted)]">{group.length}</span></div><div className="cress-card divide-y divide-[var(--border-subtle)] rounded-xl">{group.map((session) => { const piece = pieces.find((item) => item.id === session.repertoire_item_id); return <SessionRow key={session.id} session={session} pieceName={piece?.title ?? t("sessions.piece_unavailable")} pieceSubtitle={piece?.composer ?? undefined} goalDescription={session.goal_id ? goals.find((goal) => goal.id === session.goal_id)?.description : undefined} to={`/sessions/${session.id}`} />; })}</div></section>)}</div>{hasMore && <button type="button" className="cress-btn-glass mx-auto mt-8 block" onClick={() => setPage((current) => current + 1)}>{t("sessions.load_more")}</button>}</>}
   </main>;
 }

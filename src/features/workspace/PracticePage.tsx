@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import { listPieces } from "../../application/repertoire";
@@ -10,6 +12,7 @@ import type { StudySessionRow } from "../../infrastructure/db/rows";
 import { Workspace } from "./Workspace";
 
 export function PracticePage() {
+  useLanguageStore((state) => state.language);
   const { sessionId = "" } = useParams();
   const navigate = useNavigate();
   const [session, setSession] = useState<StudySessionRow | null>(null);
@@ -22,7 +25,7 @@ export function PracticePage() {
       .getDeps()
       .then(async (deps) => {
         const found = await makeSessionRepo(deps.db).get(sessionId);
-        if (!found) throw new Error("Sessão não encontrada.");
+        if (!found) throw new Error(t("workspace.session_not_found"));
         const [pieces, goals] = await Promise.all([
           listPieces(deps),
           listGoals(deps, { repertoireItemId: found.repertoire_item_id }),
@@ -32,7 +35,7 @@ export function PracticePage() {
           (item) => item.id === found.repertoire_item_id,
         );
         if (!selectedPiece)
-          throw new Error("A obra desta sessão não foi encontrada.");
+          throw new Error(t("workspace.session_piece_not_found"));
         setSession(found);
         setPiece(selectedPiece);
         setGoal(goals.find((item) => item.id === found.goal_id));
@@ -42,7 +45,7 @@ export function PracticePage() {
           setError(
             cause instanceof Error
               ? cause.message
-              : "Não foi possível carregar a sessão.",
+              : t("workspace.load_session_error"),
           );
       });
     return () => {
@@ -55,14 +58,14 @@ export function PracticePage() {
       <main className="p-8 text-[var(--text-primary)]">
         <p role="alert">{error}</p>
         <button className="mt-4" onClick={() => navigate("/")}>
-          Voltar ao início
+          {t("workspace.back_home")}
         </button>
       </main>
     );
   if (!session || !piece)
     return (
       <main className="p-8 text-[var(--text-secondary)]" aria-busy="true">
-        Carregando sessão…
+        {t("workspace.loading_session")}
       </main>
     );
   return (

@@ -22,7 +22,8 @@ const profile: UserProfile = {
   onboardedAt: "2026-01-01T00:00:00.000Z",
   updatedAt: "2026-01-02T00:00:00.000Z",
 };
-const deps = {} as Deps;
+const db = { select: vi.fn().mockResolvedValue([]) } as unknown as Deps["db"];
+const deps = { db } as Deps;
 
 const renderSettings = () => render(<UpdateCheckProvider><SettingsPage /></UpdateCheckProvider>);
 
@@ -34,24 +35,52 @@ describe("SettingsPage", () => {
     getDeps.mockReset().mockResolvedValue(deps);
   });
 
-  it("pre-fills the profile and validates required fields", () => {
+  it("mostra apenas as informações no carregamento e expõe o botão de editar", () => {
     renderSettings();
-    expect((screen.getByRole("textbox", { name: "Seu nome" }) as HTMLInputElement).value).toBe("Ana");
+    expect(screen.getByText("Ana")).toBeTruthy();
     expect(screen.getByText("Orquestra Jovem")).toBeTruthy();
-    expect((screen.getByRole("textbox", { name: "Qual instrumento?" }) as HTMLInputElement).value).toBe("Bandolim");
-    fireEvent.change(screen.getByRole("textbox", { name: "Seu nome" }), { target: { value: " " } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar perfil" }));
+    expect(screen.getByRole("button", { name: /editar/i })).toBeTruthy();
+    // Campos de edição não devem estar visíveis no modo visualização
+    expect(screen.queryByRole("textbox", { name: /seu nome/i })).toBeNull();
+    // O seletor de idioma não aparece na visualização
+    expect(screen.queryByRole("button", { name: /Português/i })).toBeNull();
+    expect(screen.queryByRole("button", { name: /English/i })).toBeNull();
+  });
+
+  it("mostra apenas o idioma configurado na visualização", () => {
+    renderSettings();
+    // Deve mostrar o idioma atual (Português por padrão / detectado do sistema)
+    expect(screen.getByText(/Português|English/)).toBeTruthy();
+  });
+
+  it("exibe o seletor de idioma apenas no modo edição", async () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: /editar/i }));
+
+    // Agora os botões de idioma aparecem no formulário de edição
+    expect(screen.getByRole("button", { name: /Português/i })).toBeTruthy();
+    expect(screen.getByRole("button", { name: /English/i })).toBeTruthy();
+  });
+
+  it("preenche os campos após entrar no modo edição e valida campos obrigatórios", async () => {
+    renderSettings();
+    fireEvent.click(screen.getByRole("button", { name: /editar/i }));
+
+    expect((screen.getByRole("textbox", { name: /seu nome/i }) as HTMLInputElement).value).toBe("Ana");
+    fireEvent.change(screen.getByRole("textbox", { name: /seu nome/i }), { target: { value: " " } });
+    fireEvent.click(screen.getByRole("button", { name: /salvar alterações/i }));
     expect(screen.getByRole("alert").textContent).toContain("Informe seu nome.");
     expect(saveProfile).not.toHaveBeenCalled();
   });
 
-  it("saves editable fields and updates the profile store immediately", async () => {
+  it("salva campos editáveis e atualiza o profile store imediatamente", async () => {
     const updated = { ...profile, displayName: "Ana Maria", ensembleName: "Camerata" };
     saveProfile.mockResolvedValue(updated);
     renderSettings();
-    fireEvent.change(screen.getByRole("textbox", { name: "Seu nome" }), { target: { value: "Ana Maria" } });
-    fireEvent.change(screen.getByRole("textbox", { name: "Conjunto, orquestra ou escola" }), { target: { value: "Camerata" } });
-    fireEvent.click(screen.getByRole("button", { name: "Salvar perfil" }));
+    fireEvent.click(screen.getByRole("button", { name: /editar/i }));
+    fireEvent.change(screen.getByRole("textbox", { name: /seu nome/i }), { target: { value: "Ana Maria" } });
+    fireEvent.change(screen.getByRole("textbox", { name: /conjunto, orquestra ou escola/i }), { target: { value: "Camerata" } });
+    fireEvent.click(screen.getByRole("button", { name: /salvar alterações/i }));
 
     await waitFor(() => expect(saveProfile).toHaveBeenCalledOnce());
     expect(saveProfile).toHaveBeenCalledWith(deps, {

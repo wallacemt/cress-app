@@ -1,16 +1,19 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import type { StudyGoal } from "../../domain/goal";
 
 export function GoalSelect({
   goals,
   value,
   onChange,
-  label = "Objetivo existente",
+  label = t("workspace.existing_goal"),
 }: {
   goals: StudyGoal[];
   value: string;
   onChange: (id: string) => void;
   label?: string;
 }) {
+  useLanguageStore((state) => state.language);
   return (
     <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
       {label}
@@ -21,7 +24,7 @@ export function GoalSelect({
         onChange={(event) => onChange(event.target.value)}
         disabled={!goals.length}
       >
-        <option value="">Sem objetivo</option>
+        <option value="">{t("workspace.no_goal_option")}</option>
         {goals.map((goal) => (
           <option key={goal.id} value={goal.id}>
             {goal.description}

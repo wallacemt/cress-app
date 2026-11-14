@@ -300,6 +300,10 @@ main {
 .cress-loading-fade {
   animation: cress-loading-fade-in 1100ms cubic-bezier(.16, 1, .3, 1) forwards;
 }
+/* Entrada curta do conteúdo após o fallback de carregamento. */
+.cress-content-enter {
+  animation: cress-loading-fade-in 420ms ease-out both;
+}
 @keyframes cress-loading-fade-in {
   from { opacity: 0; }
   to { opacity: 1; }

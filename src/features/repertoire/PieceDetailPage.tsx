@@ -18,6 +18,8 @@ import { PieceFormDialog } from "./PieceFormDialog";
 import { ScoreList } from "./ScoreList";
 import type { StudySession } from "../../domain/session";
 import { Sparkline } from "../../components/ui/Sparkline";
+import { useLanguageStore } from "../../stores/languageStore";
+import { getLanguage, t } from "../../lib/i18n";
 
 type PieceStats = Awaited<ReturnType<typeof getPieceStats>>;
 function formatDuration(ms: number) {
@@ -26,10 +28,11 @@ function formatDuration(ms: number) {
   return hours ? `${hours}h ${minutes % 60}min` : `${minutes}min`;
 }
 function formatDate(date: Date | null) {
-  return date ? date.toLocaleString("pt-BR") : "Nunca";
+  return date ? date.toLocaleString(getLanguage()) : t("repertoire.never");
 }
 
 export function PieceDetailPage() {
+  useLanguageStore((state) => state.language);
   const { pieceId = "" } = useParams();
   const navigate = useNavigate();
   const [piece, setPiece] = useState<RepertoireItem>();
@@ -66,7 +69,7 @@ export function PieceDetailPage() {
         }
       })
       .catch(() => {
-        if (active) setError("Não foi possível carregar a obra.");
+        if (active) setError(t("repertoire.piece_load_error"));
       });
     return () => {
       active = false;
@@ -88,10 +91,10 @@ export function PieceDetailPage() {
         cause instanceof Error &&
           "code" in cause &&
           cause.code === "PIECE_HAS_SESSIONS"
-          ? "Esta obra tem sessões registradas — arquive em vez de excluir."
+          ? t("repertoire.piece_has_sessions")
           : cause instanceof Error
             ? cause.message
-            : "Não foi possível concluir a ação.",
+            : t("repertoire.action_error"),
       );
     } finally {
       setBusy(false);
@@ -109,7 +112,7 @@ export function PieceDetailPage() {
   if (!piece)
     return (
       <main className="mx-auto max-w-4xl px-6 py-10" aria-busy="true">
-        <p className="text-sm text-[var(--text-muted)]">Carregando obra…</p>
+        <p className="text-sm text-[var(--text-muted)]">{t("repertoire.loading_piece")}</p>
       </main>
     );
   return (
@@ -119,11 +122,11 @@ export function PieceDetailPage() {
         className="mb-8 text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
         onClick={() => navigate("/repertoire")}
       >
-        ← Repertório
+        ← {t("repertoire.title")}
       </button>
       <header className="border-b border-[var(--border-subtle)] pb-6">
         <p className="mb-2 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">
-          OBRA{piece.archived ? " · ARQUIVADA" : ""}
+          {t(piece.archived ? "repertoire.archived_piece" : "repertoire.piece_upper")}
         </p>
         <h1 className="font-display text-4xl">{piece.title}</h1>
         {(piece.composer || piece.instrument) && (
@@ -156,7 +159,7 @@ export function PieceDetailPage() {
               )
             }
           >
-            {piece.archived ? "Desarquivar" : "Arquivar"}
+            {piece.archived ? t("repertoire.unarchive") : t("repertoire.archive")}
           </button>
           <button
             type="button"
@@ -177,19 +180,19 @@ export function PieceDetailPage() {
       )}
       <GoalList goals={goals} repertoireItemId={pieceId} onChanged={reloadGoals} />
       <section aria-labelledby="piece-practice-title" className="mt-10">
-        <h2 id="piece-practice-title" className="font-display text-2xl text-[var(--text-primary)]">Prática</h2>
+        <h2 id="piece-practice-title" className="font-display text-2xl text-[var(--text-primary)]">{t("repertoire.practice")}</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-4">
-          <div><dt className="text-xs text-[var(--text-muted)]">Tempo estudado</dt><dd className="mt-1 text-sm">{formatDuration(stats?.totalActiveMs ?? 0)}</dd></div>
-          <div><dt className="text-xs text-[var(--text-muted)]">Sessões</dt><dd className="mt-1 text-sm">{stats?.totalSessions ?? 0}</dd></div>
-          <div><dt className="text-xs text-[var(--text-muted)]">Objetivos concluídos</dt><dd className="mt-1 text-sm">{stats?.completedGoals ?? 0}/{stats?.totalGoals ?? 0}</dd></div>
-          <div><dt className="text-xs text-[var(--text-muted)]">Última prática</dt><dd className="mt-1 text-sm">{formatDate(stats?.lastPracticeAt ?? null)}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">{t("repertoire.time_studied")}</dt><dd className="mt-1 text-sm">{formatDuration(stats?.totalActiveMs ?? 0)}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">{t("repertoire.sessions")}</dt><dd className="mt-1 text-sm">{stats?.totalSessions ?? 0}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">{t("repertoire.completed_goals")}</dt><dd className="mt-1 text-sm">{stats?.completedGoals ?? 0}/{stats?.totalGoals ?? 0}</dd></div>
+          <div><dt className="text-xs text-[var(--text-muted)]">{t("repertoire.last_practice")}</dt><dd className="mt-1 text-sm">{formatDate(stats?.lastPracticeAt ?? null)}</dd></div>
         </dl>
         <div className="mt-6">
-          <h3 className="text-sm font-semibold">Evolução do BPM final</h3>
-          <div className="mt-2"><Sparkline values={stats?.finalBpmHistory ?? []} ariaLabel="Evolução do BPM final nas últimas sessões" /></div>
+          <h3 className="text-sm font-semibold">{t("repertoire.final_bpm_progress")}</h3>
+          <div className="mt-2"><Sparkline values={stats?.finalBpmHistory ?? []} ariaLabel={t("repertoire.final_bpm_history")} /></div>
         </div>
-        <h3 className="mt-6 text-sm font-semibold">Histórico de sessões</h3>
-        {!stats?.sessions.length ? <p className="mt-3 text-sm text-[var(--text-muted)]">Nenhuma sessão registrada.</p> : <ul className="mt-2 divide-y divide-[var(--border-subtle)]">
+        <h3 className="mt-6 text-sm font-semibold">{t("repertoire.session_history")}</h3>
+        {!stats?.sessions.length ? <p className="mt-3 text-sm text-[var(--text-muted)]">{t("repertoire.no_sessions")}</p> : <ul className="mt-2 divide-y divide-[var(--border-subtle)]">
           {stats.sessions.map((session: StudySession & { initial_bpm: number | null; final_bpm: number | null }) => <li key={session.id} className="flex flex-wrap justify-between gap-x-4 gap-y-1 py-3 text-sm">
             <time dateTime={session.startedAt?.toISOString()}>{formatDate(session.startedAt)}</time>
             <span>{formatDuration(session.activeMs)}{session.initial_bpm != null || session.final_bpm != null ? ` · ${session.initial_bpm ?? "—"} → ${session.final_bpm ?? "—"} BPM` : ""}</span>

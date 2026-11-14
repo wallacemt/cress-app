@@ -1,3 +1,5 @@
+import { t } from "../../../lib/i18n";
+import { useLanguageStore } from "../../../stores/languageStore";
 import { noteLabel } from "../../../domain/tuner";
 
 type NoteNaming = "letter" | "solfege";
@@ -9,13 +11,15 @@ interface TunerCarouselProps {
 
 const NEIGHBORS = 4;
 
-export function TunerCarousel({ midi, naming }: TunerCarouselProps) {
+export function TunerCarousel({
+  midi, naming }: TunerCarouselProps) {
+  useLanguageStore((state) => state.language);
   if (midi === null) {
-    return <div className="cress-tuner-carousel is-empty">As notas detectadas aparecerão aqui.</div>;
+    return <div className="cress-tuner-carousel is-empty">{t("workspace.tuner_no_notes")}</div>;
   }
 
   return (
-    <div className="cress-tuner-carousel" aria-label="Notas vizinhas">
+    <div className="cress-tuner-carousel" aria-label={t("workspace.neighbor_notes")}>
       {Array.from({ length: NEIGHBORS * 2 + 1 }, (_, index) => {
         const distance = index - NEIGHBORS;
         return (
