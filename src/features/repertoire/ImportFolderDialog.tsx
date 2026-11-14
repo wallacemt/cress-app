@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useMemo, useState, type FormEvent } from "react";
 import { importPlan } from "../../application/scores";
 import type { FolderScan } from "../../application/deps";
@@ -58,7 +59,7 @@ export function ImportFolderDialog({ scan, plan, onClose, onImported }: {
       await onImported();
       onClose();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("repertoire.import_error"));
+      setError(friendlyErrorMessage(cause, t("repertoire.import_error")));
     } finally { setBusy(false); }
   }
 

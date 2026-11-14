@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router";
 import {
@@ -88,13 +89,9 @@ export function PieceDetailPage() {
       }
     } catch (cause) {
       setError(
-        cause instanceof Error &&
-          "code" in cause &&
-          cause.code === "PIECE_HAS_SESSIONS"
+        cause instanceof Error && "code" in cause && cause.code === "PIECE_HAS_SESSIONS"
           ? t("repertoire.piece_has_sessions")
-          : cause instanceof Error
-            ? cause.message
-            : t("repertoire.action_error"),
+          : friendlyErrorMessage(cause, t("repertoire.action_error")),
       );
     } finally {
       setBusy(false);

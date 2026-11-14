@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useState, type FormEvent } from "react";
 import {
   createPiece,
@@ -55,9 +56,7 @@ export function PieceFormDialog({
       onSaved(saved);
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : t("repertoire.save_piece_error"),
+        friendlyErrorMessage(cause, t("repertoire.save_piece_error")),
       );
     } finally {
       setSaving(false);

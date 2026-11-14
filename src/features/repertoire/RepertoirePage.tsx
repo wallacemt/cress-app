@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useEffect, useMemo, useState } from "react";
 import { FileMusic, Music2, Search } from "lucide-react";
 import { listPieces } from "../../application/repertoire";
@@ -102,7 +103,7 @@ export function RepertoirePage() {
       const result = await scanFolder(await container.getDeps());
       if (result) setFolderImport(result);
     } catch (cause) {
-      setImportError(cause instanceof Error ? cause.message : t("repertoire.scan_error"));
+      setImportError(friendlyErrorMessage(cause, t("repertoire.scan_error")));
     } finally { setScanning(false); }
   }
 

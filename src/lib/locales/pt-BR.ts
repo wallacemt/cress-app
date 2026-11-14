@@ -1,6 +1,13 @@
 import type { Locale } from "../i18n";
 
 const dictionary: Locale = {
+  "errors.VALIDATION": "Os dados informados não são válidos.",
+  "errors.INVALID_TRANSITION": "Esta ação não pode ser realizada neste momento.",
+  "errors.NOT_FOUND": "O item solicitado não foi encontrado.",
+  "errors.DUPLICATE_SCORE": "Esta partitura já foi adicionada.",
+  "errors.NOT_A_PDF": "O arquivo selecionado não é um PDF válido.",
+  "errors.TOO_LARGE": "O arquivo selecionado é grande demais.",
+  "errors.SCAN_NOT_FOUND": "A análise da pasta expirou. Tente novamente.",
   // Navegação / atril
   "nav.inicio": "Início",
   "nav.repertorio": "Repertório",

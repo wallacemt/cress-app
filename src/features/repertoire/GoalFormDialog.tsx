@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useState, type FormEvent } from "react";
 import { createGoal, updateGoal } from "../../application/goals";
 import { container } from "../../app/container";
@@ -47,7 +48,7 @@ export function GoalFormDialog({
         : await createGoal(deps, input);
       onSaved({ id: saved.id, description: saved.description, targetBpm: saved.target_bpm, startMeasure: saved.measure_start, endMeasure: saved.measure_end, completed: saved.completed_at !== null });
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("repertoire.save_goal_error"));
+      setError(friendlyErrorMessage(cause, t("repertoire.save_goal_error")));
     } finally {
       setSaving(false);
     }

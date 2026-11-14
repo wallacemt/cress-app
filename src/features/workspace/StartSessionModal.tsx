@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { getLanguage, t } from "../../lib/i18n";
 import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
@@ -66,7 +67,7 @@ export function StartSessionModal({ onClose }: { onClose: () => void }) {
       onClose();
       navigate(`/practice/${session.id}`);
     } catch (cause) {
-      setError(cause instanceof Error && "code" in cause && cause.code === "SESSION_ALREADY_OPEN" ? t("workspace.open_session_error") : t("workspace.start_session_error"));
+      setError(cause instanceof Error && "code" in cause && cause.code === "SESSION_ALREADY_OPEN" ? t("workspace.open_session_error") : friendlyErrorMessage(cause, t("workspace.start_session_error")));
     }
   }
   function onKeyDown(event: React.KeyboardEvent) {

@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../../lib/errors";
 import { t } from "../../../lib/i18n";
 import { useLanguageStore } from "../../../stores/languageStore";
 import { useEffect, useState, type FunctionComponent } from "react";
@@ -36,7 +37,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
       setGoals(items);
       setGoal(items.find((item) => item.id === session?.goal_id));
     }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : t("workspace.load_recording_goals_error"));
+      if (active) setError(friendlyErrorMessage(cause, t("workspace.load_recording_goals_error")));
     });
     return () => { active = false; };
   }, [deps, pieceId, session?.goal_id]);
@@ -52,7 +53,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
         setSaved(true);
         setError("");
       }).catch((cause: unknown) => {
-        setError(cause instanceof Error ? cause.message : t("workspace.save_session_notes_error"));
+        setError(friendlyErrorMessage(cause, t("workspace.save_session_notes_error")));
       }).finally(() => setSaving(false));
     }, 1000);
     return () => clearTimeout(timer);
@@ -67,7 +68,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
       setSelecting(false);
       setError("");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("workspace.change_goal_error"));
+      setError(friendlyErrorMessage(cause, t("workspace.change_goal_error")));
     }
   }
 
@@ -84,7 +85,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
       setError("");
     } catch (cause) {
       setCreatingGoal(false);
-      setError(cause instanceof Error ? cause.message : t("workspace.set_goal_error"));
+      setError(friendlyErrorMessage(cause, t("workspace.set_goal_error")));
     }
   }
 
@@ -96,7 +97,7 @@ export const SessionPanel: FunctionComponent<IDockviewPanelProps> = ({ params })
       setGoal({ ...goal, completed: !goal.completed });
       setGoals((items) => items.map((item) => item.id === goal.id ? { ...item, completed: !goal.completed } : item));
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("workspace.update_goal_error"));
+      setError(friendlyErrorMessage(cause, t("workspace.update_goal_error")));
     }
   }
 

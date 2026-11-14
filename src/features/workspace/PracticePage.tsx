@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { t } from "../../lib/i18n";
 import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useState } from "react";
@@ -43,9 +44,7 @@ export function PracticePage() {
       .catch((cause) => {
         if (active)
           setError(
-            cause instanceof Error
-              ? cause.message
-              : t("workspace.load_session_error"),
+            friendlyErrorMessage(cause, t("workspace.load_session_error")),
           );
       });
     return () => {

@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useState } from "react";
 import { completeGoal, deleteGoal, reopenGoal } from "../../application/goals";
 import { container } from "../../app/container";
@@ -27,7 +28,7 @@ export function GoalList({
       await run(await container.getDeps());
       await onChanged();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("repertoire.action_error"));
+      setError(friendlyErrorMessage(cause, t("repertoire.action_error")));
     } finally {
       setBusy(false);
     }
