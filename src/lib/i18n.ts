@@ -14,13 +14,13 @@ const locales: Record<LanguageCode, Locale> = {
   "en-US": {},
 };
 
-let current: LanguageCode = "pt-BR";
-
 export function detectSystemLanguage(): LanguageCode {
   if (typeof navigator === "undefined") return "pt-BR";
   const lang = navigator.language || navigator.languages?.[0] || "";
   return lang.toLowerCase().startsWith("pt") ? "pt-BR" : "en-US";
 }
+
+let current: LanguageCode = detectSystemLanguage();
 
 export function setLanguage(code: LanguageCode) {
   if (!(code in locales)) return;

@@ -9,10 +9,8 @@ interface LanguageState {
   loadLanguage: (db: SqlDb) => Promise<void>;
 }
 
-const DEFAULT_LANGUAGE: LanguageCode = "pt-BR";
-
 export const useLanguageStore = create<LanguageState>((set) => ({
-  language: DEFAULT_LANGUAGE,
+  language: detectSystemLanguage(),
   setLanguage: async (code, db) => {
     const settings = makeSettingsRepo(db);
     await settings.set("app.language", JSON.stringify(code));

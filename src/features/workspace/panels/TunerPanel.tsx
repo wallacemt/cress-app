@@ -1,3 +1,5 @@
+import { t } from "../../../lib/i18n";
+import { useLanguageStore } from "../../../stores/languageStore";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Settings2 } from "lucide-react";
 import { CressSlider } from "../../../components/CressSlider";
@@ -12,6 +14,7 @@ import { TunerCarousel } from "./TunerCarousel";
 const SWITCH_DELAY_MS = 160;
 
 export function TunerPanel() {
+  useLanguageStore((state) => state.language);
   const pitch = useAudioInputStore((s) => s.pitch);
   const inputError = useAudioInputStore((s) => s.error);
   const root = useRef<HTMLElement>(null);
@@ -62,18 +65,18 @@ export function TunerPanel() {
     if (pendingReading.current) clearTimeout(pendingReading.current.timer);
   }, []);
 
-  const status = error ? "Sem entrada de áudio" : !pitch ? "Sem sinal · ouvindo…" : pitch.clarity < 0.7 ? "Detectando…" : Math.abs(note?.cents ?? 50) <= 5 ? "Afinado" : "Ajuste a afinação";
+  const status = error ? t("workspace.no_audio_input_status") : !pitch ? t("workspace.no_signal") : pitch.clarity < 0.7 ? t("workspace.detecting") : Math.abs(note?.cents ?? 50) <= 5 ? t("workspace.in_tune") : t("workspace.adjust_tuning");
   return (
     <section
       ref={root}
       className={`cress-tuner-panel${layoutClass ? ` ${layoutClass}` : ""}`}
-      aria-label="Afinador"
+      aria-label={t("workspace.tuner")}
     >
-      <header><span className={`cress-tuner-status${note && Math.abs(note.cents) <= 5 ? " is-tuned" : ""}`}><i />{status}</span><button type="button" className="cress-control" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={15} /> Configurações</button></header>
-      {settings && <div className="cress-tuner-settings"><label className="cress-tuner-reference">A4 <strong>{a4} Hz</strong><CressSlider aria-label="Frequência de referência A4" min={415} max={466} value={a4} onChange={(value) => useTunerStore.getState().setA4(value)} /></label><span className="cress-tuner-settings-divider" /><button type="button" aria-label="Alternar nomenclatura de notas" onClick={() => useTunerStore.getState().setNoteNaming(naming === "letter" ? "solfege" : "letter")}>Nomes <strong>{naming === "letter" ? "C–D–E" : "Dó–Ré–Mi"}</strong></button></div>}
-      {error ? <><div className="cress-tuner-error"><p>Microfone indisponível. Verifique se outro app está usando a entrada ou confira a permissão de microfone do Windows.</p><button type="button" className="cress-control" onClick={() => { void useAudioInputStore.getState().acquire().catch(() => {}); }}>Tentar novamente</button></div><div className="cress-tuner-silence-hint" role="status">Verifique: Configurações do Windows → Privacidade e segurança → Microfone → Permitir que apps da área de trabalho acessem o microfone.</div></> : <>
+      <header><span className={`cress-tuner-status${note && Math.abs(note.cents) <= 5 ? " is-tuned" : ""}`}><i />{status}</span><button type="button" className="cress-control" aria-expanded={settings} onClick={() => setSettings(!settings)}><Settings2 size={15} /> {t("workspace.settings")}</button></header>
+      {settings && <div className="cress-tuner-settings"><label className="cress-tuner-reference">A4 <strong>{a4} Hz</strong><CressSlider aria-label={t("workspace.reference_frequency")} min={415} max={466} value={a4} onChange={(value) => useTunerStore.getState().setA4(value)} /></label><span className="cress-tuner-settings-divider" /><button type="button" aria-label={t("workspace.toggle_note_names")} onClick={() => useTunerStore.getState().setNoteNaming(naming === "letter" ? "solfege" : "letter")}>{t("workspace.note_names")} <strong>{naming === "letter" ? "C–D–E" : "Dó–Ré–Mi"}</strong></button></div>}
+      {error ? <><div className="cress-tuner-error"><p>{t("workspace.microphone_unavailable")}</p><button type="button" className="cress-control" onClick={() => { void useAudioInputStore.getState().acquire().catch(() => {}); }}>{t("workspace.retry")}</button></div><div className="cress-tuner-silence-hint" role="status">{t("workspace.microphone_privacy_hint")}</div></> : <>
         <TunerGauge cents={displayNote?.cents ?? 0} inTune={!!displayNote && Math.abs(displayNote.cents) <= 5} />
-        <div className={`cress-tuner-main${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}><strong>{displayNote ? noteLabel(displayNote.midi, naming) : "—"}</strong><span>{displayHz !== null ? `${displayHz.toFixed(1)} Hz` : "Aguardando som"}</span></div>
+        <div className={`cress-tuner-main${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}><strong>{displayNote ? noteLabel(displayNote.midi, naming) : "—"}</strong><span>{displayHz !== null ? `${displayHz.toFixed(1)} Hz` : t("workspace.waiting_for_sound")}</span></div>
         <div className={`cress-tuner-cents${displayNote && Math.abs(displayNote.cents) <= 5 ? " is-tuned" : ""}${isHeld ? " is-held" : ""}`}>{displayNote ? <><strong>{displayNote.cents > 0 ? "+" : ""}{displayNote.cents}</strong><span>cents</span></> : <><strong>—</strong><span>cents</span></>}</div>
         <AudioDeviceSelector />
       </>}

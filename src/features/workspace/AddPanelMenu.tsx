@@ -1,10 +1,12 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
 import { Check, Plus, X } from "lucide-react";
 import type { DockviewReadyEvent } from "dockview-react";
-import { PANEL_CATALOG, PANEL_TITLES, type WorkspaceMode } from "../../domain/workspace";
+import { PANEL_CATALOG, type WorkspaceMode } from "../../domain/workspace";
 import { ScorePicker } from "./ScorePicker";
+import { getPanelTitle } from "./panelRegistry";
 
-const labels = PANEL_TITLES;
 const shortcuts = ["1", "2", "3", "4", "5"] as const;
 
 export function openWorkspacePanel(
@@ -28,7 +30,7 @@ export function openWorkspacePanel(
     const existingScore = api.panels.find((panel) => panel.api.id === explicitId);
     if (existingScore) { existingScore.api.setActive(); return existingScore; }
   }
-  return api.addPanel({ id: id!, component, title: labels[component], params });
+  return api.addPanel({ id: id!, component, title: getPanelTitle(component), params });
 }
 
 export function useWorkspacePanelShortcuts(
@@ -83,6 +85,7 @@ export function AddPanelMenu({
   onOpen?: () => void;
   panelParams?: Record<string, unknown>;
 }) {
+  useLanguageStore((state) => state.language);
   const [open, setOpen] = useState(false);
   const [scoreDialog, setScoreDialog] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -152,7 +155,7 @@ export function AddPanelMenu({
         <div
           className="cress-menu-popover cress-add-panel-menu"
           role="menu"
-          aria-label="Abrir painel"
+          aria-label={t("workspace.open_panel")}
         >
           {available.map((key, index) => {
             const item = PANEL_CATALOG[key];
@@ -167,8 +170,8 @@ export function AddPanelMenu({
                     role="menuitem"
                     onClick={() => { setOpen(false); setScoreDialog(true); }}
                   >
-                    <span>{labels[key]}</span>
-                    <span className="cress-menu-meta">Selecionar…</span>
+                    <span>{getPanelTitle(key)}</span>
+                    <span className="cress-menu-meta">{t("workspace.select")}</span>
                   </button>
                 </div>
               );
@@ -179,11 +182,11 @@ export function AddPanelMenu({
                 role="menuitem"
                 onClick={() => activate(key)}
               >
-                <span>{labels[key]}</span>
+                <span>{getPanelTitle(key)}</span>
                 <span className="cress-menu-meta">
                   {opened ? (
                     <>
-                      <Check size={14} /> Aberto
+                      <Check size={14} /> {t("workspace.opened")}
                     </>
                   ) : (
                     `Ctrl+${shortcuts[index]}`
@@ -201,8 +204,8 @@ export function AddPanelMenu({
         >
           <section role="dialog" aria-modal="true" aria-labelledby="score-picker-title" className="flex max-h-[85vh] w-full max-w-2xl flex-col rounded-xl border border-[var(--border-default)] bg-[var(--ink-900)] text-[var(--text-primary)] shadow-2xl">
             <header className="flex items-center justify-between border-b border-[var(--border-subtle)] p-4">
-              <h2 id="score-picker-title" className="font-display text-2xl">Selecionar partitura</h2>
-              <button type="button" aria-label="Fechar seleção de partitura" className="rounded p-2 text-[var(--text-secondary)] hover:bg-[var(--violet-tint)]" onClick={() => { setScoreDialog(false); trigger.current?.focus(); }}><X size={18} /></button>
+              <h2 id="score-picker-title" className="font-display text-2xl">{t("workspace.select_score")}</h2>
+              <button type="button" aria-label={t("workspace.close_score_selection")} className="rounded p-2 text-[var(--text-secondary)] hover:bg-[var(--violet-tint)]" onClick={() => { setScoreDialog(false); trigger.current?.focus(); }}><X size={18} /></button>
             </header>
             <ScorePicker onSelect={(id, title) => {
               if (!api) return;

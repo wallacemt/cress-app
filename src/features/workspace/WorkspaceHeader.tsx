@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { ArrowLeft, ChevronLeft, Pause, Play, Square } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router";
@@ -36,6 +38,7 @@ export function WorkspaceHeader({
   firstScoreId?: string;
   onBack?: () => void;
 }) {
+  useLanguageStore((state) => state.language);
   const navigate = useNavigate();
   const [dialog, setDialog] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -55,14 +58,14 @@ export function WorkspaceHeader({
     try {
       const value = action === "pause" ? await pauseSession(deps, { id: current.id }) : await resumeSession(deps, { id: current.id });
       setCurrent({ ...current, status: value.status, active_ms: value.activeMs, resumed_at: value.resumedAt?.getTime() ?? null, last_heartbeat_at: value.lastHeartbeatAt?.getTime() ?? current.last_heartbeat_at });
-    } catch { window.alert("Não foi possível atualizar a sessão."); }
+    } catch { window.alert(t("workspace.update_session_error")); }
     finally { setBusy(false); }
   }
   async function finish(data: { finalBpm: number | null; notes: string; completeGoal: boolean }) {
     if (!deps || !current) return;
     setBusy(true);
     try { await finishSession(deps, { id: current.id, ...data }); setDialog(false); navigate("/"); }
-    catch { window.alert("Não foi possível finalizar a sessão."); }
+    catch { window.alert(t("workspace.finish_session_error")); }
     finally { setBusy(false); }
   }
   return (
@@ -72,23 +75,23 @@ export function WorkspaceHeader({
           <button
             type="button"
             className="cress-icon-control"
-            aria-label="Voltar ao início"
+            aria-label={t("workspace.back_home")}
             onClick={onBack}
           >
             <ArrowLeft size={18} />
           </button>
           <div className="cress-session-heading">
-            <strong title={pieceTitle || "Sessão"}>
-              {pieceTitle || "Sessão"}
+            <strong title={pieceTitle || t("workspace.session")}>
+              {pieceTitle || t("workspace.session")}
             </strong>
-            <span>{goalSummary || "Sem objetivo"}</span>
+            <span>{goalSummary || t("workspace.no_goal")}</span>
           </div>
-          <span className="cress-session-clock" data-live={current?.status === "ACTIVE"} aria-label="Tempo ativo"><i aria-hidden="true" />{clock}</span>
+          <span className="cress-session-clock" data-live={current?.status === "ACTIVE"} aria-label={t("workspace.active_time")}><i aria-hidden="true" />{clock}</span>
           <div className="cress-header-spacer" />
           <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} session={session} hasScores={hasScores} firstScoreId={firstScoreId} />
           <button type="button" className="cress-control" disabled={!current || busy} onClick={() => void changeSession(current?.status === "ACTIVE" ? "pause" : "resume")}>
-            {current?.status === "ACTIVE" ? <><Pause size={15} /> Pausar</> : <><Play size={15} /> Retomar</>}
+            {current?.status === "ACTIVE" ? <><Pause size={15} /> {t("workspace.pause")}</> : <><Play size={15} /> {t("workspace.resume")}</>}
           </button>
           <button type="button" className="cress-finish-button" disabled={!current || busy} onClick={() => setDialog(true)}>
             <Square size={13} /> Finalizar
@@ -97,12 +100,12 @@ export function WorkspaceHeader({
         </>
       ) : (
         <>
-          <button type="button" className="cress-icon-control" aria-label="Voltar ao início" onClick={onBack ?? (() => navigate("/"))}><ChevronLeft size={20} /></button>
-          <strong className="cress-free-title">Prática livre</strong>
+          <button type="button" className="cress-icon-control" aria-label={t("workspace.back_home")} onClick={onBack ?? (() => navigate("/"))}><ChevronLeft size={20} /></button>
+          <strong className="cress-free-title">{t("workspace.free_practice")}</strong>
           <div className="cress-header-spacer" />
-          <span className={`cress-metronome-pill${metronomeRunning ? " is-running" : ""}`} aria-label={`Metrônomo, ${metronome.bpm} BPM${metronomeRunning ? ", tocando" : " parado"}`}>
+          <span className={`cress-metronome-pill${metronomeRunning ? " is-running" : ""}`} aria-label={t("workspace.metronome_status", { bpm: metronome.bpm, status: metronomeRunning ? t("workspace.playing_suffix") : t("workspace.stopped_suffix") })}>
             <i aria-hidden="true" /> ♩ <span>{metronome.bpm}</span>
-            <button type="button" aria-label="Parar metrônomo" disabled={!metronomeRunning} onClick={stopMetronome}><Square size={13} /></button>
+            <button type="button" aria-label={t("workspace.stop_metronome")} disabled={!metronomeRunning} onClick={stopMetronome}><Square size={13} /></button>
           </span>
           <AddPanelMenu api={api} mode={mode} panelParams={panelParams} />
           <LayoutMenu api={api} mode={mode} deps={deps} pieceId={pieceId} session={session} hasScores={hasScores} firstScoreId={firstScoreId} />

@@ -1,6 +1,8 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { toast } from "sonner";
 import { UpdateContext, type UpdateCheckState } from "../../hooks/useUpdateCheck";
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 
 type Update = {
   version: string;
@@ -10,6 +12,7 @@ type Status = UpdateCheckState["status"];
 const inTauri = () => typeof window !== "undefined" && "__TAURI_INTERNALS__" in window;
 
 export function UpdateCheckProvider({ children }: { children: ReactNode }) {
+  const language = useLanguageStore((state) => state.language);
   const [status, setStatus] = useState<Status>("idle");
   const [installing, setInstalling] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
@@ -55,7 +58,7 @@ export function UpdateCheckProvider({ children }: { children: ReactNode }) {
       setInstalling(false);
       installingRef.current = false;
       setProgress(null);
-      toast.error("Não foi possível instalar a atualização.");
+      toast.error(t("updates.install_error"));
       console.error("[updates] Install failed:", error);
     }
   };
@@ -67,13 +70,13 @@ export function UpdateCheckProvider({ children }: { children: ReactNode }) {
       return;
     }
     toast(installing
-      ? progress === null ? "Baixando atualização do Cress…" : `Baixando atualização do Cress… ${progress}%`
-      : `Nova versão do Cress disponível (v${update.current.version})`, {
+      ? progress === null ? t("updates.downloading") : t("updates.downloading_progress", { progress: String(progress) })
+      : t("updates.available", { version: update.current.version }), {
       id: "cress-update",
       duration: Infinity,
-      action: installing ? undefined : { label: "Atualizar", onClick: () => void install() },
+      action: installing ? undefined : { label: t("updates.update_action"), onClick: () => void install() },
     });
-  }, [status, installing, progress]);
+  }, [status, installing, progress, language]);
 
   const value = useMemo(() => ({ status, check, install, installing, progress }), [status, installing, progress]);
   return <UpdateContext.Provider value={value}>{children}</UpdateContext.Provider>;

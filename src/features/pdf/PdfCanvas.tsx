@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
 import type { PDFDocumentProxy } from "pdfjs-dist";
 import type { RenderTask } from "pdfjs-dist/types/src/display/api";
@@ -18,6 +20,7 @@ export function PdfCanvas({
   onPageSize: (size: { width: number; height: number }) => void;
   onError: (message: string) => void;
 }) {
+  useLanguageStore((state) => state.language);
   const canvas = useRef<HTMLCanvasElement>(null);
   const documentRef = useRef<PDFDocumentProxy | null>(null);
   const [loading, setLoading] = useState(true);
@@ -35,7 +38,7 @@ export function PdfCanvas({
       setReady(true);
       setLoading(false);
     }).catch((error: unknown) => {
-      if (active) { setLoading(false); onError(error instanceof Error ? error.message : "Não foi possível abrir o PDF."); }
+      if (active) { setLoading(false); onError(error instanceof Error ? error.message : t("score.open_error")); }
     });
     return () => {
       active = false;
@@ -60,14 +63,14 @@ export function PdfCanvas({
       target.style.width = `${viewport.width}px`;
       target.style.height = `${viewport.height}px`;
       const context = target.getContext("2d");
-      if (!context) { onError("Não foi possível criar o canvas da partitura."); return; }
+      if (!context) { onError(t("score.create_canvas_error")); return; }
       renderTask = pdfPage.render({ canvas: target, canvasContext: context, viewport, transform: ratio === 1 ? undefined : [ratio, 0, 0, ratio, 0, 0] });
       return renderTask.promise.catch((error: unknown) => {
-        if (active && !(error instanceof Error && error.name === "RenderingCancelledException")) onError("Falha ao renderizar a página.");
+        if (active && !(error instanceof Error && error.name === "RenderingCancelledException")) onError(t("score.render_error"));
       });
-    }).catch(() => { if (active) onError("Não foi possível carregar esta página."); });
+    }).catch(() => { if (active) onError(t("score.load_page_error")); });
     return () => { active = false; renderTask?.cancel(); };
   }, [page, scale, onError, onPageSize, ready]);
 
-  return <div className="cress-score-canvas-wrap">{loading && <span role="status">Carregando partitura…</span>}<canvas ref={canvas} aria-label={`Página ${page} da partitura`} /></div>;
+  return <div className="cress-score-canvas-wrap">{loading && <span role="status">{t("score.loading")}</span>}<canvas ref={canvas} aria-label={t("score.page_number", { page })} /></div>;
 }

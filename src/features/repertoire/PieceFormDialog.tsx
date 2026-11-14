@@ -7,6 +7,8 @@ import {
 import { container } from "../../app/container";
 import { INSTRUMENTS, type InstrumentCode } from "../../domain/profile";
 import type { RepertoireItem } from "../../domain/repertoire";
+import { useLanguageStore } from "../../stores/languageStore";
+import { t } from "../../lib/i18n";
 
 const control =
   "rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)] outline-none focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]";
@@ -22,6 +24,7 @@ export function PieceFormDialog({
   onClose: () => void;
   onSaved: (piece: RepertoireItem) => void;
 }) {
+  useLanguageStore((state) => state.language);
   const [title, setTitle] = useState(piece?.title ?? "");
   const [composer, setComposer] = useState(piece?.composer ?? "");
   const [movement, setMovement] = useState(piece?.movement ?? "");
@@ -35,7 +38,7 @@ export function PieceFormDialog({
   async function save(event: FormEvent) {
     event.preventDefault();
     setError("");
-    if (!title.trim()) return setError("Informe o título da obra.");
+    if (!title.trim()) return setError(t("repertoire.title_required"));
     setSaving(true);
     const input: PieceInput = {
       title: title.trim(),
@@ -54,7 +57,7 @@ export function PieceFormDialog({
       setError(
         cause instanceof Error
           ? cause.message
-          : "Não foi possível salvar a obra.",
+          : t("repertoire.save_piece_error"),
       );
     } finally {
       setSaving(false);
@@ -75,24 +78,24 @@ export function PieceFormDialog({
         className="w-full max-w-xl rounded-xl border border-[var(--border-default)] bg-[var(--ink-900)] p-6 text-[var(--text-primary)] shadow-2xl"
       >
         <h2 id="piece-form-title" className="font-display text-3xl">
-          {piece ? "Editar obra" : "Adicionar obra"}
+          {piece ? t("repertoire.edit_piece") : t("repertoire.add_piece")}
         </h2>
         <form className="mt-6 space-y-4" onSubmit={save}>
           <label className="block text-sm text-[var(--text-secondary)]">
-            Título *
+            {t("repertoire.title")} *
             <input
               autoFocus
               required
-              aria-label="Título"
+              aria-label={t("repertoire.title")}
               className={`${control} mt-2 h-11 w-full`}
               value={title}
               onChange={(e) => setTitle(e.target.value)}
             />
           </label>
           <label className="block text-sm text-[var(--text-secondary)]">
-            Compositor
+            {t("repertoire.composer")}
             <input
-              aria-label="Compositor"
+              aria-label={t("repertoire.composer")}
               className={`${control} mt-2 h-11 w-full`}
               value={composer}
               onChange={(e) => setComposer(e.target.value)}
@@ -101,23 +104,23 @@ export function PieceFormDialog({
           <label className="block text-sm text-[var(--text-secondary)]">
             Movimento
             <input
-              aria-label="Movimento"
+              aria-label={t("repertoire.movement")}
               className={`${control} mt-2 h-11 w-full`}
               value={movement}
               onChange={(e) => setMovement(e.target.value)}
             />
           </label>
           <label className="block text-sm text-[var(--text-secondary)]">
-            Instrumento
+            {t("repertoire.instrument")}
             <select
-              aria-label="Instrumento"
+              aria-label={t("repertoire.instrument")}
               className={`${control} mt-2 h-11 w-full`}
               value={instrument}
               onChange={(e) =>
                 setInstrument(e.target.value as InstrumentCode | "")
               }
             >
-              <option value="">Nenhum</option>
+              <option value="">{t("repertoire.none")}</option>
               {Object.entries(INSTRUMENTS).map(([code, label]) => (
                 <option key={code} value={code}>
                   {label}
@@ -128,7 +131,7 @@ export function PieceFormDialog({
           <label className="block text-sm text-[var(--text-secondary)]">
             Notas
             <textarea
-              aria-label="Notas"
+              aria-label={t("repertoire.notes")}
               className={`${control} mt-2 min-h-24 w-full py-3`}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
@@ -145,14 +148,14 @@ export function PieceFormDialog({
               className={`${button} border border-[var(--border-default)] text-[var(--text-secondary)]`}
               onClick={onClose}
             >
-              Cancelar
+              {t("repertoire.cancel")}
             </button>
             <button
               type="submit"
               disabled={saving}
               className={`${button} bg-[var(--violet-600)] text-white hover:bg-[var(--violet-500)]`}
             >
-              {saving ? "Salvando…" : "Salvar obra"}
+              {saving ? t("repertoire.saving") : t("repertoire.save_piece")}
             </button>
           </div>
         </form>

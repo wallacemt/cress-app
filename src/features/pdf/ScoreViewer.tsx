@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Minus, Plus, RotateCcw } from "lucide-react";
 import { convertFileSrc } from "@tauri-apps/api/core";
@@ -10,6 +12,7 @@ import { PdfCanvas } from "./PdfCanvas";
 type Fit = "width" | "page";
 
 export function ScoreViewer({ scoreId, inline = false }: { scoreId: string; inline?: boolean }) {
+  useLanguageStore((state) => state.language);
   const root = useRef<HTMLElement>(null);
   const stage = useRef<HTMLDivElement>(null);
   const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -28,12 +31,12 @@ export function ScoreViewer({ scoreId, inline = false }: { scoreId: string; inli
     void (async () => {
       const deps = await container.getDeps();
       const row = await getScore(deps, { id: scoreId });
-      if (!row) throw new Error("Partitura não encontrada.");
+      if (!row) throw new Error(t("score.not_found"));
       const absolute = await join(await deps.scores.scoresRoot(), row.relative_path);
       if (!active) return;
       setScore(row); setPage(row.last_page); setPageInput(String(row.last_page));
       setSrc(convertFileSrc(absolute));
-    })().catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : "Não foi possível abrir a partitura."); });
+    })().catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : t("score.open_error")); });
     return () => { active = false; if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [scoreId]);
 
@@ -45,7 +48,7 @@ export function ScoreViewer({ scoreId, inline = false }: { scoreId: string; inli
     setPageInput(String(page));
     if (saveTimer.current) clearTimeout(saveTimer.current);
     saveTimer.current = setTimeout(() => {
-      void container.getDeps().then((deps) => setScoreLastPage(deps, { id: score.id, page })).catch(() => setError("Não foi possível salvar a última página."));
+      void container.getDeps().then((deps) => setScoreLastPage(deps, { id: score.id, page })).catch(() => setError(t("score.save_page_error")));
     }, 500);
     return () => { if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [page, pageCount, score]);
@@ -73,22 +76,22 @@ export function ScoreViewer({ scoreId, inline = false }: { scoreId: string; inli
   const submitPage = () => navigate(Number(pageInput));
   const zoom = (factor: number) => { setFit(null); setScale((value) => Math.min(3, Math.max(.35, Math.round(value * factor * 100) / 100))); };
 
-  return <section className={`cress-score-panel${inline ? " cress-score-inline" : ""}`} ref={root} aria-label="Visualizador de partitura">
+  return <section className={`cress-score-panel${inline ? " cress-score-inline" : ""}`} ref={root} aria-label={t("score.viewer")}>
     <header className="cress-score-toolbar">
-      <strong title={score?.label}>{score?.label ?? "Partitura"}</strong>
+      <strong title={score?.label}>{score?.label ?? t("score.score_fallback")}</strong>
       <div className="cress-score-controls">
-        <button type="button" className="cress-control" onClick={() => navigate(page - 1)} disabled={page <= 1}>Anterior</button>
-        <label>Página <input aria-label="Ir para página" inputMode="numeric" value={pageInput} onChange={(event) => setPageInput(event.target.value)} onBlur={submitPage} onKeyDown={(event) => { if (event.key === "Enter") { submitPage(); event.currentTarget.blur(); } }} /> / {pageCount || "—"}</label>
-        <button type="button" className="cress-control" onClick={() => navigate(page + 1)} disabled={pageCount > 0 && page >= pageCount}>Próxima</button>
+        <button type="button" className="cress-control" onClick={() => navigate(page - 1)} disabled={page <= 1}>{t("score.previous")}</button>
+        <label>{t("score.page")} <input aria-label={t("score.go_to_page")} inputMode="numeric" value={pageInput} onChange={(event) => setPageInput(event.target.value)} onBlur={submitPage} onKeyDown={(event) => { if (event.key === "Enter") { submitPage(); event.currentTarget.blur(); } }} /> / {pageCount || "—"}</label>
+        <button type="button" className="cress-control" onClick={() => navigate(page + 1)} disabled={pageCount > 0 && page >= pageCount}>{t("score.next")}</button>
         <span className="cress-score-divider" />
-        <button type="button" className="cress-icon-control" aria-label="Diminuir zoom" onClick={() => zoom(.9)}><Minus size={15} /></button>
+        <button type="button" className="cress-icon-control" aria-label={t("score.zoom_out")} onClick={() => zoom(.9)}><Minus size={15} /></button>
         <span className="cress-score-zoom">{Math.round(scale * 100)}%</span>
-        <button type="button" className="cress-icon-control" aria-label="Aumentar zoom" onClick={() => zoom(1.1)}><Plus size={15} /></button>
-        <button type="button" className={`cress-control ${fit === "width" ? "is-active" : ""}`} onClick={() => setFit("width")}>Largura</button>
-        <button type="button" className={`cress-control ${fit === "page" ? "is-active" : ""}`} onClick={() => setFit("page")}><RotateCcw size={14} /> Página</button>
+        <button type="button" className="cress-icon-control" aria-label={t("score.zoom_in")} onClick={() => zoom(1.1)}><Plus size={15} /></button>
+        <button type="button" className={`cress-control ${fit === "width" ? "is-active" : ""}`} onClick={() => setFit("width")}>{t("score.fit_width")}</button>
+        <button type="button" className={`cress-control ${fit === "page" ? "is-active" : ""}`} onClick={() => setFit("page")}><RotateCcw size={14} /> {t("score.fit_page")}</button>
       </div>
     </header>
-    {error ? <p className="cress-score-error" role="alert">{error}</p> : <div className="cress-score-stage" ref={stage} tabIndex={0} aria-label="Página da partitura; use as setas ou espaço para navegar">
+    {error ? <p className="cress-score-error" role="alert">{error}</p> : <div className="cress-score-stage" ref={stage} tabIndex={0} aria-label={t("score.page_nav_hint")}>
       {src && <PdfCanvas src={src} page={page} scale={scale} onPageCount={onPageCount} onPageSize={onPageSize} onError={onError} />}
     </div>}
   </section>;

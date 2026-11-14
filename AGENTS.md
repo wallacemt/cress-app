@@ -118,6 +118,15 @@ O Blueprint-001 assumia que a Store receberia um instalador Win32; na prática, 
 
 - Gravações em modo `free` usam a obra sentinela `FREE_PRACTICE_PIECE_ID` (`free-practice`) e uma sessão `ACTIVE` reutilizável; `listPieces` oculta a obra sentinela. Fonte: migration `0002_free_practice_piece.sql`, `sessions.ts` e `repertoire.ts`.
 - Auto-update do Tauri usa artefatos NSIS assinados pelo updater e exige `latest.json` na raiz dos assets da GitHub Release; o `tauri build` sozinho só gera `.exe.sig`, não agrega o manifesto. O endpoint `releases/latest/download` exige que a release atual não seja marcada como pre-release; o workflow injeta a versão da tag no `tauri.conf.json` antes do build. Workflow Windows em `.github/workflows/release.yml`; atualizar secrets de signing só fora deste repo. Fontes: workflow e docs oficiais `tauri-apps/plugins-workspace` (Updater v2), GitHub “Linking to releases”, 2026-11-02.
+- **Convenção de release notes bilíngue (2026-11-13):** `ChangelogPage`/`useChangelog.ts` exibem as notas de release no idioma ativo do app. Para isso funcionar, o corpo da release no GitHub precisa ter as duas seções, headers markdown nível 2 exatamente assim (case-sensitive, qualquer ordem):
+  ```markdown
+  ## pt-BR
+  ...texto em português...
+
+  ## en-US
+  ...English text...
+  ```
+  `parseLocalizedNotes` (`useChangelog.ts`) só preenche `notesByLocale` se AMBOS os marcadores existirem; senão cai no fallback de mostrar o corpo bruto (texto corrido) pros dois idiomas — por isso releases antigas (geradas automaticamente pelo `generate_release_notes: true` do workflow) continuam funcionando, só não são bilíngues. `.github/workflows/release.yml` não foi alterado — o corpo bilíngue precisa ser escrito/editado manualmente na release antes ou depois da publicação, até decidirmos automatizar isso.
 
 ## 10. CI (GitHub Actions)
 

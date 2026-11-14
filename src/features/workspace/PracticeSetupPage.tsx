@@ -1,3 +1,5 @@
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useState, type FormEvent } from "react";
 import { useNavigate, useSearchParams } from "react-router";
 import { createGoal, listGoals } from "../../application/goals";
@@ -12,6 +14,7 @@ import { validateBpm } from "../../domain/bpm";
 import { GoalSelect } from "./GoalSelect";
 
 export function PracticeSetupPage() {
+  useLanguageStore((state) => state.language);
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const [pieces, setPieces] = useState<RepertoireItem[]>([]);
@@ -36,7 +39,7 @@ export function PracticeSetupPage() {
         setPieceId(available.some((piece) => piece.id === requestedPieceId) ? requestedPieceId! : available[0]?.id ?? "");
       })
       .catch(() => {
-        if (active) setError("Não foi possível carregar o repertório.");
+        if (active) setError(t("workspace.load_repertoire_error"));
       });
     return () => {
       active = false;
@@ -63,7 +66,7 @@ export function PracticeSetupPage() {
         );
       })
       .catch(() => {
-        if (active) setError("Não foi possível carregar os objetivos.");
+        if (active) setError(t("workspace.load_goals_error"));
       });
     return () => {
       active = false;
@@ -77,22 +80,22 @@ export function PracticeSetupPage() {
     try {
       initialBpm = validateBpm(Number(bpm));
     } catch {
-      setError("Informe um BPM inteiro entre 20 e 300.");
+      setError(t("workspace.invalid_bpm"));
       return;
     }
     if (!pieceId) {
-      setError("Cadastre uma obra antes de iniciar a prática.");
+      setError(t("workspace.no_piece_before_practice"));
       return;
     }
     if (newGoal.trim().length > 120) {
-      setError("Use até 120 caracteres no objetivo.");
+      setError(t("workspace.goal_length_error"));
       return;
     }
     setBusy(true);
     try {
       const deps: Deps = await container.getDeps();
       if ((await makeSessionRepo(deps.db).open()).some((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID)) {
-        setError("Finalize ou retome a sessão aberta antes de iniciar outra.");
+        setError(t("workspace.open_session_error"));
         return;
       }
       const goal = newGoal.trim()
@@ -111,7 +114,7 @@ export function PracticeSetupPage() {
       setError(
         cause instanceof Error
           ? cause.message
-          : "Não foi possível iniciar a sessão.",
+          : t("workspace.start_session_error"),
       );
     } finally {
       setBusy(false);
@@ -125,27 +128,27 @@ export function PracticeSetupPage() {
         className="mb-8 text-sm text-[var(--text-secondary)]"
         onClick={() => navigate("/")}
       >
-        ← Voltar ao início
+        {t("workspace.back_home")}
       </button>
       <header className="mb-8 border-b border-[var(--border-subtle)] pb-6">
         <p className="mb-2 text-xs font-semibold tracking-[0.08em] text-[var(--violet-300)]">
-          PRÁTICA
+          {t("workspace.practice")}
         </p>
-        <h1 className="font-display text-4xl">Nova sessão</h1>
+        <h1 className="font-display text-4xl">{t("workspace.new_session")}</h1>
         <p className="mt-2 text-[var(--text-secondary)]">
-          Escolha uma obra e defina o ponto de partida.
+          {t("workspace.choose_piece_and_start")}
         </p>
       </header>
       <form className="grid gap-6" noValidate onSubmit={submit}>
         <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
           Obra
           <select
-            aria-label="Obra"
+            aria-label={t("workspace.piece")}
             className="h-12 rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)]"
             value={pieceId}
             onChange={(event) => setPieceId(event.target.value)}
           >
-            <option value="">Selecione uma obra</option>
+            <option value="">{t("workspace.select_piece")}</option>
             {pieces.map((piece) => (
               <option key={piece.id} value={piece.id}>
                 {piece.title}
@@ -155,12 +158,12 @@ export function PracticeSetupPage() {
         </label>
         <GoalSelect goals={goals} value={goalId} onChange={(id) => { setGoalId(id); setNewGoal(""); }} />
         <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-          Novo objetivo{" "}
+          {t("workspace.new_goal")}{" "}
           <span className="text-[var(--text-muted)]">
-            (opcional; substitui o existente)
+            {t("workspace.optional_replaces_existing")}
           </span>
           <input
-            aria-label="Novo objetivo"
+            aria-label={t("workspace.new_goal")}
             maxLength={120}
             className="h-12 rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] px-4 text-[var(--text-primary)]"
             value={newGoal}
@@ -171,9 +174,9 @@ export function PracticeSetupPage() {
           />
         </label>
         <label className="grid gap-2 text-sm text-[var(--text-secondary)]">
-          BPM inicial
+          {t("workspace.initial_bpm")}
           <input
-            aria-label="BPM inicial"
+            aria-label={t("workspace.initial_bpm")}
             type="number"
             min={20}
             max={300}
@@ -194,7 +197,7 @@ export function PracticeSetupPage() {
           disabled={busy || !pieces.length}
           className="cress-btn-primary min-h-12"
         >
-          {busy ? "Iniciando…" : "Iniciar sessão"}
+          {busy ? t("workspace.starting") : t("workspace.start_session")}
         </button>
       </form>
     </main>

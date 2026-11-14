@@ -1,3 +1,5 @@
+import { t, getLanguage } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router";
 import { Search } from "lucide-react";
@@ -7,6 +9,7 @@ import { normalizeName } from "../../domain/score";
 import type { RepertoireItem } from "../../domain/repertoire";
 
 export function SearchModal({ onClose }: { onClose: () => void }) {
+  useLanguageStore((state) => state.language);
   const navigate = useNavigate();
   const [pieces, setPieces] = useState<RepertoireItem[]>([]);
   const [query, setQuery] = useState("");
@@ -19,7 +22,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
     void container.getDeps().then(listPieces).then((allPieces) => {
       if (active) setPieces(allPieces.filter((piece) => !piece.archived));
     }).catch(() => {
-      if (active) setError("Não foi possível carregar o repertório.");
+      if (active) setError(t("search.load_error"));
     }).finally(() => {
       if (active) setLoading(false);
     });
@@ -29,7 +32,7 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
 
   const needle = normalizeName(query);
   const matches = pieces.filter((piece) => !needle || normalizeName(`${piece.title} ${piece.composer ?? ""}`).includes(needle))
-    .sort((a, b) => a.title.localeCompare(b.title, "pt-BR"));
+    .sort((a, b) => a.title.localeCompare(b.title, getLanguage()));
 
   function onKeyDown(event: React.KeyboardEvent) {
     if (event.key === "Escape") onClose();
@@ -44,11 +47,11 @@ export function SearchModal({ onClose }: { onClose: () => void }) {
 
   return <div className="fixed inset-0 z-50 flex items-center justify-center bg-[rgb(5_7_13/.72)] p-4 backdrop-blur-sm" onMouseDown={(event) => { if (event.target === event.currentTarget) onClose(); }} onKeyDown={onKeyDown}>
     <section role="dialog" aria-modal="true" aria-labelledby="search-title" className="cress-card flex max-h-[85vh] w-full max-w-[560px] flex-col rounded-2xl shadow-2xl">
-      <header className="border-b border-[var(--border-subtle)] p-5"><h2 id="search-title" className="font-display text-[28px]">Buscar obra</h2><label className="mt-4 flex h-11 items-center gap-3 rounded-lg border border-[var(--border-default)] px-3 text-[var(--text-muted)]"><Search size={17} /><input ref={searchRef} autoFocus aria-label="Buscar obra" placeholder="Título ou compositor…" value={query} onChange={(event) => setQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none" /></label></header>
+      <header className="border-b border-[var(--border-subtle)] p-5"><h2 id="search-title" className="font-display text-[28px]">{t("search.title")}</h2><label className="mt-4 flex h-11 items-center gap-3 rounded-lg border border-[var(--border-default)] px-3 text-[var(--text-muted)]"><Search size={17} /><input ref={searchRef} autoFocus aria-label={t("search.title")} placeholder={t("search.title_composer")} value={query} onChange={(event) => setQuery(event.target.value)} className="min-w-0 flex-1 bg-transparent text-sm text-[var(--text-primary)] outline-none" /></label></header>
       <div className="min-h-0 flex-1 overflow-y-auto p-3">
-        {matches.map((piece) => <button key={piece.id} data-search-result type="button" onClick={() => { onClose(); navigate(`/repertoire/${piece.id}`); }} className="relative flex h-14 w-full flex-col justify-center border-b border-[var(--border-subtle)] px-4 pl-6 text-left hover:bg-[var(--ink-800)]"><span className="truncate">{piece.title}</span><span className="truncate text-xs text-[var(--text-muted)]">{piece.composer || "Compositor não informado"}</span></button>)}
-        {!loading && !error && !matches.length && <p className="p-4 text-sm text-[var(--text-muted)]">Nenhuma obra encontrada.</p>}
-        {loading && <p role="status" className="p-4 text-sm text-[var(--text-muted)]">Carregando repertório…</p>}
+        {matches.map((piece) => <button key={piece.id} data-search-result type="button" onClick={() => { onClose(); navigate(`/repertoire/${piece.id}`); }} className="relative flex h-14 w-full flex-col justify-center border-b border-[var(--border-subtle)] px-4 pl-6 text-left hover:bg-[var(--ink-800)]"><span className="truncate">{piece.title}</span><span className="truncate text-xs text-[var(--text-muted)]">{piece.composer || t("search.composer_missing")}</span></button>)}
+        {!loading && !error && !matches.length && <p className="p-4 text-sm text-[var(--text-muted)]">{t("search.empty")}</p>}
+        {loading && <p role="status" className="p-4 text-sm text-[var(--text-muted)]">{t("search.loading")}</p>}
         {error && <p role="alert" className="p-3 text-sm text-[var(--danger)]">{error}</p>}
       </div>
     </section>

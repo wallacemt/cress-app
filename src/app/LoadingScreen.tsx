@@ -1,4 +1,6 @@
 import cressStacked from "../assets/brand/cress-stacked-gold.svg";
+import { useLanguageStore } from "../stores/languageStore";
+import { t } from "../lib/i18n";
 
 // Posição (x) e linha do pentagrama (y) de cada nota do progresso — ritmo levemente
 // irregular (não um metrônomo robótico) para parecer uma frase musical de verdade.
@@ -14,6 +16,7 @@ const LOADING_NOTES = [
 ];
 
 export function LoadingScreen() {
+  useLanguageStore((state) => state.language);
   return (
     <main
       role="status"
@@ -24,7 +27,7 @@ export function LoadingScreen() {
       <div className="flex flex-col items-center">
       <img src={cressStacked} alt="Cress" className="h-82 cress-loading-logo" />
       <p className="mt-8 text-base font-medium text-[var(--text-muted)] cress-loading-text">
-        Preparando sua mesa de estudo musical…
+        {t("loading.mensagem")}
       </p>
       <svg
         aria-hidden="true"

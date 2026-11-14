@@ -1,8 +1,12 @@
+import { t } from "../../../lib/i18n";
+import { useLanguageStore } from "../../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
 
 interface TunerGaugeProps { cents: number; inTune: boolean }
 
-export function TunerGauge({ cents, inTune }: TunerGaugeProps) {
+export function TunerGauge({
+  cents, inTune }: TunerGaugeProps) {
+  useLanguageStore((state) => state.language);
   const value = Math.max(-50, Math.min(50, cents));
   const angle = Math.PI - ((value + 50) / 100) * Math.PI;
   const needleX = 100 + 82 * Math.cos(angle);
@@ -21,7 +25,7 @@ export function TunerGauge({ cents, inTune }: TunerGaugeProps) {
   }, [inTune]);
 
   return (
-    <div className="cress-tuner-gauge" role="meter" aria-label="Afinação em cents" aria-valuemin={-50} aria-valuemax={50} aria-valuenow={value}>
+    <div className="cress-tuner-gauge" role="meter" aria-label={t("workspace.tuning_cents")} aria-valuemin={-50} aria-valuemax={50} aria-valuenow={value}>
       <svg className="cress-tuner-gauge-arc" viewBox="0 0 200 116" aria-hidden="true">
         <defs><linearGradient id="tuner-arc-zones" x1="0" x2="1"><stop offset="0%" stopColor="var(--danger)" /><stop offset="34%" stopColor="var(--warning)" /><stop offset="50%" stopColor="var(--color-gold)" /><stop offset="66%" stopColor="var(--warning)" /><stop offset="100%" stopColor="var(--danger)" /></linearGradient></defs>
         <path className="cress-tuner-gauge-track" d="M 16 104 A 84 84 0 0 1 184 104" pathLength="100" />

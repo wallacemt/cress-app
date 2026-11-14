@@ -1,4 +1,6 @@
-import { useCallback, useMemo, useRef, useState } from "react";
+import { t } from "../../lib/i18n";
+import { useLanguageStore } from "../../stores/languageStore";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   DockviewReact,
   type DockviewReadyEvent,
@@ -18,6 +20,7 @@ import {
   panelRegistry,
   panelRenderer,
   WorkspaceWatermark,
+  getPanelTitle,
   PanelTab,
 } from "./panelRegistry";
 import { useLayoutPersistence } from "./useLayoutPersistence";
@@ -53,6 +56,7 @@ export function Workspace({
   const effectiveSession = session ?? freeSession;
   const apiRef = useRef<DockviewReadyEvent["api"] | null>(null);
   const layoutReadyRef = useRef(false);
+  const language = useLanguageStore((state) => state.language);
   const setPanelCount = useWorkspaceLayoutStore((s) => s.setPanelCount);
   const setGroupCount = useWorkspaceLayoutStore((s) => s.setGroupCount);
   useLayoutPersistence(
@@ -60,6 +64,11 @@ export function Workspace({
     deps,
     mode === "session" ? pieceId : undefined,
   );
+  useEffect(() => {
+    ready?.api.panels.forEach((panel) => {
+      if (panel.api.component !== "score") panel.api.setTitle(getPanelTitle(panel.api.component));
+    });
+  }, [language, ready]);
 
   // Função síncrona para ler contagem final - chamada UMA vez após layout estabilizar
   const commitLayoutCounts = useCallback(() => {
@@ -109,7 +118,7 @@ export function Workspace({
     const applyDefault = () => {
       event.api.closeAllGroups();
       const containerSize = { width: event.api.width, height: event.api.height };
-      for (const spec of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, activeSession && activeDeps ? { session: activeSession, pieceId, deps: activeDeps } : undefined)) event.api.addPanel(spec);
+      for (const spec of buildDefaultLayoutAddPanelSpecs(mode, hasScores, firstScoreId, containerSize, activeSession && activeDeps ? { session: activeSession, pieceId, deps: activeDeps } : undefined)) event.api.addPanel({ ...spec, title: getPanelTitle(spec.component) });
     };
     try {
       activeDeps = await container.getDeps();
@@ -149,13 +158,13 @@ export function Workspace({
           }
         } catch (error) {
           console.warn(
-            "Não foi possível restaurar o layout; usando o padrão.",
+            t("workspace.restore_layout_error"),
             error,
           );
           applyDefault();
         }
       } else {
-        console.warn("Layout salvo ausente ou inválido; usando o padrão.");
+        console.warn(t("workspace.invalid_layout"));
         applyDefault();
       }
       if (mode === "free" && activeSession && activeDeps) {
@@ -166,7 +175,7 @@ export function Workspace({
       }
     } catch (error) {
       console.warn(
-        "Não foi possível carregar o layout; usando o padrão.",
+        t("workspace.load_layout_error"),
         error,
       );
       applyDefault();

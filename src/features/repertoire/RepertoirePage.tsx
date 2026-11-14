@@ -11,6 +11,8 @@ import { ImportFolderDialog } from "./ImportFolderDialog";
 import { scanFolder } from "../../application/scores";
 import type { FolderScan } from "../../application/deps";
 import type { ImportPlan } from "../../domain/score";
+import { useLanguageStore } from "../../stores/languageStore";
+import { t } from "../../lib/i18n";
 
 const columns =
   "grid min-w-[760px] grid-cols-[minmax(0,3fr)_minmax(0,2fr)_120px_88px_88px_120px] items-center gap-4";
@@ -53,6 +55,7 @@ function HighlightedTitle({ title, query }: { title: string; query: string }) {
 }
 
 export function RepertoirePage() {
+  useLanguageStore((state) => state.language);
   const [pieces, setPieces] = useState<RepertoireItem[]>([]);
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(-1);
@@ -73,7 +76,7 @@ export function RepertoirePage() {
         if (active) setPieces(items);
       })
       .catch(() => {
-        if (active) setError("Não foi possível carregar seu repertório.");
+        if (active) setError(t("repertoire.load_error"));
       })
       .finally(() => {
         if (active) setLoading(false);
@@ -99,7 +102,7 @@ export function RepertoirePage() {
       const result = await scanFolder(await container.getDeps());
       if (result) setFolderImport(result);
     } catch (cause) {
-      setImportError(cause instanceof Error ? cause.message : "Não foi possível analisar a pasta.");
+      setImportError(cause instanceof Error ? cause.message : t("repertoire.scan_error"));
     } finally { setScanning(false); }
   }
 
@@ -156,12 +159,12 @@ export function RepertoirePage() {
           className="mb-6 text-[var(--gold-300)]"
         />
         <h1 className="font-display text-5xl leading-[0.95] text-[var(--text-primary)] sm:text-6xl">
-          Seu repertório
+          {t("repertoire.your_collection")}
           <br />
-          começa aqui.
+          {t("repertoire.starts_here")}
         </h1>
         <p className="mt-5 text-base text-[var(--text-secondary)]">
-          Adicione uma obra e comece sua evolução.
+          {t("repertoire.empty_description")}
         </p>
         <div className="mt-8 flex flex-col items-center gap-3 sm:flex-row">
           <button
@@ -169,9 +172,9 @@ export function RepertoirePage() {
             onClick={() => setCreating(true)}
             className="inline-flex h-11 items-center gap-2 rounded-lg bg-[var(--violet-600)] px-5 text-sm font-medium text-white transition-colors hover:bg-[var(--violet-500)] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--violet-300)]"
           >
-            <span aria-hidden="true">+</span> Adicionar obra
+            <span aria-hidden="true">+</span> {t("repertoire.add_piece")}
           </button>
-          <button type="button" disabled={scanning} onClick={() => void startFolderImport()} className="inline-flex h-11 items-center gap-2 rounded-lg border border-[var(--border-default)] px-5 text-sm text-[var(--text-secondary)]">{scanning ? "Analisando pasta…" : "Importar pasta"}</button>
+          <button type="button" disabled={scanning} onClick={() => void startFolderImport()} className="inline-flex h-11 items-center gap-2 rounded-lg border border-[var(--border-default)] px-5 text-sm text-[var(--text-secondary)]">{scanning ? t("repertoire.scanning_folder") : t("repertoire.import_folder")}</button>
         </div>
         {creating && (
           <PieceFormDialog
@@ -189,14 +192,14 @@ export function RepertoirePage() {
       <div className="mb-6 flex items-end justify-between gap-6">
         <div>
           <h1 className="font-display text-4xl text-[var(--text-primary)]">
-            Repertório
+            {t("repertoire.title")}
           </h1>
           <p className="mt-1 text-sm text-[var(--text-muted)]">
-            {pieces.length} {pieces.length === 1 ? "obra" : "obras"}
+            {pieces.length} {t(pieces.length === 1 ? "repertoire.piece_singular" : "repertoire.piece_plural")}
           </p>
         </div>
         <label className="relative block w-full max-w-sm">
-          <span className="sr-only">Buscar por título ou compositor</span>
+          <span className="sr-only">{t("repertoire.search_title_composer")}</span>
           <Search
             aria-hidden="true"
             size={17}
@@ -209,7 +212,7 @@ export function RepertoirePage() {
               setQuery(event.target.value);
               setSelected(-1);
             }}
-            placeholder="Buscar por título ou compositor"
+            placeholder={t("repertoire.search_title_composer")}
             className="h-11 w-full rounded-lg border border-[var(--border-default)] bg-[var(--ink-800)] pl-10 pr-4 text-sm text-[var(--text-primary)] outline-none placeholder:text-[var(--text-muted)] focus:border-[var(--violet-400)] focus:ring-2 focus:ring-[var(--violet-tint)]"
           />
         </label>
@@ -217,24 +220,24 @@ export function RepertoirePage() {
 
       <div className="mb-5 flex justify-end gap-3">
         {importError && <p role="alert" className="mr-auto self-center text-sm text-[var(--danger)]">{importError}</p>}
-        <button type="button" disabled={scanning} onClick={() => void startFolderImport()} className="rounded-lg border border-[var(--border-default)] px-4 py-2.5 text-sm text-[var(--text-secondary)]">{scanning ? "Analisando pasta…" : "Importar pasta"}</button>
+        <button type="button" disabled={scanning} onClick={() => void startFolderImport()} className="rounded-lg border border-[var(--border-default)] px-4 py-2.5 text-sm text-[var(--text-secondary)]">{scanning ? t("repertoire.scanning_folder") : t("repertoire.import_folder")}</button>
       </div>
 
       <div className="overflow-x-auto">
         <div
           className={`${columns} border-b border-[var(--border-default)] px-4 py-3 text-xs font-medium uppercase tracking-wide text-[var(--text-muted)]`}
         >
-          <span>Título</span>
-          <span>Compositor</span>
-          <span>Instrumento</span>
-          <span>Partituras</span>
-          <span>Sessões</span>
-          <span>Última sessão</span>
+          <span>{t("repertoire.title")}</span>
+          <span>{t("repertoire.composer")}</span>
+          <span>{t("repertoire.instrument")}</span>
+          <span>{t("repertoire.scores")}</span>
+          <span>{t("repertoire.sessions")}</span>
+          <span>{t("repertoire.last_session")}</span>
         </div>
         {filtered.length ? (
           <div
             role="listbox"
-            aria-label="Obras do repertório"
+            aria-label={t("repertoire.pieces_list")}
             tabIndex={0}
             className="outline-none focus-visible:ring-2 focus-visible:ring-[var(--violet-400)]"
             onKeyDown={(event) => {
@@ -266,7 +269,7 @@ export function RepertoirePage() {
                   <HighlightedTitle title={piece.title} query={query} />
                   {piece.archived && (
                     <span className="ml-2 rounded bg-[var(--ink-700)] px-1.5 py-0.5 text-[10px] font-normal text-[var(--text-muted)]">
-                      Arquivada
+                      {t("repertoire.archived")}
                     </span>
                   )}
                 </span>
@@ -282,19 +285,19 @@ export function RepertoirePage() {
                 </span>
                 <span
                   className="inline-flex items-center gap-2 font-[var(--font-metric)] tabular-nums text-[var(--text-muted)]"
-                  title="Contagem de partituras indisponível"
+                  title={t("repertoire.score_count_unavailable")}
                 >
                   <FileMusic aria-hidden="true" size={14} /> —
                 </span>
                 <span
                   className="font-[var(--font-metric)] tabular-nums text-[var(--text-muted)]"
-                  title="Contagem de sessões indisponível"
+                  title={t("repertoire.session_count_unavailable")}
                 >
                   —
                 </span>
                 <span
                   className="truncate text-[var(--text-muted)]"
-                  title="Última sessão indisponível"
+                  title={t("repertoire.last_session_unavailable")}
                 >
                   —
                 </span>
@@ -303,7 +306,7 @@ export function RepertoirePage() {
           </div>
         ) : (
           <p className="px-4 py-10 text-center text-sm text-[var(--text-muted)]">
-            Nenhuma obra encontrada.
+            {t("repertoire.no_pieces_found")}
           </p>
         )}
       </div>

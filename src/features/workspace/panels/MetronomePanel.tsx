@@ -1,3 +1,5 @@
+import { t } from "../../../lib/i18n";
+import { useLanguageStore } from "../../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
 import type { IDockviewPanelProps } from "dockview-react";
 import {
@@ -29,6 +31,7 @@ import { CressSlider } from "../../../components/CressSlider";
 import { SubdivisionIcon } from "../../../components/icons/SubdivisionIcon";
 
 export function MetronomePanel({ params }: IDockviewPanelProps) {
+  useLanguageStore((state) => state.language);
   void params;
   const config = useMetronomeStore((state) => state.config);
   const running = useMetronomeStore((state) => state.running);
@@ -86,7 +89,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
       .then((value) => {
         if (alive) setConfig(value);
       })
-      .catch(() => setError("Não foi possível carregar a configuração."));
+      .catch(() => setError(t("workspace.metro_error")));
     return () => {
       alive = false;
     };
@@ -98,7 +101,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         void container
           .getDeps()
           .then((deps) => saveMetronomeConfig(deps, config))
-          .catch(() => setError("Não foi possível salvar a configuração.")),
+          .catch(() => setError(t("workspace.metro_save_error"))),
       500,
     );
   }, [config]);
@@ -113,7 +116,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         )
         .catch((cause) =>
           console.warn(
-            "Não foi possível salvar a configuração do metrônomo.",
+            t("workspace.metro_save_error"),
             cause,
           ),
         );
@@ -137,7 +140,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         event.preventDefault();
         void toggle().catch((cause: unknown) => {
           console.error("Metrônomo: falha ao iniciar o áudio.", cause);
-          setError("Não foi possível iniciar o áudio.");
+          setError(t("workspace.audio_error"));
         });
       }
       if (
@@ -193,7 +196,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
       setEditing(false);
       setError("");
     } catch {
-      setError("Informe um BPM inteiro entre 20 e 300.");
+      setError(t("workspace.metronomo_erro_bpm"));
     }
   }
   function update(patch: Partial<typeof config>) {
@@ -205,7 +208,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
   }
   const isBeat = (index: number) => running && index === beat - 1;
   const row = (
-    <div className="cress-metronome-beat-row" aria-label="Tempos do compasso">
+    <div className="cress-metronome-beat-row" aria-label={t("workspace.beats")}>
       {Array.from({ length: config.beatsPerBar }, (_, i) => (
         <span
           key={i}
@@ -260,7 +263,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         {tempoOpen && (
           <div
             role="menu"
-            aria-label="Andamento"
+            aria-label={t("workspace.tempo_label")}
             className="cress-menu-popover cress-metronome-tempo-menu "
           >
             {Object.keys(TEMPO_MARKING_MIDPOINTS).map((name) => {
@@ -297,7 +300,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
           </div>
         )}
       </div>
-      {running && timerSeconds != null && <output className="cress-metronome-timer-badge" aria-label="Tempo restante">{`${String(Math.floor(timerRemaining / 60)).padStart(2, "0")}:${String(timerRemaining % 60).padStart(2, "0")}`}</output>}
+      {running && timerSeconds != null && <output className="cress-metronome-timer-badge" aria-label={t("workspace.remaining")}>{`${String(Math.floor(timerRemaining / 60)).padStart(2, "0")}:${String(timerRemaining % 60).padStart(2, "0")}`}</output>}
     </div>
   );
   const adjustment = (
@@ -319,7 +322,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
           {Math.abs(delta)}
         </button>
       ))}
-      <CressSlider aria-label="Ajustar BPM" min={20} max={300} value={config.bpm} onChange={setBpm} />
+      <CressSlider aria-label={t("workspace.adjust_bpm")} min={20} max={300} value={config.bpm} onChange={setBpm} />
       {([1, 5] as const).map((delta) => (
         <button
           key={delta}
@@ -343,12 +346,12 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
     <button
       type="button"
       className="cress-metronome-play"
-      aria-label={running ? "Parar metrônomo" : "Iniciar metrônomo"}
+      aria-label={running ? t("workspace.stop_metronome_toggle") : t("workspace.start_metronome")}
       onClick={() => {
         setError("");
         void toggle().catch((cause: unknown) => {
           console.error("Metrônomo: falha ao iniciar o áudio.", cause);
-          setError("Não foi possível iniciar o áudio.");
+          setError(t("workspace.audio_error"));
         });
       }}
     >
@@ -362,7 +365,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
           Tempos{" "}
           <input
             type="number"
-            aria-label="Tempos por compasso"
+            aria-label={t("workspace.beats_per_bar")}
             min="1"
             max="12"
             value={config.beatsPerBar}
@@ -372,7 +375,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
             }}
           />
         </label>
-        <div className="cress-metronome-unit" aria-label="Unidade do compasso">
+        <div className="cress-metronome-unit" aria-label={t("workspace.time_signature_unit")}>
           {([4, 8] as const).map((n) => (
             <button
               key={n}
@@ -389,13 +392,13 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         </strong>
       </div>
       <div className="cress-metronome-section">
-        <span className="cress-metronome-label">ACENTOS</span>
+        <span className="cress-metronome-label">{t("workspace.accents")}</span>
         <div className="cress-metronome-accents">
           {Array.from({ length: config.beatsPerBar }, (_, i) => (
             <button
               key={i}
               type="button"
-              aria-label={`Acento no tempo ${i + 1}`}
+              aria-label={t("workspace.accent_beat", { beat: i + 1 })}
               aria-pressed={config.accentBeats.includes(i)}
               onClick={() => update({ accentBeats: config.accentBeats.includes(i) ? config.accentBeats.filter((b) => b !== i) : [...config.accentBeats, i] })}
             >
@@ -405,7 +408,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         </div>
       </div>
       <div className="cress-metronome-section">
-        <span className="cress-metronome-label">SUBDIVISÃO</span>
+        <span className="cress-metronome-label">{t("workspace.subdivision")}</span>
         <div className="cress-metronome-subdivisions">
           {SUBDIVISIONS.map((item) => (
             <button
@@ -413,9 +416,9 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
               type="button"
               title={item
                 .split("-")
-                .map((x) => (x === "1" ? "Toca" : "Pausa"))
+                .map((x) => (x === "1" ? t("workspace.toca") : t("workspace.pausa")))
                 .join(" · ")}
-              aria-label={`Subdivisão ${item}`}
+              aria-label={t("workspace.subdivision_label", { item })}
               aria-pressed={config.subdivision === item}
               onClick={() => update({ subdivision: item })}
             >
@@ -428,15 +431,15 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         </div>
       </div>
       <div className="cress-metronome-section cress-metronome-timer">
-        <label className="cress-metronome-timer-toggle"><input type="checkbox" aria-label="Habilitar timer" checked={timerEnabled} onChange={(event) => { const enabled = event.target.checked; setTimerEnabled(enabled); updateTimer(timerMinutes, timerSecs, enabled); }} /> TIMER</label>
+        <label className="cress-metronome-timer-toggle"><input type="checkbox" aria-label={t("workspace.timer_enabled")} checked={timerEnabled} onChange={(event) => { const enabled = event.target.checked; setTimerEnabled(enabled); updateTimer(timerMinutes, timerSecs, enabled); }} /> {t("workspace.timer_enabled")}</label>
         <div className="cress-metronome-timer-inputs">
-          <label>Min <input aria-label="Minutos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerMinutes} onChange={(event) => { const minutes = event.target.value.replace(/\D/g, ""); setTimerMinutes(minutes); updateTimer(minutes, timerSecs, timerEnabled); }} /></label>
-          <label>Seg <input aria-label="Segundos do timer" inputMode="numeric" className="cress-metronome-time-input" value={timerSecs} onChange={(event) => { const secs = String(Math.min(59, Number(event.target.value.replace(/\D/g, "") || 0))); setTimerSecs(secs); updateTimer(timerMinutes, secs, timerEnabled); }} /></label>
+          <label>{t("workspace.minutes_short")} <input aria-label={t("workspace.timer_minutes")} inputMode="numeric" className="cress-metronome-time-input" value={timerMinutes} onChange={(event) => { const minutes = event.target.value.replace(/\D/g, ""); setTimerMinutes(minutes); updateTimer(minutes, timerSecs, timerEnabled); }} /></label>
+          <label>{t("workspace.seconds_short")} <input aria-label={t("workspace.timer_seconds")} inputMode="numeric" className="cress-metronome-time-input" value={timerSecs} onChange={(event) => { const secs = String(Math.min(59, Number(event.target.value.replace(/\D/g, "") || 0))); setTimerSecs(secs); updateTimer(timerMinutes, secs, timerEnabled); }} /></label>
         </div>
       </div>
       <label className="cress-metronome-volume">
         <Volume2 size={16} />
-        <CressSlider aria-label="Volume" min={0} max={100} value={volume} onChange={setVolume} />
+        <CressSlider aria-label={t("workspace.volume")} min={0} max={100} value={volume} onChange={setVolume} />
         <output>{volume}%</output>
       </label>
     </>
@@ -446,7 +449,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
       ref={root}
       tabIndex={0}
       className={`cress-metronome-panel${layoutClass ? ` ${layoutClass}` : ""}`}
-      aria-label="Painel Metrônomo"
+      aria-label={t("workspace.metro_panel")}
       onClick={() => root.current?.focus({ preventScroll: true })}
     >
       {error && (
@@ -468,7 +471,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
         type="button"
         onClick={() => setConfigModal(true)}
       >
-        <Settings2 size={16} /> Configurações
+        <Settings2 size={16} /> {t("workspace.settings")}
       </button>
       <div className="cress-metronome-extra">{controls}</div>
       {configModal && (
@@ -482,13 +485,13 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
             className="session-dialog cress-metronome-config-modal"
             role="dialog"
             aria-modal="true"
-            aria-label="Configurações do metrônomo"
+            aria-label={t("workspace.metronome_settings")}
           >
             <header>
-              <h2>Configurações</h2>
+              <h2>{t("workspace.settings")}</h2>
               <button
                 type="button"
-                aria-label="Fechar configurações"
+                aria-label={t("workspace.close_settings")}
                 onClick={() => setConfigModal(false)}
               >
                 <X size={18} />
@@ -497,7 +500,7 @@ export function MetronomePanel({ params }: IDockviewPanelProps) {
             {controls}
             <footer>
               <button type="button" onClick={() => setConfigModal(false)}>
-                Concluir
+                {t("workspace.done")}
               </button>
             </footer>
           </section>
