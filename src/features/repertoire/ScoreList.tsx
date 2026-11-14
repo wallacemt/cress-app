@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useEffect, useState } from "react";
 import { attachScoreFile, deleteScore, listScores, renameScore, reorderScore } from "../../application/scores";
 import type { Deps } from "../../application/deps";
@@ -24,7 +25,7 @@ export function ScoreList({ pieceId }: { pieceId: string }) {
     void container.getDeps().then((deps) => listScores(deps, { pieceId })).then((items) => {
       if (active) setScores(items);
     }).catch((cause: unknown) => {
-      if (active) setError(cause instanceof Error ? cause.message : t("repertoire.scores_load_error"));
+      if (active) setError(friendlyErrorMessage(cause, t("repertoire.scores_load_error")));
     });
     return () => { active = false; };
   }, [pieceId]);
@@ -36,7 +37,7 @@ export function ScoreList({ pieceId }: { pieceId: string }) {
       await run(await container.getDeps());
       await reload();
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("repertoire.action_error"));
+      setError(friendlyErrorMessage(cause, t("repertoire.action_error")));
     } finally {
       setBusy(false);
     }

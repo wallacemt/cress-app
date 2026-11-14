@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { useRef, useState, type FormEvent } from "react";
 import { useNavigate } from "react-router";
 import { Check, Star } from "lucide-react";
@@ -121,7 +122,7 @@ export function OnboardingPage() {
       });
       navigate("/");
     } catch (cause) {
-      setError(cause instanceof Error ? cause.message : t("onboarding.erro_concluir"));
+      setError(friendlyErrorMessage(cause, t("onboarding.erro_concluir")));
     } finally {
       setSaving(false);
     }

@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { t } from "../../lib/i18n";
 import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useRef, useState } from "react";
@@ -38,7 +39,7 @@ export function PdfCanvas({
       setReady(true);
       setLoading(false);
     }).catch((error: unknown) => {
-      if (active) { setLoading(false); onError(error instanceof Error ? error.message : t("score.open_error")); }
+      if (active) { setLoading(false); onError(friendlyErrorMessage(error, t("score.open_error"))); }
     });
     return () => {
       active = false;

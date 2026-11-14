@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { t } from "../../lib/i18n";
 import { useLanguageStore } from "../../stores/languageStore";
 import { useEffect, useState, type FormEvent } from "react";
@@ -112,9 +113,7 @@ export function PracticeSetupPage() {
       navigate(`/practice/${session.id}`);
     } catch (cause) {
       setError(
-        cause instanceof Error
-          ? cause.message
-          : t("workspace.start_session_error"),
+        friendlyErrorMessage(cause, t("workspace.start_session_error")),
       );
     } finally {
       setBusy(false);

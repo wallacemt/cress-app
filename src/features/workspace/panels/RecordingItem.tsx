@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../../lib/errors";
 import { t, getLanguage } from "../../../lib/i18n";
 import { useLanguageStore } from "../../../stores/languageStore";
 import { useEffect, useRef, useState, type FunctionComponent } from "react";
@@ -70,7 +71,7 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
       setSrc(resolvedSrc);
       try { setPeaks(await getPeaks(take.relative_path, resolvedSrc)); }
       catch (cause) { console.error("[Cress] Falha ao buscar/decodificar take", { path: absolutePath, src: resolvedSrc, cause }); }
-    })().catch((cause: unknown) => { if (alive) { setFailed(true); onError(cause instanceof Error ? cause.message : t("workspace.resolve_recording_error")); } });
+    })().catch((cause: unknown) => { if (alive) { setFailed(true); onError(friendlyErrorMessage(cause, t("workspace.resolve_recording_error"))); } });
     return () => { alive = false; };
   }, [take.relative_path, onError]);
 
@@ -91,18 +92,18 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
     return () => { audio.removeEventListener("timeupdate", onTime); audio.removeEventListener("ended", onEnded); audio.removeEventListener("error", onErrorEvent); };
   }, [audio, src, duration]);
 
-  async function saveTitle() { setEditing(false); if (title === take.title) return; try { await renameRecording(deps, { id: take.id, title }); onChange(); } catch (cause) { onError(cause instanceof Error ? cause.message : t("workspace.rename_recording_error")); } }
-  async function saveNotes() { if (notes === (take.notes ?? "")) return; try { await setRecordingNotes(deps, { id: take.id, notes: notes || null }); onChange(); } catch (cause) { onError(cause instanceof Error ? cause.message : t("workspace.save_notes_error")); } }
+  async function saveTitle() { setEditing(false); if (title === take.title) return; try { await renameRecording(deps, { id: take.id, title }); onChange(); } catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.rename_recording_error"))); } }
+  async function saveNotes() { if (notes === (take.notes ?? "")) return; try { await setRecordingNotes(deps, { id: take.id, notes: notes || null }); onChange(); } catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.save_notes_error"))); } }
   async function togglePlay() {
     if (failed || !src) return;
     if (audio.src === src) {
       if (!audio.paused) { audio.pause(); setPlaying(false); return; }
       onPlay(take.id);
-      try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(cause instanceof Error ? cause.message : t("workspace.play_recording_error")); }
+      try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(friendlyErrorMessage(cause, t("workspace.play_recording_error"))); }
       return;
     }
     onPlay(take.id); audio.src = src; audio.load(); audio.onerror = () => { const e = audio.error; console.error("[Cress] Erro no áudio", { code: e?.code, message: e?.message, src }); setFailed(true); };
-    try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(cause instanceof Error ? cause.message : t("workspace.play_recording_error")); }
+    try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(friendlyErrorMessage(cause, t("workspace.play_recording_error"))); }
   }
   function seek(clientX: number) {
     const rect = waveRef.current?.getBoundingClientRect();
@@ -113,7 +114,7 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
     setCurrent(target);
   }
   function onWaveKey(event: React.KeyboardEvent<HTMLDivElement>) { if (event.key === " ") { event.preventDefault(); void togglePlay(); } else if (event.key === "Home") audio.currentTime = 0; else if (event.key === "End") audio.currentTime = duration; else if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); audio.currentTime = Math.max(0, Math.min(duration, audio.currentTime + (event.key === "ArrowRight" ? 5 : -5) * (event.shiftKey ? 3 : 1))); } }
-  async function remove() { try { await deleteRecording(deps, { id: take.id }); onChange(); } catch (cause) { onError(cause instanceof Error ? cause.message : t("workspace.delete_recording_error")); } }
+  async function remove() { try { await deleteRecording(deps, { id: take.id }); onChange(); } catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.delete_recording_error"))); } }
   const progress = duration ? current / duration : 0;
 
   return <article className="cress-take" data-playing={playing}>

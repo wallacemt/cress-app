@@ -1,3 +1,4 @@
+import { friendlyErrorMessage } from "../../lib/errors";
 import { t } from "../../lib/i18n";
 import { useLanguageStore } from "../../stores/languageStore";
 import { useCallback, useEffect, useRef, useState } from "react";
@@ -36,7 +37,7 @@ export function ScoreViewer({ scoreId, inline = false }: { scoreId: string; inli
       if (!active) return;
       setScore(row); setPage(row.last_page); setPageInput(String(row.last_page));
       setSrc(convertFileSrc(absolute));
-    })().catch((cause: unknown) => { if (active) setError(cause instanceof Error ? cause.message : t("score.open_error")); });
+    })().catch((cause: unknown) => { if (active) setError(friendlyErrorMessage(cause, t("score.open_error"))); });
     return () => { active = false; if (saveTimer.current) clearTimeout(saveTimer.current); };
   }, [scoreId]);
 

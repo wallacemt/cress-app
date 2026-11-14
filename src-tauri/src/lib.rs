@@ -1,4 +1,7 @@
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
+#[cfg(desktop)]
+use tauri::Manager;
+
 pub mod audio;
 pub mod paths;
 pub mod scores;
@@ -27,7 +30,19 @@ pub fn run() {
             .join(env!("CARGO_PKG_VERSION"));
         std::env::set_var("WEBVIEW2_USER_DATA_FOLDER", profile);
     }
-    tauri::Builder::default()
+    let builder = tauri::Builder::default();
+    // Só uma instância do app pode rodar por vez; ao abrir uma segunda, ela
+    // encerra sozinha e só foca/restaura a janela da instância já aberta.
+    // Precisa ser o primeiro plugin registrado (exigência do próprio plugin).
+    #[cfg(desktop)]
+    let builder = builder.plugin(tauri_plugin_single_instance::init(|app, _args, _cwd| {
+        if let Some(window) = app.get_webview_window("main") {
+            let _ = window.unminimize();
+            let _ = window.show();
+            let _ = window.set_focus();
+        }
+    }));
+    builder
         .plugin(
             tauri_plugin_sql::Builder::default()
                 .add_migrations(

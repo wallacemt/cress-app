@@ -1,6 +1,13 @@
 import type { Locale } from "../i18n";
 
 const dictionary: Locale = {
+  "errors.VALIDATION": "The information provided is invalid.",
+  "errors.INVALID_TRANSITION": "This action cannot be performed right now.",
+  "errors.NOT_FOUND": "The requested item could not be found.",
+  "errors.DUPLICATE_SCORE": "This score has already been added.",
+  "errors.NOT_A_PDF": "The selected file is not a valid PDF.",
+  "errors.TOO_LARGE": "The selected file is too large.",
+  "errors.SCAN_NOT_FOUND": "The folder scan expired. Please try again.",
   // Navegação / atril
   "nav.inicio": "Home",
   "nav.repertorio": "Repertoire",
