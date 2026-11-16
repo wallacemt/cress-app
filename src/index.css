@@ -356,7 +356,21 @@ main {
   }
 }
 
-[data-sonner-toaster] { --width: 340px; }
+/* sonner injeta seu CSS base via <style> em runtime (__insertCSS); em alguns WebView2 essa
+   injeção não se aplica e o toaster cai no fluxo normal da página, sem position:fixed,
+   quebrando o layout (relatado em produção, não reproduzido em Chrome comum). Redeclarar
+   o essencial aqui, no CSS estático sempre carregado, garante o posicionamento mesmo se a
+   injeção do sonner falhar — só usamos position="bottom-right", nunca variamos. */
+[data-sonner-toaster] {
+  --width: 340px;
+  position: fixed !important;
+  top: auto !important;
+  left: auto !important;
+  right: var(--offset-right, 24px) !important;
+  bottom: var(--offset-bottom, 24px) !important;
+  z-index: 999999 !important;
+}
+[data-sonner-toast] { display: flex !important; align-items: center !important; }
 .cress-toast {
   border: 1px solid var(--border-default) !important;
   border-radius: var(--radius) !important;
