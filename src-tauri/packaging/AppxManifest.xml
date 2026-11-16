@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  AppxManifest.xml for Cress Microsoft Store submission.
+
+  Placeholders replaced by .github/workflows/msix-build.yml:
+    $PUBLISHER_CN$  : Publisher CN from Partner Center (e.g. "CN=XXXX-...")
+    $VERSION$       : four-part version, e.g. 1.0.0.9
+-->
+<Package
+  xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"
+  xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10"
+  xmlns:rescap="http://schemas.microsoft.com/appx/manifest/foundation/windows10/restrictedcapabilities"
+  IgnorableNamespaces="uap rescap">
+
+  <Identity
+    Name="WallaceSantana.Cress"
+    Publisher="$PUBLISHER_CN$"
+    Version="$VERSION$"
+    ProcessorArchitecture="x64" />
+
+  <Properties>
+    <DisplayName>Cress</DisplayName>
+    <PublisherDisplayName>Wallace Santana</PublisherDisplayName>
+    <Description>App desktop de prática musical: metrônomo, afinador, gravador e repertório.</Description>
+    <Logo>Assets\StoreLogo.png</Logo>
+  </Properties>
+
+  <Resources>
+    <Resource Language="pt-br" />
+    <Resource Language="en-us" />
+  </Resources>
+
+  <Dependencies>
+    <TargetDeviceFamily Name="Windows.Desktop" MinVersion="10.0.17763.0" MaxVersionTested="10.0.22621.0" />
+  </Dependencies>
+
+  <Capabilities>
+    <!-- Exigido por qualquer app Win32 clássico empacotado via Desktop Bridge (Windows.FullTrustApplication). -->
+    <rescap:Capability Name="runFullTrust" />
+  </Capabilities>
+
+  <Applications>
+    <Application
+      Id="CRESS"
+      Executable="cress.exe"
+      EntryPoint="Windows.FullTrustApplication">
+      <uap:VisualElements
+        BackgroundColor="transparent"
+        DisplayName="Cress"
+        Description="Cress"
+        Square150x150Logo="Assets\Cress-Square150x150Logo.png"
+        Square44x44Logo="Assets\Cress-Square44x44Logo.png">
+        <uap:DefaultTile
+          Wide310x150Logo="Assets\Cress-Wide310x150Logo.png"
+          Square310x310Logo="Assets\Cress-Square310x310Logo.png"
+          Square71x71Logo="Assets\Cress-Square71x71Logo.png" />
+      </uap:VisualElements>
+    </Application>
+  </Applications>
+
+</Package>

@@ -1,0 +1,240 @@
+name: MSIX Store Build
+
+# Disparado manualmente ou em tags de versão.
+# Produz um .msix pronto para upload no Partner Center (Microsoft Store).
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Versão (quatro partes, ex. 1.0.0.9)"
+        required: true
+        type: string
+
+permissions:
+  contents: read
+
+concurrency:
+  group: msix-${{ github.ref_name }}${{ github.event.inputs.version }}
+  cancel-in-progress: false
+
+jobs:
+  build-msix:
+    name: Build MSIX package for Store
+    runs-on: windows-latest
+    timeout-minutes: 90
+
+    env:
+      TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+      TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+
+    steps:
+      # ──────────────────────────────────────────────
+      # 1. Setup
+      # ──────────────────────────────────────────────
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: meta
+        shell: pwsh
+        run: |
+          $ver = "${{ github.event.inputs.version }}"
+          if ([string]::IsNullOrWhiteSpace($ver)) {
+            # Deriva da tag git (remove o "v" inicial)
+            $ver = "${{ github.ref_name }}" -replace '^v', ''
+            # beta.N vira só N como 4ª parte (ex. 1.0.0-beta.9 -> 1.0.0.9)
+            $ver = $ver -replace '-beta\.(\d+)$', '.$1'
+            # Garante semver de quatro partes (x.y.z -> x.y.z.0)
+            if ($ver -match '^\d+\.\d+\.\d+$') { $ver = "$ver.0" }
+          }
+          if ($ver -notmatch '^\d+\.\d+\.\d+\.\d+$') {
+            Write-Error "Versão precisa ter quatro partes (ex. 1.0.0.9). Recebido: $ver"
+            exit 1
+          }
+          "version=$ver" >> $env:GITHUB_OUTPUT
+          Write-Host "Building MSIX version: $ver"
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.4.0"
+
+      - name: Setup Rust toolchain
+        uses: dtolnay/rust-toolchain@stable
+
+      # ──────────────────────────────────────────────
+      # 1b. Validar secrets necessários antes de gastar tempo de build
+      # ──────────────────────────────────────────────
+      - name: Validate required secrets
+        shell: pwsh
+        env:
+          MSIX_PUBLISHER_CN: ${{ secrets.MSIX_PUBLISHER_CN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:MSIX_PUBLISHER_CN)) {
+            Write-Host "ERROR: Secret MSIX_PUBLISHER_CN não está configurado."
+            Write-Host "  Encontre em: Partner Center > Account settings > Legal info > Publisher CN"
+            Write-Host "  Adicione em: GitHub repo > Settings > Secrets > Actions > New secret"
+            Write-Host "  Nome: MSIX_PUBLISHER_CN  |  Valor: CN=XXXX-XXXX-..."
+            exit 1
+          }
+          Write-Host "MSIX_PUBLISHER_CN is set."
+
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY)) {
+            Write-Host "ERROR: Secret TAURI_SIGNING_PRIVATE_KEY não está configurado."
+            Write-Host "  tauri.conf.json tem updater.active=true com pubkey, então todo"
+            Write-Host "  'tauri build' exige a chave privada correspondente para assinar os artefatos."
+            exit 1
+          }
+          Write-Host "TAURI_SIGNING_PRIVATE_KEY is set."
+
+          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
+            Write-Host "ERROR: Secret TAURI_SIGNING_PRIVATE_KEY_PASSWORD não está configurado."
+            exit 1
+          }
+          Write-Host "TAURI_SIGNING_PRIVATE_KEY_PASSWORD is set."
+
+      # ──────────────────────────────────────────────
+      # 2. Build do app Tauri (nsis + msi — msi é só para extrair os arquivos,
+      #    não é o artefato final; o pacote de distribuição é o .msix)
+      # ──────────────────────────────────────────────
+      - name: Install JS dependencies
+        run: bun install --frozen-lockfile
+
+      - name: Build desktop app (nsis + msi)
+        run: bun run tauri build --bundles nsis,msi
+
+      # ──────────────────────────────────────────────
+      # 3. Extrai os arquivos do app a partir do MSI
+      #    Instalação administrativa extrai os arquivos num diretório de staging
+      #    sem gravar no sistema real.
+      # ──────────────────────────────────────────────
+      - name: Extract app files from MSI
+        id: extract
+        shell: pwsh
+        run: |
+          $msi = Get-ChildItem "src-tauri\target\release\bundle\msi" -Filter "*.msi" |
+                 Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if (-not $msi) {
+            Write-Error "Nenhum .msi encontrado em bundle/msi."
+            exit 1
+          }
+          Write-Host "Found MSI: $($msi.FullName)"
+
+          $staging = "$env:TEMP\cress-msix-stage"
+          Remove-Item $staging -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $staging | Out-Null
+
+          Start-Process msiexec.exe -ArgumentList "/a `"$($msi.FullName)`" TARGETDIR=`"$staging`" /qn" -Wait -NoNewWindow
+
+          $appExe = Get-ChildItem -Path $staging -Recurse -Filter "cress.exe" | Select-Object -First 1
+          if (-not $appExe) {
+            Write-Error "cress.exe não encontrado após extração do MSI. Conteúdo do staging:"
+            Get-ChildItem $staging -Recurse | ForEach-Object { Write-Host $_.FullName }
+            exit 1
+          }
+
+          $appDir = $appExe.DirectoryName
+          Write-Host "App directory: $appDir"
+          "app_dir=$appDir" >> $env:GITHUB_OUTPUT
+
+      # ──────────────────────────────────────────────
+      # 4. Monta a estrutura de pacote do MSIX
+      # ──────────────────────────────────────────────
+      - name: Create MSIX package structure
+        shell: pwsh
+        run: |
+          $version   = "${{ steps.meta.outputs.version }}"
+          $publisher = "${{ secrets.MSIX_PUBLISHER_CN }}"
+          $appDir    = "${{ steps.extract.outputs.app_dir }}"
+          $pkgDir    = "$env:TEMP\cress-msix-pkg"
+
+          Remove-Item $pkgDir -Recurse -Force -ErrorAction SilentlyContinue
+          New-Item -ItemType Directory -Path $pkgDir | Out-Null
+
+          Write-Host "Copying app files from $appDir ..."
+          Copy-Item "$appDir\*" $pkgDir -Recurse -Force
+
+          $assetsDir = "$pkgDir\Assets"
+          New-Item -ItemType Directory -Path $assetsDir -Force | Out-Null
+
+          Add-Type -AssemblyName System.Drawing
+
+          $iconSrc = "src-tauri\icons\128x128.png"
+
+          function Resize-Image($src, $dst, $w, $h) {
+            $orig = [System.Drawing.Image]::FromFile((Resolve-Path $src))
+            $bmp  = New-Object System.Drawing.Bitmap($w, $h)
+            $g    = [System.Drawing.Graphics]::FromImage($bmp)
+            $g.InterpolationMode = [System.Drawing.Drawing2D.InterpolationMode]::HighQualityBicubic
+            $g.DrawImage($orig, 0, 0, $w, $h)
+            $g.Dispose(); $orig.Dispose()
+            $bmp.Save($dst, [System.Drawing.Imaging.ImageFormat]::Png)
+            $bmp.Dispose()
+          }
+
+          Resize-Image $iconSrc "$assetsDir\StoreLogo.png"                    50   50
+          Resize-Image $iconSrc "$assetsDir\Cress-Square44x44Logo.png"       44   44
+          Resize-Image $iconSrc "$assetsDir\Cress-Square71x71Logo.png"       71   71
+          Resize-Image $iconSrc "$assetsDir\Cress-Square150x150Logo.png"    150  150
+          Resize-Image $iconSrc "$assetsDir\Cress-Square310x310Logo.png"    310  310
+          Resize-Image $iconSrc "$assetsDir\Cress-Wide310x150Logo.png"      310  150
+
+          $manifest = Get-Content "src-tauri\packaging\AppxManifest.xml" -Raw
+          $manifest = $manifest -replace '\$PUBLISHER_CN\$', $publisher
+          $manifest = $manifest -replace '\$VERSION\$',      $version
+          $manifest | Set-Content "$pkgDir\AppxManifest.xml" -Encoding utf8
+
+          Write-Host "MSIX package directory ready: $pkgDir"
+          Get-ChildItem $pkgDir | ForEach-Object { Write-Host "  $($_.Name)" }
+
+      # ──────────────────────────────────────────────
+      # 5. Empacota com makeappx.exe (Windows SDK)
+      # ──────────────────────────────────────────────
+      - name: Pack MSIX
+        shell: pwsh
+        run: |
+          $makeappx = Get-ChildItem "C:\Program Files (x86)\Windows Kits\10\bin" -Recurse -Filter "makeappx.exe" -ErrorAction SilentlyContinue |
+                      Where-Object { $_.FullName -match 'x64' } |
+                      Sort-Object FullName -Descending |
+                      Select-Object -First 1
+
+          if (-not $makeappx) {
+            Write-Error "makeappx.exe não encontrado. Confirme que o Windows SDK está instalado no runner."
+            exit 1
+          }
+          Write-Host "Using makeappx: $($makeappx.FullName)"
+
+          $version = "${{ steps.meta.outputs.version }}"
+          $pkgDir  = "$env:TEMP\cress-msix-pkg"
+          $outDir  = "src-tauri\target\release\bundle\msix"
+          New-Item -ItemType Directory -Path $outDir -Force | Out-Null
+
+          $outFile = "$outDir\Cress_${version}_x64.msix"
+          & $makeappx.FullName pack /d $pkgDir /p $outFile /o
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "makeappx falhou com código $LASTEXITCODE. Validação de manifesto habilitada - veja os erros acima."
+            exit 1
+          }
+          Write-Host "MSIX created: $outFile ($([math]::Round((Get-Item $outFile).Length / 1MB, 1)) MB)"
+
+      # ──────────────────────────────────────────────
+      # 6. Upload dos artefatos
+      # ──────────────────────────────────────────────
+      - name: Upload MSIX artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cress-${{ steps.meta.outputs.version }}-msix
+          path: src-tauri/target/release/bundle/msix/*.msix
+          if-no-files-found: error
+
+      - name: Upload NSIS installer artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Cress-${{ steps.meta.outputs.version }}-nsis
+          path: src-tauri/target/release/bundle/nsis/*.exe
+          if-no-files-found: warn
