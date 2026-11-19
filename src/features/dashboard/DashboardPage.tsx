@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate } from "react-router";
-import { Gauge, Plus, Timer } from "lucide-react";
+import { Gauge, Pause, Play, Plus, Timer } from "lucide-react";
+import { useRecordingPlayerStore } from "../../stores/recordingPlayerStore";
 import { getDashboard, getMonthActivity } from "../../application/dashboard";
 import { container } from "../../app/container";
 import { FREE_PRACTICE_PIECE_ID } from "../../domain/repertoire";
@@ -18,6 +19,7 @@ const duration = (ms: number) => {
   return minutes >= 60 ? `${Math.floor(minutes / 60)}h ${minutes % 60}min` : `${minutes}min`;
 };
 const pieceName = (id: string, pieces: Dashboard["pieces"]) => id === FREE_PRACTICE_PIECE_ID ? t("dashboard.pratica_livre_titulo") : pieces.find((piece) => piece.id === id)?.title ?? t("dashboard.obra_indisponivel");
+const recordingDuration = (ms: number | null) => { const s = Math.floor((ms ?? 0) / 1000); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; };
 const timeLabel = (date: Date | null) => {
   if (!date) return t("dashboard.data_indisponivel");
   const locale = getLanguage();
@@ -44,6 +46,7 @@ export function DashboardPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [activityView, setActivityView] = useState<"week" | "month">("week");
   const [monthDays, setMonthDays] = useState<Awaited<ReturnType<typeof getMonthActivity>>>();
+  const player = useRecordingPlayerStore();
   useEffect(() => {
     let active = true;
     void container.getDeps().then(getDashboard).then((data) => { if (active) setDashboard(data); }).catch(() => { if (active) setError(t("dashboard.erro_carregar")); });
@@ -143,5 +146,20 @@ export function DashboardPage() {
         {dashboard.recentSessions.length ? <ul className="divide-y divide-[var(--border-subtle)]">{dashboard.recentSessions.map((session) => <li key={session.id}><SessionRow session={session} pieceName={pieceName(session.repertoire_item_id, dashboard.pieces)} to={`/sessions/${session.id}`} /></li>)}</ul> : <p className="p-5 text-sm text-[var(--text-muted)]">{t("dashboard.nenhuma_sessao")}</p>}
       </div>
     </section>
+
+    {dashboard.recentRecordings.length > 0 && <section className="mt-10">
+      <div className="cress-section-head"><h2>{t("dashboard.gravacoes_recentes_titulo")}</h2><div aria-hidden="true" className="cress-hairpin" /></div>
+      <div className="cress-card rounded-xl">
+        <ul className="divide-y divide-[var(--border-subtle)]">{dashboard.recentRecordings.map((recording) => {
+          const playable = { id: recording.id, relativePath: recording.relative_path, title: recording.title, durationMs: recording.duration_ms };
+          const isCurrent = player.currentId === recording.id;
+          return <li key={recording.id} className="flex items-center gap-3 px-5 py-3">
+            <button type="button" className="cress-take-play" aria-label={isCurrent && player.playing ? t("workspace.pause_audio") : t("workspace.play_audio")} onClick={() => void player.toggle(playable)}>{isCurrent && player.playing ? <Pause size={16} /> : <Play size={16} />}</button>
+            <div className="min-w-0 flex-1"><p className="truncate text-sm">{recording.title}</p><p className="truncate text-xs text-[var(--text-muted)]">{recording.pieceTitle ?? t("dashboard.pratica_livre_titulo")}</p></div>
+            <span className="shrink-0 text-xs text-[var(--text-muted)] tabular-nums">{recordingDuration(recording.duration_ms)}</span>
+          </li>;
+        })}</ul>
+      </div>
+    </section>}
   </main>;
 }

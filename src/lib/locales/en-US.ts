@@ -124,6 +124,7 @@ const dictionary: Locale = {
   "dashboard.pratica_livre_desc": "Metronome and tuner side by side, no session needed.",
   "dashboard.abrir_ferramentas": "Open tools",
   "dashboard.ultimas_sessoes_titulo": "Recent sessions",
+  "dashboard.gravacoes_recentes_titulo": "Recent recordings",
   "dashboard.ver_todas": "See all →",
   "dashboard.nenhuma_sessao": "No sessions recorded yet.",
   "dashboard.obra_indisponivel": "Piece unavailable",

@@ -124,6 +124,7 @@ const dictionary: Locale = {
   "dashboard.pratica_livre_desc": "Metrônomo e afinador lado a lado, sem abrir sessão.",
   "dashboard.abrir_ferramentas": "Abrir ferramentas",
   "dashboard.ultimas_sessoes_titulo": "Últimas sessões",
+  "dashboard.gravacoes_recentes_titulo": "Gravações recentes",
   "dashboard.ver_todas": "Ver todas →",
   "dashboard.nenhuma_sessao": "Nenhuma sessão registrada ainda.",
   "dashboard.obra_indisponivel": "Obra indisponível",

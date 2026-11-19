@@ -4,6 +4,7 @@ import { completeGoal, createGoal } from "./goals";
 import { finishSession, pauseSession, startSession } from "./sessions";
 import { completeOnboarding } from "./profile";
 import { getDashboard, getMonthActivity } from "./dashboard";
+import { startTake, stopTake } from "./recordings";
 import { makeTestDeps } from "./test-support";
 import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
 
@@ -53,6 +54,19 @@ describe("dashboard application", () => {
     expect(result.days).toHaveLength(7);
     expect(result.days.map((day) => day.date.getDay())).toEqual([1, 2, 3, 4, 5, 6, 0]);
     expect(result.days[0]?.activeMs).toBe(1_800_000);
+  });
+
+  it("returns recent completed recordings with their piece title", async () => {
+    const d = makeTestDeps({ now: () => new Date("2026-11-09T10:00:00") });
+    const piece = await createPiece(d, { title: "Concerto", composer: "Bach" });
+    const session = await startSession(d, { repertoireItemId: piece.id });
+    const take = await startTake(d, { sessionId: session.id, title: "Take 1" });
+    await stopTake(d);
+
+    const result = await getDashboard(d);
+
+    expect(result.recentRecordings).toHaveLength(1);
+    expect(result.recentRecordings[0]).toMatchObject({ id: take?.id, title: "Take 1", pieceTitle: "Concerto" });
   });
 
   it("returns practice activity for every day in a requested month", async () => {
