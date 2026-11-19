@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router";
 import { Check } from "lucide-react";
 import { getGoal } from "../../application/goals";
@@ -24,7 +24,6 @@ export function SessionDetailPage() {
   useLanguageStore((state) => state.language);
   const { sessionId = "" } = useParams();
   const navigate = useNavigate();
-  const audio = useRef(new Audio()).current;
   const [session, setSession] = useState<Awaited<ReturnType<typeof getSession>>>();
   const [takes, setTakes] = useState<RecordingRow[]>([]);
   const [pieceName, setPieceName] = useState("");
@@ -33,7 +32,6 @@ export function SessionDetailPage() {
   const [deps, setDeps] = useState<Deps>();
   const [error, setError] = useState("");
   const [takeError, setTakeError] = useState("");
-  const [activeTakeId, setActiveTakeId] = useState<string | null>(null);
 
   useEffect(() => {
     let active = true;
@@ -48,8 +46,8 @@ export function SessionDetailPage() {
         setGoalDescription(goal?.description ?? ""); setGoalCompleted(completed);
       }
     }).catch(() => { if (active) setError(t("sessions.load_detail_error")); });
-    return () => { active = false; audio.pause(); };
-  }, [sessionId, audio]);
+    return () => { active = false; };
+  }, [sessionId]);
 
   if (error) return <main className="mx-auto max-w-[1120px] px-8 pt-12"><p role="alert" className="text-[var(--danger)]">{error}</p><button className="mt-4 text-sm text-[var(--text-secondary)]" onClick={() => navigate("/sessions")}>← {t("sessions.title")}</button></main>;
   if (!session || !deps) return <main aria-label={t("sessions.loading_detail")} aria-busy="true" className="mx-auto max-w-[1120px] px-8 pt-12"><div className="cress-skeleton h-12 w-2/3" /><div className="cress-skeleton mt-3 h-5 w-1/3" /><div className="mt-10 grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-3"><div className="cress-skeleton h-32" /><div className="cress-skeleton h-32" /><div className="cress-skeleton h-32" /></div></main>;
@@ -67,7 +65,7 @@ export function SessionDetailPage() {
     <Link to="/sessions" className="mb-8 inline-block text-sm text-[var(--text-secondary)] hover:text-[var(--text-primary)]">← {t("sessions.back_to_sessions")}</Link>
     <header className="mb-10">
       <p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">{t("sessions.title_upper")}</p>
-      <h1 className="mt-2 font-display text-[44px] leading-[48px] font-medium italic">{pieceName}</h1>
+      <h1 className="mt-2 font-display text-[44px] leading-[48px] font-medium italic">{session.repertoire_item_id === FREE_PRACTICE_PIECE_ID ? pieceName : <Link to={`/repertoire/${session.repertoire_item_id}`} className="hover:text-[var(--violet-300)]">{pieceName}</Link>}</h1>
       <p className="mt-2 text-lg text-[var(--text-secondary)]">{dateLabel} · {timeLabel}</p>
     </header>
     <section aria-label={t("sessions.metrics")} className="cress-glass relative mb-10 grid grid-cols-1 overflow-hidden rounded-2xl sm:grid-cols-3 sm:divide-x sm:divide-[var(--border-subtle)]">
@@ -77,6 +75,6 @@ export function SessionDetailPage() {
       <div className="p-6"><p className="text-xs uppercase tracking-[.08em] text-[var(--text-muted)]">{t("sessions.goal_upper")}</p>{goalDescription ? <><p className="mt-2 line-clamp-2 text-base">{goalDescription}</p><p className="mt-2">{goalCompleted ? <GoalBadge /> : <span className="text-xs text-[var(--text-muted)]">{t("sessions.in_progress")}</span>}</p></> : <p className="mt-2 text-xs text-[var(--text-muted)]">{t("sessions.no_goal")}</p>}</div>
     </section>
     {session.notes && <section className="mb-10"><div className="cress-section-head"><h2>{t("sessions.notes")}</h2><div aria-hidden="true" className="cress-hairpin" /></div><p className="max-w-[68ch] whitespace-pre-wrap border-l-2 border-[var(--ink-600)] pl-4 text-base">{session.notes}</p></section>}
-    <section aria-labelledby="session-recordings-title"><div className="cress-section-head"><h2 id="session-recordings-title">{t("sessions.recordings", { count: takes.length })}</h2><div aria-hidden="true" className="cress-hairpin" /></div>{takeError && <p role="alert" className="text-[var(--danger)]">{takeError}</p>}{!visibleTakes.length ? <p className="text-sm text-[var(--text-muted)]">{recordingInProgress ? t("sessions.recording_in_progress") : t("sessions.no_recordings")}</p> : <div className="cress-card cress-takes rounded-xl p-2">{visibleTakes.map((take) => <RecordingItem key={take.id} take={take} deps={deps} onChange={() => void refresh()} onError={setTakeError} audio={audio} activeTakeId={activeTakeId} onPlay={(id) => setActiveTakeId(id)} />)}</div>}</section>
+    <section aria-labelledby="session-recordings-title"><div className="cress-section-head"><h2 id="session-recordings-title">{t("sessions.recordings", { count: takes.length })}</h2><div aria-hidden="true" className="cress-hairpin" /></div>{takeError && <p role="alert" className="text-[var(--danger)]">{takeError}</p>}{!visibleTakes.length ? <p className="text-sm text-[var(--text-muted)]">{recordingInProgress ? t("sessions.recording_in_progress") : t("sessions.no_recordings")}</p> : <div className="cress-card cress-takes rounded-xl p-2">{visibleTakes.map((take) => <RecordingItem key={take.id} take={take} deps={deps} onChange={() => void refresh()} onError={setTakeError} />)}</div>}</section>
   </main>;
 }

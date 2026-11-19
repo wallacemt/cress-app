@@ -11,6 +11,7 @@ function makeFakeAudio() {
   return {
     get paused() { return paused; },
     src: "",
+    currentTime: 0,
     play: vi.fn(async () => { paused = false; listeners.play?.forEach((fn) => fn()); }),
     pause: vi.fn(() => { paused = true; listeners.pause?.forEach((fn) => fn()); }),
     addEventListener: (event: string, fn: () => void) => { (listeners[event] ??= []).push(fn); },
@@ -50,5 +51,28 @@ describe("recordingPlayerStore", () => {
     await store.getState().play({ id: "take-2", relativePath: "b.wav", title: "B", durationMs: 1000 });
     expect(audio.src).toBe("asset:///data/recordings/b.wav");
     expect(store.getState().currentId).toBe("take-2");
+  });
+
+  it("seek updates the audio element's current time", async () => {
+    const audio = makeFakeAudio();
+    const store = createRecordingPlayerStore(audio);
+    await store.getState().play({ id: "take-1", relativePath: "a.wav", title: "A", durationMs: 10_000 });
+
+    store.getState().seek(4.5);
+
+    expect(audio.currentTime).toBe(4.5);
+    expect(store.getState().currentTime).toBe(4.5);
+  });
+
+  it("close pauses playback and clears the current recording", async () => {
+    const audio = makeFakeAudio();
+    const store = createRecordingPlayerStore(audio);
+    await store.getState().play({ id: "take-1", relativePath: "a.wav", title: "A", durationMs: 10_000 });
+
+    store.getState().close();
+
+    expect(audio.pause).toHaveBeenCalledTimes(1);
+    expect(store.getState().currentId).toBeNull();
+    expect(store.getState().playing).toBe(false);
   });
 });

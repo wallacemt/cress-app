@@ -413,6 +413,7 @@ const dictionary: Locale = {
   "workspace.recording_notes": "Notes",
   "workspace.delete_more": "Delete…",
   "workspace.recording_position": "Position in {{title}}",
+  "workspace.close_player": "Close player",
   "workspace.seconds_of_seconds": "{{current}} seconds of {{duration}} seconds",
   "workspace.recording_notes_placeholder": "What should you note about this take?",
   "workspace.delete_recording_confirm": "Delete {{title}}? The audio file will be deleted and cannot be recovered.",

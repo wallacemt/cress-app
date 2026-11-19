@@ -65,6 +65,19 @@ describe("PieceDetailPage", () => {
     deletePiece.mockReset().mockResolvedValue(undefined);
   });
 
+  it("shows the piece notes without needing to open the edit dialog", async () => {
+    listPieces.mockResolvedValue([{ id: "piece-1", title: "Sonata", composer: "Ana", notes: "Cuidado com a afinação na corda sol" }]);
+    renderPage();
+    expect(await screen.findByText("Cuidado com a afinação na corda sol")).toBeTruthy();
+    expect(screen.queryByRole("textbox", { name: "Notas" })).toBeNull();
+  });
+
+  it("hides the notes section when the piece has no notes", async () => {
+    renderPage();
+    await screen.findByRole("heading", { name: "Sonata" });
+    expect(screen.queryByRole("heading", { name: "Notas" })).toBeNull();
+  });
+
   it("shows aggregated practice stats and session details", async () => {
     renderPage();
     expect(await screen.findByText("3h 20min")).toBeTruthy();

@@ -413,6 +413,7 @@ const dictionary: Locale = {
   "workspace.recording_notes": "Observações",
   "workspace.delete_more": "Excluir…",
   "workspace.recording_position": "Posição em {{title}}",
+  "workspace.close_player": "Fechar reprodutor",
   "workspace.seconds_of_seconds": "{{current}} segundos de {{duration}} segundos",
   "workspace.recording_notes_placeholder": "O que observar neste take?",
   "workspace.delete_recording_confirm": "Excluir {{title}}? O arquivo de áudio é apagado e não pode ser recuperado.",
