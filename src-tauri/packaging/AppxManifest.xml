@@ -13,7 +13,7 @@
   IgnorableNamespaces="uap rescap">
 
   <Identity
-    Name="WallaceSantana.Cress"
+    Name="WallaceSantana.CressPratice"
     Publisher="$PUBLISHER_CN$"
     Version="$VERSION$"
     ProcessorArchitecture="x64" />
