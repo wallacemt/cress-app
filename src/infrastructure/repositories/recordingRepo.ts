@@ -10,6 +10,11 @@ export const makeRecordingRepo = (db: SqlDb) => ({
     db.select<RecordingRow>(
       "SELECT * FROM recordings WHERE status='RECORDING'",
     ),
+  recent: (limit: number) =>
+    db.select<RecordingRow>(
+      "SELECT * FROM recordings WHERE status='COMPLETE' ORDER BY created_at DESC LIMIT $1",
+      [limit],
+    ),
   get: async (id: string) =>
     (
       await db.select<RecordingRow>("SELECT * FROM recordings WHERE id=$1", [

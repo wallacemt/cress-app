@@ -176,6 +176,10 @@ export function PieceDetailPage() {
         </p>
       )}
       <GoalList goals={goals} repertoireItemId={pieceId} onChanged={reloadGoals} />
+      {piece.notes && <section aria-labelledby="piece-notes-title" className="mt-10">
+        <h2 id="piece-notes-title" className="font-display text-2xl text-[var(--text-primary)]">{t("repertoire.notes")}</h2>
+        <p className="mt-3 max-w-[68ch] whitespace-pre-wrap border-l-2 border-[var(--ink-600)] pl-4 text-base">{piece.notes}</p>
+      </section>}
       <section aria-labelledby="piece-practice-title" className="mt-10">
         <h2 id="piece-practice-title" className="font-display text-2xl text-[var(--text-primary)]">{t("repertoire.practice")}</h2>
         <dl className="mt-4 grid gap-4 sm:grid-cols-4">

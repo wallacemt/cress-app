@@ -2,12 +2,14 @@ import { friendlyErrorMessage } from "../../../lib/errors";
 import { t, getLanguage } from "../../../lib/i18n";
 import { useLanguageStore } from "../../../stores/languageStore";
 import { useEffect, useRef, useState, type FunctionComponent } from "react";
+import { useLocation } from "react-router";
 import { convertFileSrc } from "@tauri-apps/api/core";
 import { appDataDir, join } from "@tauri-apps/api/path";
 import { Ellipsis, FileX, NotebookPen, Pause, Play } from "lucide-react";
 import { deleteRecording, renameRecording, setRecordingNotes } from "../../../application/recordings";
 import type { Deps } from "../../../application/deps";
 import type { RecordingRow } from "../../../infrastructure/db/rows";
+import { useRecordingPlayerStore } from "../../../stores/recordingPlayerStore";
 
 const peakCache = new Map<string, Float32Array>();
 let decodeQueue: Promise<void> = Promise.resolve();
@@ -35,20 +37,19 @@ const getPeaks = (path: string, src: string) => {
   return task;
 };
 
-interface RecordingItemProps { take: RecordingRow; deps: Deps; onChange: () => void; onError: (message: string) => void; audio: HTMLAudioElement; activeTakeId: string | null; onPlay: (takeId: string) => void; }
+interface RecordingItemProps { take: RecordingRow; deps: Deps; onChange: () => void; onError: (message: string) => void; }
 function durationLabel(ms: number | null) { const s = Math.floor((ms ?? 0) / 1000); return `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(s % 60).padStart(2, "0")}`; }
 function recordedAtLabel(ms: number) {
   const date = new Date(ms);
   return `${date.toLocaleDateString(getLanguage())} ${date.toLocaleTimeString(getLanguage(), { hour: "2-digit", minute: "2-digit" })}`;
 }
 
-export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, deps, onChange, onError, audio, activeTakeId, onPlay }) => {
+export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, deps, onChange, onError }) => {
   useLanguageStore((state) => state.language);
+  const pathname = useLocation().pathname;
   const [src, setSrc] = useState("");
   const [peaks, setPeaks] = useState<Float32Array | null>(null);
-  const [failed, setFailed] = useState(false);
-  const [playing, setPlaying] = useState(false);
-  const [current, setCurrent] = useState(0);
+  const [resolveFailed, setResolveFailed] = useState(false);
   const [title, setTitle] = useState(take.title);
   const [editing, setEditing] = useState(false);
   const [notes, setNotes] = useState(take.notes ?? "");
@@ -61,6 +62,15 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
   const gradientId = `wave-gradient-${take.id.replace(/[^a-zA-Z0-9_-]/g, "")}`;
   const duration = take.duration_ms ? take.duration_ms / 1000 : 0;
 
+  const activeId = useRecordingPlayerStore((state) => state.currentId);
+  const activePlaying = useRecordingPlayerStore((state) => state.playing);
+  const activeTime = useRecordingPlayerStore((state) => state.currentTime);
+  const activeFailed = useRecordingPlayerStore((state) => state.failed);
+  const isCurrent = activeId === take.id;
+  const playing = isCurrent && activePlaying;
+  const current = isCurrent ? activeTime : 0;
+  const failed = resolveFailed || (isCurrent && activeFailed);
+
   useEffect(() => {
     let alive = true;
     void (async () => {
@@ -71,12 +81,11 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
       setSrc(resolvedSrc);
       try { setPeaks(await getPeaks(take.relative_path, resolvedSrc)); }
       catch (cause) { console.error("[Cress] Falha ao buscar/decodificar take", { path: absolutePath, src: resolvedSrc, cause }); }
-    })().catch((cause: unknown) => { if (alive) { setFailed(true); onError(friendlyErrorMessage(cause, t("workspace.resolve_recording_error"))); } });
+    })().catch((cause: unknown) => { if (alive) { setResolveFailed(true); onError(friendlyErrorMessage(cause, t("workspace.resolve_recording_error"))); } });
     return () => { alive = false; };
   }, [take.relative_path, onError]);
 
   useEffect(() => { setTitle(take.title); setNotes(take.notes ?? ""); }, [take.title, take.notes]);
-  useEffect(() => { if (activeTakeId !== take.id) setPlaying(false); }, [activeTakeId, take.id]);
   useEffect(() => {
     if (!menuOpen) return;
     const close = () => setMenuOpen(false);
@@ -84,36 +93,32 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
     window.addEventListener("resize", close);
     return () => { window.removeEventListener("scroll", close, true); window.removeEventListener("resize", close); };
   }, [menuOpen]);
-  useEffect(() => {
-    const onTime = () => { if (audio.src === src) { setCurrent(audio.currentTime); if (waveRef.current && duration > 0) waveRef.current.style.setProperty("--wave-progress", String(audio.currentTime / duration)); } };
-    const onEnded = () => { setPlaying(false); window.setTimeout(() => { if (audio.src === src) { audio.currentTime = 0; setCurrent(0); } }, 400); };
-    const onErrorEvent = () => { if (audio.src !== src) return; const error = audio.error; console.error("[Cress] HTMLAudioElement falhou", { code: error?.code, message: error?.message, src }); setFailed(true); setPlaying(false); };
-    audio.addEventListener("timeupdate", onTime); audio.addEventListener("ended", onEnded); audio.addEventListener("error", onErrorEvent);
-    return () => { audio.removeEventListener("timeupdate", onTime); audio.removeEventListener("ended", onEnded); audio.removeEventListener("error", onErrorEvent); };
-  }, [audio, src, duration]);
+
+  const recording = { id: take.id, relativePath: take.relative_path, title, durationMs: take.duration_ms };
 
   async function saveTitle() { setEditing(false); if (title === take.title) return; try { await renameRecording(deps, { id: take.id, title }); onChange(); } catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.rename_recording_error"))); } }
   async function saveNotes() { if (notes === (take.notes ?? "")) return; try { await setRecordingNotes(deps, { id: take.id, notes: notes || null }); onChange(); } catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.save_notes_error"))); } }
   async function togglePlay() {
     if (failed || !src) return;
-    if (audio.src === src) {
-      if (!audio.paused) { audio.pause(); setPlaying(false); return; }
-      onPlay(take.id);
-      try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(friendlyErrorMessage(cause, t("workspace.play_recording_error"))); }
-      return;
-    }
-    onPlay(take.id); audio.src = src; audio.load(); audio.onerror = () => { const e = audio.error; console.error("[Cress] Erro no áudio", { code: e?.code, message: e?.message, src }); setFailed(true); };
-    try { await audio.play(); setPlaying(true); } catch (cause) { console.error("[Cress] audio.play() rejeitado", cause); onError(friendlyErrorMessage(cause, t("workspace.play_recording_error"))); }
+    try { await useRecordingPlayerStore.getState().toggle(recording, pathname); }
+    catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.play_recording_error"))); }
   }
   function seek(clientX: number) {
     const rect = waveRef.current?.getBoundingClientRect();
     if (!rect || !duration) return;
     const target = Math.max(0, Math.min(duration, (clientX - rect.left) / rect.width * duration));
-    if (audio.src !== src) { onPlay(take.id); audio.src = src; audio.load(); }
-    audio.currentTime = target;
-    setCurrent(target);
+    const store = useRecordingPlayerStore.getState();
+    if (store.currentId !== take.id) void store.load(recording, pathname).then(() => store.seek(target));
+    else store.seek(target);
   }
-  function onWaveKey(event: React.KeyboardEvent<HTMLDivElement>) { if (event.key === " ") { event.preventDefault(); void togglePlay(); } else if (event.key === "Home") audio.currentTime = 0; else if (event.key === "End") audio.currentTime = duration; else if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); audio.currentTime = Math.max(0, Math.min(duration, audio.currentTime + (event.key === "ArrowRight" ? 5 : -5) * (event.shiftKey ? 3 : 1))); } }
+  function onWaveKey(event: React.KeyboardEvent<HTMLDivElement>) {
+    if (event.key === " ") { event.preventDefault(); void togglePlay(); return; }
+    if (!isCurrent) return;
+    const store = useRecordingPlayerStore.getState();
+    if (event.key === "Home") store.seek(0);
+    else if (event.key === "End") store.seek(duration);
+    else if (event.key === "ArrowLeft" || event.key === "ArrowRight") { event.preventDefault(); store.seek(Math.max(0, Math.min(duration, current + (event.key === "ArrowRight" ? 5 : -5) * (event.shiftKey ? 3 : 1)))); }
+  }
   async function remove() { try { await deleteRecording(deps, { id: take.id }); onChange(); } catch (cause) { onError(friendlyErrorMessage(cause, t("workspace.delete_recording_error"))); } }
   const progress = duration ? current / duration : 0;
 
@@ -129,7 +134,8 @@ export const RecordingItem: FunctionComponent<RecordingItemProps> = ({ take, dep
     <div ref={waveRef} className="cress-take-wave" role="slider" tabIndex={0} aria-label={t("workspace.recording_position", { title })} aria-valuemin={0} aria-valuemax={duration} aria-valuenow={current} aria-valuetext={t("workspace.seconds_of_seconds", { current: Math.floor(current), duration: Math.floor(duration) })} onPointerDown={(e) => { e.currentTarget.setPointerCapture(e.pointerId); seek(e.clientX); }} onPointerMove={(e) => { if (e.buttons) seek(e.clientX); }} onKeyDown={onWaveKey}>
       {failed ? <span>{t("workspace.file_not_found")}</span> : <svg viewBox="0 0 256 32" preserveAspectRatio="none" aria-hidden="true"><defs><linearGradient id={gradientId} x1="0" x2="256" gradientUnits="userSpaceOnUse"><stop stopColor="var(--violet-400)" /><stop offset="1" stopColor="var(--blue-400)" /></linearGradient><clipPath id={`wave-clip-${take.id}`}><rect x="0" y="0" width={progress * 256} height="32" /></clipPath></defs><path d={peaks ? Array.from(peaks, (p, i) => `M${i} ${16 - Math.max(.5, Math.sqrt(p) * 15)}V${16 + Math.max(.5, Math.sqrt(p) * 15)}`).join("") : "M0 16H256"} /><path className="cress-take-wave-progress" style={{ stroke: `url(#${gradientId})` }} d={peaks ? Array.from(peaks, (p, i) => `M${i} ${16 - Math.max(.5, Math.sqrt(p) * 15)}V${16 + Math.max(.5, Math.sqrt(p) * 15)}`).join("") : "M0 16H256"} clipPath={`url(#wave-clip-${take.id})`} /><line className="cress-take-cursor" x1={progress * 256} x2={progress * 256} y1="0" y2="32" /></svg>}
     </div>
-    {notesOpen && <textarea className="cress-take-notes" rows={3} placeholder={t("workspace.recording_notes_placeholder")} value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => void saveNotes()} />}
+    {notesOpen ? <textarea className="cress-take-notes" rows={3} placeholder={t("workspace.recording_notes_placeholder")} value={notes} onChange={(e) => setNotes(e.target.value)} onBlur={() => void saveNotes()} />
+      : notes && <p className="cress-take-notes-preview" onClick={() => setNotesOpen(true)} title={t("workspace.recording_notes")}>{notes}</p>}
     {confirmDelete && <div className="cress-take-confirm" role="group" aria-label={t("workspace.confirm_delete_recording", { title })}><span>{t("workspace.delete_recording_confirm", { title })}</span><button className="cress-ghost-sm" onClick={() => setConfirmDelete(false)}>{t("workspace.cancel")}</button><button className="cress-destructive-sm" onClick={() => void remove()}>{t("workspace.delete")}</button></div>}
   </article>;
 };

@@ -6,6 +6,7 @@ import cressSymbol from "../assets/brand/cress-symbol-gold.svg";
 import { useProfileStore } from "../stores/profileStore";
 import { UpdateCheckProvider } from "../features/updates/UpdateCheckProvider";
 import { Monogram } from "../components/ui/Monogram";
+import { RecordingPlayerBar } from "../components/RecordingPlayerBar";
 import { StageBackdrop } from "../components/ui/StageBackdrop";
 import { StartSessionModal } from "../features/workspace/StartSessionModal";
 import { SearchModal } from "../features/search/SearchModal";
@@ -95,6 +96,7 @@ export function AppShell() {
             <NavLink to="/settings" className="atril-avatar" aria-label={t("nav.configuracoes")} title={t("nav.perfil_titulo", { name: profile?.displayName ?? "" })}><Monogram name={profile?.displayName ?? ""} size="sm" /></NavLink>
           </nav>
         )}
+        <RecordingPlayerBar />
         <Toaster
           theme="dark"
           position="bottom-right"

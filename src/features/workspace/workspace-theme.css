@@ -516,6 +516,8 @@
 .cress-take-file-error { display: grid; width: 32px; height: 32px; place-items: center; color: var(--warning); }
 .cress-take-wave > span { color: var(--warning); font-size: 12px; }
 .cress-take-notes { width: calc(100% - 60px); min-height: 72px; margin-left: 60px; border: 0; border-radius: 4px; background: transparent; color: var(--text-primary); font: inherit; }
+.cress-take-notes-preview { width: calc(100% - 60px); margin: 0 16px 8px 60px; padding: 8px 12px; border-left: 2px solid var(--violet-400); border-radius: 4px; background: var(--ink-800); color: var(--text-primary); font-size: 13px; line-height: 1.4; white-space: pre-wrap; cursor: pointer; }
+.cress-take-notes-preview:hover { background: var(--ink-700); }
 .cress-take-confirm { display: flex; align-items: center; gap: 8px; margin: 0 16px 8px 60px; font-size: 14px; }
 .cress-take-confirm span { flex: 1; }
 .cress-ghost-sm, .cress-destructive-sm { min-height: 32px; padding: 0 8px; border: 0; border-radius: 6px; background: transparent; color: var(--text-secondary); cursor: pointer; }

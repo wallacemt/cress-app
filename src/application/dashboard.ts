@@ -3,6 +3,7 @@ import { getProfile } from "./profile";
 import { listSessions, withGoalCompletion } from "./sessions";
 import { makeRepertoireRepo } from "../infrastructure/repositories/repertoireRepo";
 import { makeGoalRepo } from "../infrastructure/repositories/goalRepo";
+import { makeRecordingRepo } from "../infrastructure/repositories/recordingRepo";
 import { FREE_PRACTICE_PIECE_ID } from "../domain/repertoire";
 import { liveActiveMs } from "../domain/session";
 
@@ -35,11 +36,12 @@ export async function getMonthActivity(d: Deps, year: number, month: number) {
 }
 
 export async function getDashboard(d: Deps) {
-  const [profile, sessions, pieces, goals] = await Promise.all([
+  const [profile, sessions, pieces, goals, recordings] = await Promise.all([
     getProfile(d),
     listSessions(d),
     makeRepertoireRepo(d.db).list(),
     makeGoalRepo(d.db).list(),
+    makeRecordingRepo(d.db).recent(5),
   ]);
   const pieceSessions = sessions.filter((session) => session.repertoire_item_id !== FREE_PRACTICE_PIECE_ID);
   const now = d.now();
@@ -65,5 +67,10 @@ export async function getDashboard(d: Deps) {
     recentSessions: withGoalCompletion(sessions.slice(0, 5), goals.map((goal) => ({ id: goal.id, completed: goal.completed_at != null }))),
     pieceSessions,
     pieces: pieces.map((item) => ({ id: item.id, title: item.title })),
+    recentRecordings: recordings.map((recording) => {
+      const session = sessions.find((item) => item.id === recording.session_id);
+      const recordingPiece = session ? pieces.find((item) => item.id === session.repertoire_item_id) : undefined;
+      return { ...recording, pieceTitle: recordingPiece?.title ?? null };
+    }),
   };
 }
