@@ -16,14 +16,36 @@ interface AudioInputState {
   loadDevices(): Promise<void>;
 }
 
-export function createAudioInputStore(port: typeof audioPort = audioPort, persistDevice = false) {
+const MAX_AUTO_RETRIES = 5;
+const RETRY_DELAYS_MS = [500, 1000, 2000, 4000, 8000];
+
+export function createAudioInputStore(port: typeof audioPort = audioPort, persistDevice = false, scheduleTimer: typeof setTimeout = setTimeout, clearTimer: typeof clearTimeout = clearTimeout) {
   let references = 0;
   let generation = 0;
+  let retryAttempt = 0;
+  let retryTimer: ReturnType<typeof setTimeout> | null = null;
+  const cancelRetry = () => { if (retryTimer !== null) { clearTimer(retryTimer); retryTimer = null; } retryAttempt = 0; };
+  const scheduleRetry = (deviceId: string | null) => {
+    if (references === 0 || retryAttempt >= MAX_AUTO_RETRIES) return;
+    const delay = RETRY_DELAYS_MS[retryAttempt] ?? RETRY_DELAYS_MS[RETRY_DELAYS_MS.length - 1];
+    retryAttempt += 1;
+    retryTimer = scheduleTimer(() => {
+      retryTimer = null;
+      if (references === 0) return;
+      // restart() já reagenda um novo retry no próprio catch em caso de falha.
+      restart(deviceId).then(() => { retryAttempt = 0; }).catch(() => {});
+    }, delay);
+  };
   const initializer: StateCreator<AudioInputState> = (set, get) => ({
     level: { rms: 0, peak: 0 }, pitch: null, deviceId: null, devices: [], running: false, error: null,
     acquire: async () => {
       if (references > 0 && get().error) {
-        await restart(get().deviceId);
+        // Conta esta referência também: um segundo painel que monta enquanto o primeiro já
+        // está em erro não pode ficar de fora da contagem, senão o release() do primeiro
+        // derruba o stream mesmo com este ainda precisando dele (causa real do #106).
+        references += 1;
+        try { await restart(get().deviceId); }
+        catch (error) { references -= 1; throw error; }
         return;
       }
       if (references === 0 && get().error) {
@@ -36,8 +58,11 @@ export function createAudioInputStore(port: typeof audioPort = audioPort, persis
       if (references === 1) {
         try { await start(get().deviceId); }
         catch (error) {
-          references -= 1;
+          // Mantém a referência (não decrementa): o caller continua "querendo" o microfone
+          // até chamar release() no unmount; é isso que mantém scheduleRetry ativo enquanto
+          // ninguém desistiu de verdade (ex. dispositivo ocupado por outro app no momento).
           store.setState({ error: toAudioError(error), running: false, pitch: null });
+          scheduleRetry(get().deviceId);
           throw error;
         }
       }
@@ -46,6 +71,7 @@ export function createAudioInputStore(port: typeof audioPort = audioPort, persis
       if (references === 0) return;
       references -= 1;
       if (references === 0) {
+        cancelRetry();
         generation += 1;
         await port.stopInput();
         set({ running: false, level: { rms: 0, peak: 0 }, pitch: null, error: null });
@@ -60,7 +86,7 @@ export function createAudioInputStore(port: typeof audioPort = audioPort, persis
         if (requestedGeneration !== generation) return;
         store.setState({ running: false, pitch: null });
         try { await start(deviceId); }
-        catch (error) { store.setState({ error: toAudioError(error), running: false }); throw error; }
+        catch (error) { store.setState({ error: toAudioError(error), running: false }); scheduleRetry(deviceId); throw error; }
       }
     },
     loadDevices: async () => {
@@ -77,16 +103,19 @@ export function createAudioInputStore(port: typeof audioPort = audioPort, persis
     const current = ++generation;
     await port.startInput(deviceId, (event: AudioEvent) => {
       if (current !== generation) return;
+      if (!event || typeof event.event !== "string") return;
       if (event.event === "error") {
         store.setState({ error: event.data, running: false, pitch: null });
         generation += 1;
         void port.stopInput().catch(() => {});
+        scheduleRetry(deviceId);
         return;
       }
       store.setState({ level: { rms: event.data.rms, peak: event.data.peak }, pitch: event.data.pitch });
     });
     if (current === generation) {
       store.setState({ running: true, error: null });
+      cancelRetry();
     } else {
       const error = store.getState().error;
       if (error) throw new Error(error.message);
@@ -99,7 +128,7 @@ export function createAudioInputStore(port: typeof audioPort = audioPort, persis
     await port.stopInput();
     store.setState({ running: false, pitch: null });
     try { await start(deviceId); }
-    catch (error) { store.setState({ error: toAudioError(error), running: false }); throw error; }
+    catch (error) { store.setState({ error: toAudioError(error), running: false }); scheduleRetry(deviceId); throw error; }
   };
 
   function toAudioError(error: unknown) {
