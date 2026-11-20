@@ -92,11 +92,14 @@ jobs:
           }
           Write-Host "TAURI_SIGNING_PRIVATE_KEY is set."
 
-          if ([string]::IsNullOrWhiteSpace($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
-            Write-Host "ERROR: Secret TAURI_SIGNING_PRIVATE_KEY_PASSWORD não está configurado."
-            exit 1
+          # TAURI_SIGNING_PRIVATE_KEY_PASSWORD pode legitimamente ser vazio (chave gerada sem
+          # passphrase) — release.yml nunca valida isso e assina normalmente. Checar aqui como
+          # obrigatório gerava falso-positivo (achado ao lançar a v1.0.0, 2026-11-20).
+          if ([string]::IsNullOrEmpty($env:TAURI_SIGNING_PRIVATE_KEY_PASSWORD)) {
+            Write-Host "TAURI_SIGNING_PRIVATE_KEY_PASSWORD is empty (key has no passphrase)."
+          } else {
+            Write-Host "TAURI_SIGNING_PRIVATE_KEY_PASSWORD is set."
           }
-          Write-Host "TAURI_SIGNING_PRIVATE_KEY_PASSWORD is set."
 
       # ──────────────────────────────────────────────
       # 2. Build do app Tauri (nsis + msi — msi é só para extrair os arquivos,
