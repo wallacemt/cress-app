@@ -19,7 +19,7 @@
     ProcessorArchitecture="x64" />
 
   <Properties>
-    <DisplayName>Cress</DisplayName>
+    <DisplayName>Cress Practice</DisplayName>
     <PublisherDisplayName>Wallace Santana</PublisherDisplayName>
     <Description>App desktop de prática musical: metrônomo, afinador, gravador e repertório.</Description>
     <Logo>Assets\StoreLogo.png</Logo>
@@ -46,8 +46,8 @@
       EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
         BackgroundColor="transparent"
-        DisplayName="Cress"
-        Description="Cress"
+        DisplayName="Cress Practice"
+        Description="Cress Practice"
         Square150x150Logo="Assets\Cress-Square150x150Logo.png"
         Square44x44Logo="Assets\Cress-Square44x44Logo.png">
         <uap:DefaultTile
